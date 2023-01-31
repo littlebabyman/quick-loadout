@@ -100,11 +100,14 @@ end
 
 gameevent.Listen("player_activate")
 hook.Add("player_activate", "CODQuickLoadout", NetworkLoadout)
+concommand.Add("quickloadout_menu", QLOpenMenu)
 
 hook.Add("PopulateToolMenu", "CODQuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Utilities", "Admin", "CODQuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
         panel:CheckBox(enabled, "Enable quick loadouts")
         panel:CheckBox(override, "Override default loadout")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
+        local binder = vgui.Create("DBinder", panel)
+        -- binder:Set
     end)
 end)
