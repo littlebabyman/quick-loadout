@@ -2,6 +2,9 @@ AddCSLuaFile()
 CreateClientConVar("codql_weapons", "", true, true, "Quick loadout weapon classes.")
 local weaponlist = GetConVar("codql_weapons")
 local ptable = string.Explode(", ", GetConVar("codql_weapons"):GetString())
+local enabled = GetConVar("codql_enable")
+local override = GetConVar("codql_override")
+local maxslots = GetConVar("codql_maxslots")
 
 local function GenerateButton(frame, i, v, off)
     local button = vgui.Create("DButton", frame, v)
@@ -97,3 +100,11 @@ end
 
 gameevent.Listen("player_activate")
 hook.Add("player_activate", "CODQuickLoadout", NetworkLoadout)
+
+hook.Add("PopulateToolMenu", "CODQuickLoadoutSettings", function()
+    spawnmenu.AddToolMenuOption("Utilities", "Admin", "CODQuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
+        panel:CheckBox(enabled, "Enable quick loadouts")
+        panel:CheckBox(override, "Override default loadout")
+        -- panel:CheckBox(maxslots, "Max weapons on spawn")
+    end)
+end)

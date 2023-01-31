@@ -1,3 +1,4 @@
+include("codql/sh_cvars.lua")
 if CLIENT then
     include("codql/cl_loadoutmenu.lua")
 end
