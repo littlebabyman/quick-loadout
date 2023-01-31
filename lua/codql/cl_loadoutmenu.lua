@@ -53,35 +53,26 @@ function QLOpenMenu()
     -- print("Table printed!")
     local offset = 0
     local function WepSelector(button, index, wep, frame)
-        --[[local slot = vgui.Create("DButton", weplist, wep)
-        local text = wep or "ASS"
-        slot:SetWrap(true)
-        slot:SetText(text)
-        slot:SetWidth(weplist:GetWide() - weplist:GetVBar():GetWide() - 1)
-        slot:SetHeight(20)
-        slot:SetPos(0, off)]]
-        button.DoClick = function()
-            offset = 0
-            if IsValid(subcat) then subcat:Remove() end
-            if IsValid(category) then category:Remove() end
-            category = GenerateCategory(frame)
-            for k, _ in SortedPairs(wtable) do
-                cat = GenerateButton(category, index, k, offset)
-                offset = offset + cat:GetTall()
-                cat.DoClick = function()
-                    offset = 0
-                    if IsValid(subcat) then subcat:Remove() end
-                    subcat = GenerateCategory(frame)
-                    for i, v in SortedPairs(wtable[k]) do
-                        subbutton = GenerateButton(subcat, index, v, offset)
-                        offset = offset + subbutton:GetTall()
-                        subbutton.DoClick = function()
-                            table.Merge(ptable, {[index] = i})
-                            button:SetText(v .. " (" .. k .. ")")
-                            -- PrintTable(ptable)
-                            subcat:Remove()
-                            category:Remove()
-                        end
+        offset = 0
+        if IsValid(subcat) then subcat:Remove() end
+        if IsValid(category) then category:Remove() end
+        category = GenerateCategory(frame)
+        for k, _ in SortedPairs(wtable) do
+            cat = GenerateButton(category, index, k, offset)
+            offset = offset + cat:GetTall()
+            cat.DoClick = function()
+                offset = 0
+                if IsValid(subcat) then subcat:Remove() end
+                subcat = GenerateCategory(frame)
+                for i, v in SortedPairs(wtable[k]) do
+                    subbutton = GenerateButton(subcat, index, v, offset)
+                    offset = offset + subbutton:GetTall()
+                    subbutton.DoClick = function()
+                        table.Merge(ptable, {[index] = i})
+                        button:SetText(v .. " (" .. k .. ")")
+                        -- PrintTable(ptable)
+                        subcat:Remove()
+                        category:Remove()
                     end
                 end
             end
@@ -97,10 +88,10 @@ function QLOpenMenu()
     for i, v in ipairs(ptable) do
         local slot = GenerateButton(weplist, i, v, offset)
         offset = offset + slot:GetTall()
-        WepSelector(slot, i, v, mainmenu)
+        slot.DoClick = function() WepSelector(slot, i, v, mainmenu) end
     end
     local slot = GenerateButton(weplist, #ptable + 1, "Add Weapon", offset)
-    WepSelector(slot, #ptable + 1, "Add Weapon", mainmenu)
+    slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
     mainmenu.OnClose = function()
         print(table.concat(ptable,", "))
         weaponlist:SetString(table.concat(ptable, ", "))
