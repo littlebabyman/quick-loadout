@@ -4,15 +4,18 @@ local maxslots = GetConVar("codql_maxslots"):GetInt()
 
 util.AddNetworkString("codqloadout")
 
-local weps = list.HasEntry("Weapon")
-local holster, hwep = ConVarExists("holsterweapon_weapon"), "weaponholster"
+local hwep = "weaponholster"
 hook.Add("InitPostEntity", "CODQLHolsterCheck", function()
-    if holster && list.HasEntry("Weapon", GetConVar("holsterweapon_weapon"):GetString()) then
-        hwep = GetConVar("holsterweapon_weapon"):GetString()
+    if ConVarExists("holsterweapon_weapon") && list.HasEntry("Weapon", GetConVar("holsterweapon_weapon"):GetString()) then
+        hwep = GetConVar("holsterweapon_weapon"):GetString() or "weaponholster"
     end
 end)
+
 net.Receive("codqloadout", function(len, ply)
     ply.codqloadout = net.ReadTable()
+    if ConVarExists("holsterweapon_weapon") then
+        table.Add(ply.codqloadout, {[1] = hwep})
+    end
     CODQLoadout(ply)
 end)
 
@@ -22,7 +25,6 @@ function CODQLoadout(ply)
     for k, v in ipairs(ply.codqloadout) do
         ply:Give(v)
     end
-    if holster then ply:Give(hwep) end
 end
 
 gameevent.Listen("player_spawn")
