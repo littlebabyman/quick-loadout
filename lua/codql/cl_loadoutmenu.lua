@@ -47,46 +47,29 @@ function QLOpenMenu()
     end
     local offset = 0
     local function WepSelector(index, wep)
+        print(wep)
         weapon = GenerateButton(weplist, index, wep, offset)
-        --[[local weapon = vgui.Create("DButton", weplist)
-        weapon:SetWrap(true)
-        weapon:SetText(wep or "Add Weapon")
-        weapon:SetWidth(category:GetWide() - weplistbar - 1)
-        weapon:SetHeight(20)
-        weapon:SetPos(0, offset)]]
         offset = offset + weapon:GetTall()
         weapon.DoClick = function()
             offset = 0
             for k, _ in SortedPairs(wtable) do
                 button = GenerateButton(category, index, k, offset)
-                --[[local button = vgui.Create("DButton", category)
-                button:SetWrap(true)
-                button:SetText(k)
-                button:SetWidth(category:GetWide() - catbar - 1)
-                button:SetHeight(20)
-                button:SetPos(0, offset)]]
                 offset = offset + button:GetTall()
                 button.DoClick = function()
                     offset = 0
                     for i, v in SortedPairs(wtable[k]) do
                         subbutton = GenerateButton(subcat, index, v, offset)
-                        --[[local subbutton = vgui.Create("DButton", subcat)
-                        subbutton:SetWrap(true)
-                        subbutton:SetText(v)
-                        subbutton:SetWidth(subcat:GetWide() - subcatbar - 1)
-                        subbutton:SetHeight(20)
-                        subbutton:SetPos(0, offset)]]
                         offset = offset + subbutton:GetTall()
                         subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = i})
                             weapon:SetText(v .. " (" .. k .. ")")
-                            PrintTable(ptable)
+                            -- PrintTable(ptable)
                         end
                     end
                 end
             end
         end
-        if !IsValid(wep) then
+        if IsValid(wep) then
             weapon.DoRightClick = function()
                 table.remove(ptable, index)
                 weapon:Remove()
