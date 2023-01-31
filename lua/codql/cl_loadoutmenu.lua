@@ -1,4 +1,6 @@
 AddCSLuaFile()
+CreateClientConVar("codql_weapons", "", true, true, "Quick loadout weapon classes.")
+local weaponlist = GetConVar("codql_weapons")
 
 function QLOpenMenu()
     local mainmenu = vgui.Create("DFrame")
@@ -9,6 +11,10 @@ function QLOpenMenu()
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
     mainmenu:MakePopup()
+    local weplist = vgui.Create("DScrollPanel", mainmenu)
+    local weplistbar = weplist:GetVBar():GetWide()
+    weplist:SetWidth(200)
+    weplist:Dock(2)
     local category = vgui.Create("DScrollPanel", mainmenu)
     local catbar = category:GetVBar():GetWide()
     category:SetWidth(200)
@@ -17,39 +23,62 @@ function QLOpenMenu()
     local subcatbar = subcat:GetVBar():GetWide()
     subcat:SetWidth(200)
     subcat:Dock(2)
+    local ptable = string.Explode(" ", GetConVar("codql_weapons"):GetString())
+    PrintTable(ptable)
     local wtable = {}
-    -- PrintTable(wtable)
     for k, v in SortedPairs(list.Get( "Weapon" )) do
         if v.Spawnable then
             if !wtable[v.Category] then
                 wtable[v.Category] = {}
             end
-            table.Add(wtable[v.Category], {[v] = v.ClassName})
+            table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
         end
     end
     PrintTable(wtable)
     print("Table printed!")
-    local offset = 0
-    for k, _ in SortedPairs(wtable) do
-        local button = vgui.Create("DButton", category)
-        button:SetText(k)
-        button:SetWidth(category:GetWide() - catbar - 1)
-        button:SetHeight(20)
-        button:SetPos(0, offset)
-        offset = offset + 21
-        button.DoClick = function()
-            for i, v in SortedPairs(wtable[k]) do
-                local subbutton = vgui.Create("DButton", subcat)
-                subbutton:SetText(v)
-                subbutton:SetWidth(subcat:GetWide() - subcatbar - 1)
-                subbutton:SetHeight(20)
-                subbutton:SetPos(0, offset)
-                offset = offset + 21
-                subbutton.DoClick = function()
+    local function WepSelector(index, wep)
+        local offset = 0
+        local weapon = vgui.Create("DButton", weplist)
+        weapon:SetWrap(true)
+        weapon:SetText(wep or "Add Weapon")
+        weapon:SetWidth(category:GetWide() - weplistbar - 1)
+        weapon:SetHeight(20)
+        offset = offset + weapon:GetTall()
+        weapon.DoClick = function()
+            offset = 0
+            for k, _ in SortedPairs(wtable) do
+                local button = vgui.Create("DButton", category)
+                button:SetWrap(true)
+                button:SetText(k)
+                button:SetWidth(category:GetWide() - catbar - 1)
+                button:SetHeight(20)
+                button:SetPos(0, offset)
+                offset = offset + button:GetTall()
+                button.DoClick = function()
+                    offset = 0
+                    for i, v in SortedPairs(wtable[k]) do
+                        local subbutton = vgui.Create("DButton", subcat)
+                        subbutton:SetWrap(true)
+                        subbutton:SetText(v)
+                        subbutton:SetWidth(subcat:GetWide() - subcatbar - 1)
+                        subbutton:SetHeight(20)
+                        subbutton:SetPos(0, offset)
+                        offset = offset + subbutton:GetTall()
+                        subbutton.DoClick = function()
+                            table.Merge(ptable, {index or #ptable+1, v.ClassName})
+                            weapon:SetText(v .. " (" .. k .. ")")
+                        end
+                    end
                 end
             end
         end
     end
-    PrintTable(wtable)
-    print("Table printed!")
+    for i, v in ipairs(ptable) do
+        WepSelector(i, v)
+    end
+    WepSelector()
+    mainmenu.OnClose = function()
+        print(table.concat(ptable," "))
+        weaponlist:SetString(table.concat(ptable, " "))
+    end
 end
