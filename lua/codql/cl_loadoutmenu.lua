@@ -38,6 +38,7 @@ function QLOpenMenu()
     mainmenu:ShowCloseButton(true)
     mainmenu:MakePopup()
     local ptable = string.Explode(", ", GetConVar("codql_weapons"):GetString())
+    table.RemoveByValue(ptable, "")
     -- PrintTable(ptable)
     local wtable = {}
     for k, v in SortedPairs(list.Get( "Weapon" )) do
