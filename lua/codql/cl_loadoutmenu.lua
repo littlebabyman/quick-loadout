@@ -1,6 +1,7 @@
 AddCSLuaFile()
 CreateClientConVar("codql_weapons", "", true, true, "Quick loadout weapon classes.")
 local weaponlist = GetConVar("codql_weapons")
+local ptable = string.Explode(", ", GetConVar("codql_weapons"):GetString())
 
 local function GenerateButton(frame, i, v, off)
     local button = vgui.Create("DButton", frame, v)
@@ -21,10 +22,8 @@ local function GenerateCategory(frame)
 end
 
 local function NetworkLoadout()
-    local loadout = GetConVar("codql_weapons"):GetString()
-    if loadout == "" then return end
     net.Start("codqloadout")
-    net.WriteString(loadout)
+    net.WriteTable(ptable)
     net.SendToServer()
 end
 
@@ -37,9 +36,7 @@ function QLOpenMenu()
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
     mainmenu:MakePopup()
-    local ptable = string.Explode(", ", GetConVar("codql_weapons"):GetString())
     table.RemoveByValue(ptable, "")
-    -- PrintTable(ptable)
     local wtable = {}
     for k, v in SortedPairs(list.Get( "Weapon" )) do
         if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
@@ -49,8 +46,6 @@ function QLOpenMenu()
             table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
         end
     end
-    -- PrintTable(wtable)
-    -- print("Table printed!")
     local offset = 0
     local function WepSelector(button, index, wep, frame)
         offset = 0
@@ -77,11 +72,11 @@ function QLOpenMenu()
                 end
             end
         end
-        button.DoRightClick = function()
-            if table.HasValue(ptable, wep) then
-                table.remove(ptable, index)
-                button:Remove()
-            end
+    end
+    local function WepEjector(button, index, wep)
+        if table.HasValue(ptable, wep) then
+            table.remove(ptable, index)
+            button:Remove()
         end
     end
     weplist = GenerateCategory(mainmenu)
@@ -89,13 +84,16 @@ function QLOpenMenu()
         local slot = GenerateButton(weplist, i, v, offset)
         offset = offset + slot:GetTall()
         slot.DoClick = function() WepSelector(slot, i, v, mainmenu) end
+        slot.DoRightClick = function() WepEjector(slot, i, v) end
     end
     local slot = GenerateButton(weplist, #ptable + 1, "Add Weapon", offset)
     slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
+    slot.DoRightClick = function() WepEjector(slot, #ptable + 1, nil) end
     mainmenu.OnClose = function()
-        print(table.concat(ptable,", "))
         weaponlist:SetString(table.concat(ptable, ", "))
+        NetworkLoadout()
     end
 end
 
--- hook.Add("InitPostEntity", "CODQuickLoadout", NetworkLoadout())
+gameevent.Listen("player_activate")
+hook.Add("player_activate", "CODQuickLoadout", NetworkLoadout)
