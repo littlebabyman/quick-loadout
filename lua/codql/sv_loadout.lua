@@ -8,6 +8,7 @@ local weps = list.Get("Weapon")
 
 net.Receive("codqloadout", function(len, ply)
     ply.codqloadout = net.ReadTable()
+    if override:GetBool() then ply:StripWeapons() end
     CODQLoadout(ply)
 end)
 
@@ -19,4 +20,4 @@ function CODQLoadout(ply)
 end
 
 gameevent.Listen("player_spawn")
-hook.Add("PlayerSpawn", "CODQuickLoadout", CODQLoadout)
+hook.Add("PlayerSpawn", "CODQuickLoadout", function(ply) CODQLoadout(ply) return override:GetBool() end)
