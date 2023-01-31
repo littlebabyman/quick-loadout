@@ -3,14 +3,14 @@ CreateClientConVar("codql_weapons", "", true, true, "Quick loadout weapon classe
 local weaponlist = GetConVar("codql_weapons")
 
 local function GenerateButton(frame, i, v, off)
-    local button = vgui.Create("DButton", frame)
+    local button = vgui.Create("DButton", frame, v)
     local text = v or "ASS"
     button:SetWrap(true)
     button:SetText(text)
     button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
     button:SetHeight(20)
     button:SetPos(0, off)
-    return button
+    return button, v
 end
 
 local function GenerateCategory(frame)
@@ -29,7 +29,6 @@ function QLOpenMenu()
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
     mainmenu:MakePopup()
-    weplist = GenerateCategory(mainmenu)
     local ptable = string.Explode(" ", GetConVar("codql_weapons"):GetString())
     PrintTable(ptable)
     local wtable = {}
@@ -44,25 +43,29 @@ function QLOpenMenu()
     -- PrintTable(wtable)
     -- print("Table printed!")
     local offset = 0
-    local function WepSelector(index, wep)
+    local function WepSelector(index, wep, frame)
         print(wep)
-        weapon = GenerateButton(weplist, index, wep, offset)
-        offset = offset + weapon:GetTall()
-        weapon.DoClick = function()
+        slot, weapon = GenerateButton(weplist, index, wep, offset)
+        print(slot, weapon)
+        offset = offset + slot:GetTall()
+        slot.DoClick = function()
             offset = 0
-            category = GenerateCategory(mainmenu)
+            if IsValid(subcat) then subcat:Remove() end
+            if IsValid(category) then category:Remove() end
+            category = GenerateCategory(frame)
             for k, _ in SortedPairs(wtable) do
                 button = GenerateButton(category, index, k, offset)
                 offset = offset + button:GetTall()
                 button.DoClick = function()
                     offset = 0
-                    subcat = GenerateCategory(mainmenu)
+                    if IsValid(subcat) then subcat:Remove() end
+                    subcat = GenerateCategory(frame)
                     for i, v in SortedPairs(wtable[k]) do
                         subbutton = GenerateButton(subcat, index, v, offset)
                         offset = offset + subbutton:GetTall()
                         subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = i})
-                            weapon:SetText(v .. " (" .. k .. ")")
+                            slot:SetText(v .. " (" .. k .. ")")
                             -- PrintTable(ptable)
                             subcat:Remove()
                             category:Remove()
@@ -71,17 +74,18 @@ function QLOpenMenu()
                 end
             end
         end
-        weapon.DoRightClick = function()
+        slot.DoRightClick = function()
             if table.HasValue(ptable, wep) then
                 table.remove(ptable, index)
-                weapon:Remove()
+                slot:Remove()
             end
         end
     end
+    weplist = GenerateCategory(mainmenu)
     for i, v in ipairs(ptable) do
-        WepSelector(i, v)
+        WepSelector(i, v, mainmenu)
     end
-    -- WepSelector(#ptable + 1, "Add Weapon")
+    WepSelector(#ptable + 1, "Add Weapon", mainmenu)
     mainmenu.OnClose = function()
         print(table.concat(ptable," "))
         weaponlist:SetString(table.concat(ptable, " "))
