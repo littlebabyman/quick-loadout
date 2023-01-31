@@ -10,7 +10,7 @@ local function GenerateButton(frame, i, v, off)
     button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
     button:SetHeight(20)
     button:SetPos(0, off)
-    return button, v
+    return button
 end
 
 local function GenerateCategory(frame)
@@ -18,6 +18,14 @@ local function GenerateCategory(frame)
     category:SetWidth(200)
     category:Dock(2)
     return category
+end
+
+local function NetworkLoadout()
+    local loadout = GetConVar("codql_weapons"):GetString()
+    if loadout == "" then return end
+    net.Start("codqloadout")
+    net.WriteString(loadout)
+    net.SendToServer()
 end
 
 function QLOpenMenu()
@@ -29,8 +37,8 @@ function QLOpenMenu()
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
     mainmenu:MakePopup()
-    local ptable = string.Explode(" ", GetConVar("codql_weapons"):GetString())
-    PrintTable(ptable)
+    local ptable = string.Explode(", ", GetConVar("codql_weapons"):GetString())
+    -- PrintTable(ptable)
     local wtable = {}
     for k, v in SortedPairs(list.Get( "Weapon" )) do
         if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
@@ -43,20 +51,23 @@ function QLOpenMenu()
     -- PrintTable(wtable)
     -- print("Table printed!")
     local offset = 0
-    local function WepSelector(index, wep, frame)
-        print(wep)
-        slot, weapon = GenerateButton(weplist, index, wep, offset)
-        print(slot, weapon)
-        offset = offset + slot:GetTall()
-        slot.DoClick = function()
+    local function WepSelector(button, index, wep, frame)
+        --[[local slot = vgui.Create("DButton", weplist, wep)
+        local text = wep or "ASS"
+        slot:SetWrap(true)
+        slot:SetText(text)
+        slot:SetWidth(weplist:GetWide() - weplist:GetVBar():GetWide() - 1)
+        slot:SetHeight(20)
+        slot:SetPos(0, off)]]
+        button.DoClick = function()
             offset = 0
             if IsValid(subcat) then subcat:Remove() end
             if IsValid(category) then category:Remove() end
             category = GenerateCategory(frame)
             for k, _ in SortedPairs(wtable) do
-                button = GenerateButton(category, index, k, offset)
-                offset = offset + button:GetTall()
-                button.DoClick = function()
+                cat = GenerateButton(category, index, k, offset)
+                offset = offset + cat:GetTall()
+                cat.DoClick = function()
                     offset = 0
                     if IsValid(subcat) then subcat:Remove() end
                     subcat = GenerateCategory(frame)
@@ -65,7 +76,7 @@ function QLOpenMenu()
                         offset = offset + subbutton:GetTall()
                         subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = i})
-                            slot:SetText(v .. " (" .. k .. ")")
+                            button:SetText(v .. " (" .. k .. ")")
                             -- PrintTable(ptable)
                             subcat:Remove()
                             category:Remove()
@@ -74,20 +85,25 @@ function QLOpenMenu()
                 end
             end
         end
-        slot.DoRightClick = function()
+        button.DoRightClick = function()
             if table.HasValue(ptable, wep) then
                 table.remove(ptable, index)
-                slot:Remove()
+                button:Remove()
             end
         end
     end
     weplist = GenerateCategory(mainmenu)
     for i, v in ipairs(ptable) do
-        WepSelector(i, v, mainmenu)
+        local slot = GenerateButton(weplist, i, v, offset)
+        offset = offset + slot:GetTall()
+        WepSelector(slot, i, v, mainmenu)
     end
-    WepSelector(#ptable + 1, "Add Weapon", mainmenu)
+    local slot = GenerateButton(weplist, #ptable + 1, "Add Weapon", offset)
+    WepSelector(slot, #ptable + 1, "Add Weapon", mainmenu)
     mainmenu.OnClose = function()
-        print(table.concat(ptable," "))
-        weaponlist:SetString(table.concat(ptable, " "))
+        print(table.concat(ptable,", "))
+        weaponlist:SetString(table.concat(ptable, ", "))
     end
 end
+
+-- hook.Add("InitPostEntity", "CODQuickLoadout", NetworkLoadout())
