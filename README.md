@@ -1,2 +1,2 @@
-# cod-quick-loadout
+# quick-loadout
  cool ass death matching
