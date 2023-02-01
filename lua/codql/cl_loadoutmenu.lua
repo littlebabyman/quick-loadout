@@ -1,9 +1,9 @@
 AddCSLuaFile()
-local weaponlist = GetConVar("codql_weapons")
+local weaponlist = GetConVar("quickloadout_weapons")
 local ptable = string.Explode(", ", weaponlist:GetString())
-local enabled = GetConVar("codql_enable")
-local override = GetConVar("codql_override")
-local maxslots = GetConVar("codql_maxslots")
+local enabled = GetConVar("quickloadout_enable")
+local override = GetConVar("quickloadout_override")
+local maxslots = GetConVar("quickloadout_maxslots")
 
 local function GenerateButton(frame, i, v, off)
     local button = vgui.Create("DButton", frame, v)
@@ -24,7 +24,7 @@ local function GenerateCategory(frame)
 end
 
 local function NetworkLoadout()
-    net.Start("codqloadout")
+    net.Start("quickloadout")
     net.WriteTable(ptable)
     net.SendToServer()
 end
@@ -97,12 +97,12 @@ function QLOpenMenu()
     end
 end
 
-hook.Add("InitPostEntity", "CODQuickLoadout", NetworkLoadout)
+hook.Add("InitPostEntity", "QuickLoadoutInit", NetworkLoadout)
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
 
-hook.Add("PopulateToolMenu", "CODQuickLoadoutSettings", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Admin", "CODQuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
+hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
+    spawnmenu.AddToolMenuOption("Utilities", "Admin", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
         panel:CheckBox(enabled, "Enable quick loadouts")
         panel:CheckBox(override, "Override default loadout")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
