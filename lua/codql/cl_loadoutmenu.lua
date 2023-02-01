@@ -1,7 +1,6 @@
 AddCSLuaFile()
-CreateClientConVar("codql_weapons", "", true, true, "Quick loadout weapon classes.")
 local weaponlist = GetConVar("codql_weapons")
-local ptable = string.Explode(", ", GetConVar("codql_weapons"):GetString())
+local ptable = string.Explode(", ", weaponlist:GetString())
 local enabled = GetConVar("codql_enable")
 local override = GetConVar("codql_override")
 local maxslots = GetConVar("codql_maxslots")
@@ -98,8 +97,8 @@ function QLOpenMenu()
     end
 end
 
-gameevent.Listen("player_activate")
-hook.Add("player_activate", "CODQuickLoadout", NetworkLoadout)
+hook.Add("InitPostEntity", "CODQuickLoadout", NetworkLoadout)
+
 concommand.Add("quickloadout_menu", QLOpenMenu)
 
 hook.Add("PopulateToolMenu", "CODQuickLoadoutSettings", function()
