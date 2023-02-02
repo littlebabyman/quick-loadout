@@ -21,11 +21,12 @@ end)
 
 function QuickLoadout(ply)
     if !enabled or !ply.quickloadout then return end
-    if override then ply:StripWeapons() end
+    ply:StripWeapons()
+    if !override then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
         ply:Give(v)
     end
 end
 
 gameevent.Listen("player_spawn")
-hook.Add("PlayerSpawn", "CODQuickLoadout", function(ply) timer.Simple(0, function() QuickLoadout(ply) end) end)
+hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply) timer.Simple(0, function() QuickLoadout(ply) end) end)
