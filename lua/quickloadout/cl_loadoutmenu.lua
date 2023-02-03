@@ -5,10 +5,21 @@ local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_override")
 local maxslots = GetConVar("quickloadout_maxslots")
 
-local function GenerateButton(frame, i, v, off)
-    local button = vgui.Create("DButton", frame, v)
-    local text = v or "ASS"
-    button:SetWrap(true)
+local function GenerateMainFrame()
+    local frame = vgui.Create("DFrame")
+    frame:SetPos(ScrW() / 2-320, ScrH() / 2-240)
+    frame:SetSize(640, 480)
+    frame:SetTitle("Loadout")
+    frame:SetVisible(true)
+    frame:SetDraggable(false)
+    frame:ShowCloseButton(true)
+    frame:MakePopup() return frame
+end
+
+local function GenerateButton(frame, index, value, off)
+    local button = vgui.Create("DButton", frame, value)
+    local text = value or "ASS"
+    -- button:SetWrap(true)
     button:SetText(text)
     button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
     button:SetHeight(20)
@@ -30,14 +41,7 @@ local function NetworkLoadout()
 end
 
 function QLOpenMenu()
-    local mainmenu = vgui.Create("DFrame")
-    mainmenu:SetPos(ScrW() / 2-320, ScrH() / 2-240)
-    mainmenu:SetSize(640, 480)
-    mainmenu:SetTitle("Loadout")
-    mainmenu:SetVisible(true)
-    mainmenu:SetDraggable(false)
-    mainmenu:ShowCloseButton(true)
-    mainmenu:MakePopup()
+    local mainmenu = GenerateMainFrame()
     table.RemoveByValue(ptable, "")
     local wtable = {}
     for k, v in SortedPairs(list.Get( "Weapon" )) do
@@ -49,6 +53,7 @@ function QLOpenMenu()
         end
     end
     local offset = 0
+    local weplist = GenerateCategory(mainmenu)
     local function WepSelector(button, index, wep, frame)
         offset = 0
         if IsValid(subcat) then subcat:Remove() end
@@ -70,6 +75,7 @@ function QLOpenMenu()
                         -- PrintTable(ptable)
                         subcat:Remove()
                         category:Remove()
+                        weplist:InvalidateLayout()
                     end
                 end
             end
@@ -81,7 +87,6 @@ function QLOpenMenu()
             button:Remove()
         end
     end
-    weplist = GenerateCategory(mainmenu)
     for i, v in ipairs(ptable) do
         local slot = GenerateButton(weplist, i, v, offset)
         offset = offset + slot:GetTall()
