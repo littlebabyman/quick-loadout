@@ -117,6 +117,7 @@ end
 hook.Add("InitPostEntity", "QuickLoadoutInit", NetworkLoadout)
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
+cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
 
 hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Utilities", "Admin", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
