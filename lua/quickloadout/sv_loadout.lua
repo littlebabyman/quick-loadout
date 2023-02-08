@@ -20,7 +20,7 @@ net.Receive("quickloadout", function(len, ply)
 end)
 
 function QuickLoadout(ply)
-    if !enabled or !ply.quickloadout then return end
+    if !enabled or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
     if !override then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
