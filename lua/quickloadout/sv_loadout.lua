@@ -1,6 +1,6 @@
-local enabled = GetConVar("quickloadout_enable"):GetBool()
-local override = GetConVar("quickloadout_override"):GetBool()
-local maxslots = GetConVar("quickloadout_maxslots"):GetInt()
+local enabled = GetConVar("quickloadout_enable")
+local override = GetConVar("quickloadout_override")
+local maxslots = GetConVar("quickloadout_maxslots")
 
 util.AddNetworkString("quickloadout")
 
@@ -20,9 +20,9 @@ net.Receive("quickloadout", function(len, ply)
 end)
 
 function QuickLoadout(ply)
-    if !enabled or !ply.quickloadout or !ply:Alive() then return end
+    if !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
-    if !override then hook.Run("PlayerLoadout", ply) end
+    if !override:GetBool() then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
         ply:Give(v)
     end
