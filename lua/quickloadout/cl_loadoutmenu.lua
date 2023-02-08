@@ -5,22 +5,33 @@ local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_override")
 local maxslots = GetConVar("quickloadout_maxslots")
 
-local function GenerateButton(frame, i, v, off)
-    local button = vgui.Create("DButton", frame, v)
-    local text = v or "ASS"
-    button:SetWrap(true)
-    button:SetText(text)
-    button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
-    button:SetHeight(20)
-    button:SetPos(0, off)
-    return button
-end
-
 local function GenerateCategory(frame)
     local category = vgui.Create("DScrollPanel", frame)
-    category:SetWidth(200)
+    local bar = category:GetVBar()
+    category:SetWidth(frame:GetTall() * 0.3)
     category:Dock(2)
+    bar:SetHideButtons(true)
     return category
+end
+
+local function GenerateButton(frame, name, v, off)
+    local button = vgui.Create("DButton", frame, v)
+    local function QuickName()
+        if !isstring(name) and !isnumber(name) and name.PrintName != nil then
+            return name.PrintName .. " (" .. name.Category .. ")"
+        else
+            return v or "ASS"
+        end
+    end
+    local text = QuickName()
+    button:SetWrap(true)
+    button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
+    button:SetHeight(frame:GetWide() * 0.15)
+    button:SetTextInset(frame:GetWide() * 0.05, frame:GetTall() * 0.0)
+    button:SetText(text)
+    button:SetPos(0, off)
+    button.OnReleased = function() for k, v in ipairs(frame:GetChild(0):GetChildren()) do v:SetToggle(false) end button:SetToggle(true) end
+    return button
 end
 
 local function NetworkLoadout()
@@ -31,12 +42,13 @@ end
 
 function QLOpenMenu()
     local mainmenu = vgui.Create("DFrame")
-    mainmenu:SetPos(ScrW() / 2-320, ScrH() / 2-240)
-    mainmenu:SetSize(640, 480)
+    mainmenu:SetSize(ScrW() / 2, ScrH() / 2)
+    mainmenu:SetPos((ScrW() - mainmenu:GetWide()) * 0.5, (ScrH() - mainmenu:GetTall()) * 0.5)
     mainmenu:SetTitle("Loadout")
     mainmenu:SetVisible(true)
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
+    mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, 0, 0)
     mainmenu:MakePopup()
     table.RemoveByValue(ptable, "")
     local wtable = {}
@@ -48,19 +60,17 @@ function QLOpenMenu()
             table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
         end
     end
-    local offset = 0
+    local weplist = GenerateCategory(mainmenu)
+    local category = GenerateCategory(mainmenu)
+    local subcat = GenerateCategory(mainmenu)
+    local offset = mainmenu:GetTall() * 0.1
     local function WepSelector(button, index, wep, frame)
-        offset = 0
-        if IsValid(subcat) then subcat:Remove() end
-        if IsValid(category) then category:Remove() end
-        category = GenerateCategory(frame)
+        offset = mainmenu:GetTall() * 0.1
         for k, _ in SortedPairs(wtable) do
             cat = GenerateButton(category, index, k, offset)
             offset = offset + cat:GetTall()
             cat.DoClick = function()
-                offset = 0
-                if IsValid(subcat) then subcat:Remove() end
-                subcat = GenerateCategory(frame)
+                offset = mainmenu:GetTall() * 0.1
                 for i, v in SortedPairs(wtable[k]) do
                     subbutton = GenerateButton(subcat, index, v, offset)
                     offset = offset + subbutton:GetTall()
@@ -68,8 +78,8 @@ function QLOpenMenu()
                         table.Merge(ptable, {[index] = i})
                         button:SetText(v .. " (" .. k .. ")")
                         -- PrintTable(ptable)
-                        subcat:Remove()
-                        category:Remove()
+                        subcat:Clear()
+                        category:Clear()
                     end
                 end
             end
@@ -81,12 +91,19 @@ function QLOpenMenu()
             button:Remove()
         end
     end
-    weplist = GenerateCategory(mainmenu)
     for i, v in ipairs(ptable) do
-        local slot = GenerateButton(weplist, i, v, offset)
+        local slot = GenerateButton(weplist, list.Get("Weapon")[v], v, offset)
         offset = offset + slot:GetTall()
-        slot.DoClick = function() WepSelector(slot, i, v, mainmenu) end
-        slot.DoRightClick = function() WepEjector(slot, i, v) end
+        slot.DoClick = function()
+            subcat:Clear()
+            category:Clear()
+            WepSelector(slot, i, v, mainmenu)
+        end
+        slot.DoRightClick = function()
+            subcat:Clear()
+            category:Clear()
+            WepEjector(slot, i, v)
+        end
     end
     local slot = GenerateButton(weplist, #ptable + 1, "Add Weapon", offset)
     slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
