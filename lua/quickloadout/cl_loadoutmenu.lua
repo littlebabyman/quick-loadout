@@ -56,7 +56,11 @@ function QLOpenMenu(refresh)
     mainmenu:ShowCloseButton(true)
     mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, 0, 0)
     mainmenu:MakePopup()
-    mainmenu:RequestFocus()
+    function mainmenu:OnKeyCodePressed(key)
+        if key == input.GetKeyCode(keybind:GetString()) then
+            mainmenu:Close()
+        end
+    end
     table.RemoveByValue(ptable, "")
     local wtable = {}
     for k, v in SortedPairs(list.Get( "Weapon" )) do
