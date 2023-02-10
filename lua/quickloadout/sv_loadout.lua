@@ -42,7 +42,12 @@ function QuickLoadout(ply)
     ply:StripWeapons()
     if !override:GetBool() then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
-        ply:Give(v)
+        if k <= maxslots:GetInt() then
+            ply:Give(v)
+        end
+    end
+    if ConVarExists("holsterweapon_weapon") then
+        ply:Give(hwep)
     end
 end
 
