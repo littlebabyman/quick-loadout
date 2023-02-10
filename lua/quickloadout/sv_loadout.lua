@@ -1,6 +1,8 @@
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_override")
 local maxslots = GetConVar("quickloadout_maxslots")
+local time = GetConVar("quickloadout_switchtime")
+local timestop = GetConVar("quickloadout_switchtime_override")
 
 util.AddNetworkString("quickloadout")
 if game.SinglePlayer then
@@ -27,7 +29,12 @@ net.Receive("quickloadout", function(len, ply)
     if ConVarExists("holsterweapon_weapon") then
         table.Add(ply.quickloadout, {[1] = hwep})
     end
-    QuickLoadout(ply)
+    if (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
+        net.Start("quickloadout")
+        net.Send(ply)
+        return
+    end
+    QuickLoadout(ply, time:GetFloat())
 end)
 
 function QuickLoadout(ply)
@@ -39,5 +46,14 @@ function QuickLoadout(ply)
     end
 end
 
-gameevent.Listen("player_spawn")
-hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply) timer.Simple(0, function() QuickLoadout(ply) end) end)
+hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)
+    ply.qlspawntime = CurTime()
+    timer.Simple(0, function() QuickLoadout(ply) end)
+end)
+
+hook.Add("KeyPress", "QuickLoadoutCancel", function(ply, key)
+    if !timestop:GetBool() then return end
+    if ply.qlspawntime > 0 and key == IN_ATTACK then
+        ply.qlspawntime = 0
+    end
+end)

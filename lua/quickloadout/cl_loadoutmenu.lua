@@ -1,10 +1,11 @@
 AddCSLuaFile()
 local weaponlist = GetConVar("quickloadout_weapons")
 local ptable = string.Explode(", ", weaponlist:GetString())
-local enabled = GetConVar("quickloadout_enable")
-local override = GetConVar("quickloadout_override")
-local maxslots = GetConVar("quickloadout_maxslots")
 local keybind = GetConVar("quickloadout_key")
+-- local enabled = GetConVar("quickloadout_enable")
+-- local override = GetConVar("quickloadout_override")
+-- local maxslots = GetConVar("quickloadout_maxslots")
+-- local time = GetConVar("quickloadout_switchtime")
 
 local function GenerateCategory(frame)
     local category = vgui.Create("DScrollPanel", frame)
@@ -28,7 +29,11 @@ local function GenerateButton(frame, name, v, off)
     button:SetTextInset(frame:GetWide() * 0.05, frame:GetTall() * 0.0)
     button:SetText(text)
     button:SetPos(0, off)
-    button.OnReleased = function() for k, v in ipairs(frame:GetChild(0):GetChildren()) do v:SetToggle(false) end button:SetToggle(true) end
+    button.OnReleased = function()
+        for k, v in ipairs(frame:GetChild(0):GetChildren()) do
+            v:SetToggle(false)
+        end
+        button:SetToggle(true) end
     return button
 end
 
@@ -38,7 +43,10 @@ local function NetworkLoadout()
     net.SendToServer()
 end
 
+net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
+
 function QLOpenMenu()
+    local newloadout = false
     local mainmenu = vgui.Create("DFrame")
     mainmenu:SetSize(ScrW() / 2, ScrH() / 2)
     mainmenu:Center()
@@ -65,12 +73,12 @@ function QLOpenMenu()
     local function WepSelector(button, index, wep, frame)
         offset = 0
         for k, _ in SortedPairs(wtable) do
-            cat = GenerateButton(category, index, k, offset)
+            cat = GenerateButton(category, k, nil, offset)
             offset = offset + cat:GetTall()
             cat.DoClick = function()
                 offset = 0
                 for i, v in SortedPairs(wtable[k]) do
-                    subbutton = GenerateButton(subcat, index, v, offset)
+                    subbutton = GenerateButton(subcat, v, i, offset)
                     offset = offset + subbutton:GetTall()
                     subbutton.DoClick = function()
                         table.Merge(ptable, {[index] = i})
@@ -78,6 +86,7 @@ function QLOpenMenu()
                         -- PrintTable(ptable)
                         subcat:Clear()
                         category:Clear()
+                        newloadout = true
                     end
                 end
             end
@@ -87,6 +96,7 @@ function QLOpenMenu()
         if table.HasValue(ptable, wep) then
             table.remove(ptable, index)
             button:Remove()
+            newloadout = true
         end
     end
     for i, v in ipairs(ptable) do
@@ -103,10 +113,11 @@ function QLOpenMenu()
             WepEjector(slot, i, v)
         end
     end
-    local slot = GenerateButton(weplist, "+ Add Weapon", nil, offset)
+    local slot = GenerateButton(weplist, nil,"+ Add Weapon",  offset)
     slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
     slot.DoRightClick = function() WepEjector(slot, #ptable + 1, nil) end
     mainmenu.OnClose = function()
+        if !newloadout then return end
         weaponlist:SetString(table.concat(ptable, ", "))
         NetworkLoadout()
     end
@@ -147,6 +158,10 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         panel:ControlHelp("Globally enables quick loadout on server.")
         panel:CheckBox("Override default loadout", "quickloadout_override")
         panel:ControlHelp("Forcibly removes other weapons players spawn with.")
+        panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 600, 0)
+        panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.")
+        panel:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
+        panel:ControlHelp("Whether pressing the attack button disables grace period.")
         panel:Help("Client settings")
         panel:Help("Loadout window bind")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
