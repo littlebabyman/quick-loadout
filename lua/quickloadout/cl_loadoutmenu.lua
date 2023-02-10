@@ -26,7 +26,7 @@ local function GenerateButton(frame, name, index, off)
     button:SetWrap(true)
     button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
     button:SetHeight(frame:GetWide() * 0.15)
-    button:SetTextInset(frame:GetWide() * 0.05, frame:GetTall() * 0.0)
+    button:SetTextInset(frame:GetWide() * 0.05, 0)
     button:SetText(text)
     button:SetPos(0, off)
     button.OnReleased = function()
@@ -45,8 +45,8 @@ end
 
 net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
 
-function QLOpenMenu()
-    local newloadout = false
+function QLOpenMenu(refresh)
+    local newloadout = refresh or false
     local mainmenu = vgui.Create("DFrame")
     mainmenu:SetSize(ScrW() / 2, ScrH() / 2)
     mainmenu:Center()
@@ -56,6 +56,7 @@ function QLOpenMenu()
     mainmenu:ShowCloseButton(true)
     mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, 0, 0)
     mainmenu:MakePopup()
+    mainmenu:RequestFocus()
     table.RemoveByValue(ptable, "")
     local wtable = {}
     for k, v in SortedPairs(list.Get( "Weapon" )) do
@@ -83,10 +84,9 @@ function QLOpenMenu()
                     offset = offset + subbutton:GetTall()
                     subbutton.DoClick = function()
                         table.Merge(ptable, {[index] = i})
-                        button:SetText(v .. " (" .. k .. ")")
-                        subcat:Clear()
-                        category:Clear()
                         newloadout = true
+                        QLOpenMenu(newloadout, frame)
+                        mainmenu:Remove()
                     end
                 end
             end
@@ -95,8 +95,9 @@ function QLOpenMenu()
     local function WepEjector(button, index, wep)
         if table.HasValue(ptable, wep) then
             table.remove(ptable, index)
-            button:Remove()
             newloadout = true
+            mainmenu:Remove()
+            QLOpenMenu(newloadout)
         end
     end
     for i, v in ipairs(ptable) do
