@@ -4,12 +4,14 @@ local ptable = string.Explode(", ", weaponlist:GetString())
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_override")
 local maxslots = GetConVar("quickloadout_maxslots")
+local keybind = GetConVar("quickloadout_key")
 
 local function GenerateCategory(frame)
     local category = vgui.Create("DScrollPanel", frame)
     local bar = category:GetVBar()
     category:SetWidth(frame:GetTall() * 0.3)
     category:Dock(2)
+    category:DockMargin(0, frame:GetTall() * 0.1, 0, frame:GetTall() * 0.1)
     bar:SetHideButtons(true)
     return category
 end
@@ -17,11 +19,7 @@ end
 local function GenerateButton(frame, name, v, off)
     local button = vgui.Create("DButton", frame, v)
     local function QuickName()
-        if !isstring(name) and !isnumber(name) and name.PrintName != nil then
-            return name.PrintName .. " (" .. name.Category .. ")"
-        else
-            return v or "ASS"
-        end
+        return name or v or "ASS"
     end
     local text = QuickName()
     button:SetWrap(true)
@@ -43,7 +41,7 @@ end
 function QLOpenMenu()
     local mainmenu = vgui.Create("DFrame")
     mainmenu:SetSize(ScrW() / 2, ScrH() / 2)
-    mainmenu:SetPos((ScrW() - mainmenu:GetWide()) * 0.5, (ScrH() - mainmenu:GetTall()) * 0.5)
+    mainmenu:Center()
     mainmenu:SetTitle("Loadout")
     mainmenu:SetVisible(true)
     mainmenu:SetDraggable(false)
@@ -63,14 +61,14 @@ function QLOpenMenu()
     local weplist = GenerateCategory(mainmenu)
     local category = GenerateCategory(mainmenu)
     local subcat = GenerateCategory(mainmenu)
-    local offset = mainmenu:GetTall() * 0.1
+    local offset = 0
     local function WepSelector(button, index, wep, frame)
-        offset = mainmenu:GetTall() * 0.1
+        offset = 0
         for k, _ in SortedPairs(wtable) do
             cat = GenerateButton(category, index, k, offset)
             offset = offset + cat:GetTall()
             cat.DoClick = function()
-                offset = mainmenu:GetTall() * 0.1
+                offset = 0
                 for i, v in SortedPairs(wtable[k]) do
                     subbutton = GenerateButton(subcat, index, v, offset)
                     offset = offset + subbutton:GetTall()
@@ -92,7 +90,7 @@ function QLOpenMenu()
         end
     end
     for i, v in ipairs(ptable) do
-        local slot = GenerateButton(weplist, list.Get("Weapon")[v], v, offset)
+        local slot = GenerateButton(weplist, list.Get("Weapon")[v].PrintName .. " (" .. list.Get("Weapon")[v].Category .. ")", v, offset)
         offset = offset + slot:GetTall()
         slot.DoClick = function()
             subcat:Clear()
@@ -105,7 +103,7 @@ function QLOpenMenu()
             WepEjector(slot, i, v)
         end
     end
-    local slot = GenerateButton(weplist, #ptable + 1, "Add Weapon", offset)
+    local slot = GenerateButton(weplist, "+ Add Weapon", nil, offset)
     slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
     slot.DoRightClick = function() WepEjector(slot, #ptable + 1, nil) end
     mainmenu.OnClose = function()
@@ -114,17 +112,52 @@ function QLOpenMenu()
     end
 end
 
-hook.Add("InitPostEntity", "QuickLoadoutInit", NetworkLoadout)
+hook.Add("InitPostEntity", "QuickLoadoutInit", function()
+    if game.SinglePlayer() then
+        if input.LookupBinding("quickloadout_menu") then return end
+        net.Start("QLSPHack")
+        net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
+        net.SendToServer()
+    end
+    NetworkLoadout()
+end)
+
+if game.SinglePlayer() then
+    cvars.AddChangeCallback("quickloadout_key", function()
+        if game.SinglePlayer() then
+            net.Start("QLSPHack")
+            net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
+            net.SendToServer()
+        end
+    end)
+    net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
+else
+    hook.Add("PlayerButtonDown", "QuickLoadoutBind", function(ply, key)
+        if key == input.GetKeyCode(keybind:GetString()) and !input.LookupBinding("quickloadout_menu") and IsFirstTimePredicted() then QLOpenMenu() end
+    end)
+end
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
 cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
 
 hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Utilities", "Admin", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
-        panel:CheckBox(enabled, "Enable quick loadouts")
-        panel:CheckBox(override, "Override default loadout")
+        panel:Help("Server settings")
+        panel:CheckBox("Enable quick loadouts", "quickloadout_enable")
+        panel:ControlHelp("Globally enables quick loadout on server.")
+        panel:CheckBox("Override default loadout", "quickloadout_override")
+        panel:ControlHelp("Forcibly removes other weapons players spawn with.")
+        panel:Help("Client settings")
+        panel:Help("Loadout window bind")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
         local binder = vgui.Create("DBinder", panel)
-        -- binder:Set
+        binder:DockMargin(60,10,60,10)
+        binder:Dock(TOP)
+        binder:CenterHorizontal()
+        binder:SetText(string.upper(keybind:GetString() or "none"))
+        function binder:OnChange(key)
+            keybind:SetString(input.GetKeyName(key))
+            binder:SetText(string.upper(input.GetKeyName(key) or "none"))
+        end
     end)
 end)

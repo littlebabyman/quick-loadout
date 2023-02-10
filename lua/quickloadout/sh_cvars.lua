@@ -4,4 +4,5 @@ CreateConVar("quickloadout_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCV
 CreateConVar("quickloadout_maxslots", 5, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Max weapon slots in a loadout.", 0, 8^8)
 if CLIENT then
     CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes.")
+    CreateClientConVar("quickloadout_key", "n", true, false, "Quick loadout keybind.")
 end
