@@ -31,9 +31,9 @@ local function GenerateButton(frame, name, index, off)
     button:SetPos(0, off)
     button.OnReleased = function()
         for k, v in ipairs(frame:GetChild(0):GetChildren()) do
-            v:SetToggle(false)
+            v:SetSelected(false)
         end
-        button:SetToggle(true) end
+        button:SetSelected(true) end
     return button
 end
 
@@ -78,16 +78,14 @@ function QLOpenMenu()
             cat.DoClick = function()
                 subcat:Clear()
                 offset = 0
-                for i, v in SortedPairs(wtable[k]) do
+                for i, v in SortedPairsByValue(wtable[k]) do
                     subbutton = GenerateButton(subcat, v, i, offset)
                     offset = offset + subbutton:GetTall()
                     subbutton.DoClick = function()
                         table.Merge(ptable, {[index] = i})
                         button:SetText(v .. " (" .. k .. ")")
-                        -- PrintTable(ptable)
                         subcat:Clear()
                         category:Clear()
-                        weplist:Clear()
                         newloadout = true
                     end
                 end
