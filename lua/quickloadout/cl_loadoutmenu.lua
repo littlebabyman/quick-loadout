@@ -6,13 +6,14 @@ local keybind = GetConVar("quickloadout_key")
 -- local override = GetConVar("quickloadout_override")
 -- local maxslots = GetConVar("quickloadout_maxslots")
 -- local time = GetConVar("quickloadout_switchtime")
+local closed = false
 
 local function GenerateCategory(frame)
     local category = vgui.Create("DScrollPanel", frame)
     local bar = category:GetVBar()
     category:SetWidth(frame:GetTall() * 0.3)
     category:Dock(2)
-    category:DockMargin(0, frame:GetTall() * 0.1, 0, frame:GetTall() * 0.1)
+    category:DockMargin(0, frame:GetTall() * 0.1, frame:GetTall() * 0.02, frame:GetTall() * 0.1)
     bar:SetHideButtons(true)
     return category
 end
@@ -24,7 +25,7 @@ local function GenerateButton(frame, name, index, off)
     end
     local text = QuickName()
     button:SetWrap(true)
-    button:SetWidth(frame:GetWide() - frame:GetVBar():GetWide() - 1)
+    button:SetWidth(frame:GetWide() - 1)
     button:SetHeight(frame:GetWide() * 0.15)
     button:SetTextInset(frame:GetWide() * 0.05, 0)
     button:SetText(text)
@@ -46,6 +47,7 @@ end
 net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
 
 function QLOpenMenu(refresh)
+    if closed then return end
     local newloadout = refresh or false
     local mainmenu = vgui.Create("DFrame")
     mainmenu:SetSize(ScrW() / 2, ScrH() / 2)
@@ -122,6 +124,8 @@ function QLOpenMenu(refresh)
     slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
     slot.DoRightClick = function() WepEjector(slot, #ptable + 1, nil) end
     mainmenu.OnClose = function()
+        closed = true
+        timer.Simple(0, function() closed = false end)
         if !newloadout then return end
         weaponlist:SetString(table.concat(ptable, ", "))
         NetworkLoadout()
