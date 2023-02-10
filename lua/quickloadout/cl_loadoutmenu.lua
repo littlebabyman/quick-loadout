@@ -64,28 +64,51 @@ function QLOpenMenu(refresh)
     mainmenu:ShowCloseButton(true)
     mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, 0, 0)
     mainmenu:MakePopup()
+
+    local function ResetMenu()
+        newloadout = true
+        QLOpenMenu(newloadout)
+        mainmenu:Remove()
+    end
+
     function mainmenu:OnKeyCodePressed(key)
         if key == input.GetKeyCode(keybind:GetString()) then
             mainmenu:Close()
         end
     end
+
+    if GetConVar("sv_cheats"):GetBool() and GetConVar("developer"):GetBool() then
+        for k, v in SortedPairs(list.Get( "Weapon" )) do
+            if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
+                local reftable = weapons.Get(k)
+                if !wtable[v.Category] then
+                    wtable[v.Category] = {}
+                end
+                if reftable and reftable.SubCategory then
+                    if !wtable[v.Category][reftable.SubCategory] then
+                        wtable[v.Category][reftable.SubCategory] = {}
+                    end
+                    table.Merge(wtable[v.Category][reftable.SubCategory], {[v.ClassName] = v.PrintName or v.ClassName})
+                else
+                    table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
+                end
+            end
+        end
+    end
+
     table.RemoveByValue(ptable, "")
     local weplist = GenerateCategory(mainmenu)
     local category = GenerateCategory(mainmenu)
     local subcat = GenerateCategory(mainmenu)
     local subcat2 = GenerateCategory(mainmenu)
     local offset = 0
-    local function ResetMenu()
-        newloadout = true
-        QLOpenMenu(newloadout)
-        mainmenu:Remove()
-    end
     local function WepSelector(button, index, wep, frame)
         offset = 0
         for k, _ in SortedPairs(wtable) do
             cat = GenerateButton(category, k, nil, offset)
             offset = offset + cat:GetTall()
             cat.DoClick = function()
+                subcat2:Clear()
                 subcat:Clear()
                 offset = 0
                 for i, v in SortedPairsByMemberValue(wtable[k], _) do
