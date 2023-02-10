@@ -96,8 +96,8 @@ function QLOpenMenu(refresh)
         if table.HasValue(ptable, wep) then
             table.remove(ptable, index)
             newloadout = true
-            mainmenu:Remove()
             QLOpenMenu(newloadout)
+            mainmenu:Remove()
         end
     end
     for i, v in ipairs(ptable) do
