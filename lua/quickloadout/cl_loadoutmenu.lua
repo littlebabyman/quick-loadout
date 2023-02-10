@@ -17,10 +17,10 @@ local function GenerateCategory(frame)
     return category
 end
 
-local function GenerateButton(frame, name, v, off)
-    local button = vgui.Create("DButton", frame, v)
+local function GenerateButton(frame, name, index, off)
+    local button = vgui.Create("DButton", frame, index)
     local function QuickName()
-        return name or v or "ASS"
+        return name or index or "ASS"
     end
     local text = QuickName()
     button:SetWrap(true)
@@ -76,6 +76,7 @@ function QLOpenMenu()
             cat = GenerateButton(category, k, nil, offset)
             offset = offset + cat:GetTall()
             cat.DoClick = function()
+                subcat:Clear()
                 offset = 0
                 for i, v in SortedPairs(wtable[k]) do
                     subbutton = GenerateButton(subcat, v, i, offset)
@@ -86,6 +87,7 @@ function QLOpenMenu()
                         -- PrintTable(ptable)
                         subcat:Clear()
                         category:Clear()
+                        weplist:Clear()
                         newloadout = true
                     end
                 end
