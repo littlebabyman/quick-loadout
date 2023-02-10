@@ -21,7 +21,11 @@ end
 local function GenerateButton(frame, name, index, off)
     local button = vgui.Create("DButton", frame, index)
     local function QuickName()
-        return name or index or "ASS"
+        if istable(name) then
+            return index or "ASS"
+        else
+            return name or index or "ASS"
+        end
     end
     local text = QuickName()
     button:SetWrap(true)
@@ -46,11 +50,13 @@ end
 
 net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
 
+local wtable = {}
+
 function QLOpenMenu(refresh)
     if closed then return end
     local newloadout = refresh or false
     local mainmenu = vgui.Create("DFrame")
-    mainmenu:SetSize(ScrW() / 2, ScrH() / 2)
+    mainmenu:SetSize(ScrW() * 0.5, ScrH() * 0.5)
     mainmenu:Center()
     mainmenu:SetTitle("Loadout")
     mainmenu:SetVisible(true)
@@ -64,19 +70,16 @@ function QLOpenMenu(refresh)
         end
     end
     table.RemoveByValue(ptable, "")
-    local wtable = {}
-    for k, v in SortedPairs(list.Get( "Weapon" )) do
-        if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
-            if !wtable[v.Category] then
-                wtable[v.Category] = {}
-            end
-            table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
-        end
-    end
     local weplist = GenerateCategory(mainmenu)
     local category = GenerateCategory(mainmenu)
     local subcat = GenerateCategory(mainmenu)
+    local subcat2 = GenerateCategory(mainmenu)
     local offset = 0
+    local function ResetMenu()
+        newloadout = true
+        QLOpenMenu(newloadout)
+        mainmenu:Remove()
+    end
     local function WepSelector(button, index, wep, frame)
         offset = 0
         for k, _ in SortedPairs(wtable) do
@@ -85,14 +88,25 @@ function QLOpenMenu(refresh)
             cat.DoClick = function()
                 subcat:Clear()
                 offset = 0
-                for i, v in SortedPairsByValue(wtable[k]) do
+                for i, v in SortedPairsByMemberValue(wtable[k], _) do
                     subbutton = GenerateButton(subcat, v, i, offset)
                     offset = offset + subbutton:GetTall()
                     subbutton.DoClick = function()
-                        table.Merge(ptable, {[index] = i})
-                        newloadout = true
-                        QLOpenMenu(newloadout)
-                        mainmenu:Remove()
+                        local temptbl = v
+                        if istable(temptbl) then
+                            offset = 0
+                            for i, v in SortedPairsByMemberValue(temptbl, v) do
+                                subbutton2 = GenerateButton(subcat2, v, i, offset)
+                                offset = offset + subbutton2:GetTall()
+                                subbutton2.DoClick = function()
+                                    table.Merge(ptable, {[index] = i})
+                                    ResetMenu()
+                                end
+                            end
+                        else
+                            table.Merge(ptable, {[index] = i})
+                            ResetMenu()
+                        end
                     end
                 end
             end
@@ -101,20 +115,20 @@ function QLOpenMenu(refresh)
     local function WepEjector(button, index, wep)
         if table.HasValue(ptable, wep) then
             table.remove(ptable, index)
-            newloadout = true
-            QLOpenMenu(newloadout)
-            mainmenu:Remove()
+            ResetMenu()
         end
     end
     for i, v in ipairs(ptable) do
         local slot = GenerateButton(weplist, list.Get("Weapon")[v].PrintName .. " (" .. list.Get("Weapon")[v].Category .. ")", v, offset)
         offset = offset + slot:GetTall()
         slot.DoClick = function()
+            subcat2:Clear()
             subcat:Clear()
             category:Clear()
             WepSelector(slot, i, v, mainmenu)
         end
         slot.DoRightClick = function()
+            subcat2:Clear()
             subcat:Clear()
             category:Clear()
             WepEjector(slot, i, v)
@@ -133,6 +147,22 @@ function QLOpenMenu(refresh)
 end
 
 hook.Add("InitPostEntity", "QuickLoadoutInit", function()
+    for k, v in SortedPairs(list.Get( "Weapon" )) do
+        if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
+            local reftable = weapons.Get(k)
+            if !wtable[v.Category] then
+                wtable[v.Category] = {}
+            end
+            if reftable and reftable.SubCategory then
+                if !wtable[v.Category][reftable.SubCategory] then
+                    wtable[v.Category][reftable.SubCategory] = {}
+                end
+                table.Merge(wtable[v.Category][reftable.SubCategory], {[v.ClassName] = v.PrintName or v.ClassName})
+            else
+                table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
+            end
+        end
+    end
     if game.SinglePlayer() then
         if input.LookupBinding("quickloadout_menu") then return end
         net.Start("QLSPHack")
