@@ -85,7 +85,7 @@ function QLOpenMenu(refresh)
                     subbutton.DoClick = function()
                         table.Merge(ptable, {[index] = i})
                         newloadout = true
-                        QLOpenMenu(newloadout, frame)
+                        QLOpenMenu(newloadout)
                         mainmenu:Remove()
                     end
                 end
