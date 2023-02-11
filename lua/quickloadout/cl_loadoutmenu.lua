@@ -37,7 +37,7 @@ local function GenerateButton(frame, name, index, off)
 end
 
 local function TestImage(item)
-    if IsValid(weapons.GetStored(item)) and surface.GetTextureNameByID(weapons.GetStored(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
+    if IsValid(weapons.GetStored(item)) and surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
     elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
     else return "vgui/null" end
