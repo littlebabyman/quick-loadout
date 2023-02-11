@@ -108,7 +108,7 @@ function QLOpenMenu(refresh)
     local image = vgui.Create("DImage", mainmenu)
     image:SetImage(TestImage(ptable[1]), "vgui/null")
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
-    image:SetPos(mainmenu:GetTall() * 0.9, mainmenu:GetTall() * 0.1)
+    image:SetPos((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25 + mainmenu:GetTall() * 0.7, mainmenu:GetTall() * 0.1)
     image:SetKeepAspect(true)
     weplist:SetWidth(mainmenu:GetTall() * 0.3)
     weplist:DockMargin(0, 0, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
@@ -146,6 +146,7 @@ function QLOpenMenu(refresh)
                 local catbut = GenerateButton(subcat, "< Categories", collapse, 0)
                 catbut.DoClick = function()
                     category:SetWidth(frame:GetTall() * 0.3)
+                    img:SetImage(icon, "vgui/null")
                     subcat:SetWidth(0)
                     subcat2:Clear()
                     subcat:Clear()
@@ -168,6 +169,7 @@ function QLOpenMenu(refresh)
                         subcat2:SetWidth(frame:GetTall() * 0.3)
                         local catbut2 = GenerateButton(subcat2, "< Subcategories", collapse, 0)
                         catbut2.DoClick = function()
+                            img:SetImage(icon, "vgui/null")
                             subcat:SetWidth(frame:GetTall() * 0.3)
                             subcat2:SetWidth(0)
                             subcat2:Clear()
@@ -178,9 +180,6 @@ function QLOpenMenu(refresh)
                             offset = offset + subbutton2:GetTall() * 1.1
                             subbutton2.OnCursorEntered = function()
                                 img:SetImage(TestImage(v), "vgui/null")
-                            end
-                            subbutton2.OnCursorExited = function()
-                                img:SetImage(icon, "vgui/null")
                             end
                             subbutton2.DoRightClick = function()
                                 img:SetImage(icon, "vgui/null")
@@ -197,9 +196,6 @@ function QLOpenMenu(refresh)
                     else
                         subbutton.OnCursorEntered = function()
                             img:SetImage(TestImage(v), icon)
-                        end
-                        subbutton.OnCursorExited = function()
-                            img:SetImage(icon, "vgui/null")
                         end
                         subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = v})
@@ -229,10 +225,6 @@ function QLOpenMenu(refresh)
             if buttonclicked then return end
             image:SetImage(TestImage(v), "vgui/null")
         end
-        slot.OnCursorExited = function()
-            if buttonclicked then return end
-            image:SetImage(TestImage(ptable[1]), "vgui/null")
-        end
         slot.DoClick = function()
             buttonclicked = true
             image:SetImage(TestImage(v), "vgui/null")
@@ -256,10 +248,6 @@ function QLOpenMenu(refresh)
     slot.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/cursors/crosshair", "vgui/null")
-    end
-    slot.OnCursorExited = function()
-        if buttonclicked then return end
-        image:SetImage(TestImage(ptable[1]), "vgui/null")
     end
     slot.DoClick = function()
         buttonclicked = true
