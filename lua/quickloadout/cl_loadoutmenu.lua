@@ -72,7 +72,7 @@ function QLOpenMenu(refresh)
     end
 
     function mainmenu:OnKeyCodePressed(key)
-        if key == input.GetKeyCode(keybind:GetString()) then
+        if key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
             mainmenu:Close()
         end
     end
