@@ -37,7 +37,8 @@ local function GenerateButton(frame, name, index, off)
 end
 
 local function TestImage(item)
-    if file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
+    if IsValid(weapons.GetStored(item)) and surface.GetTextureNameByID(weapons.GetStored(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
+    elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
     elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
     else return "vgui/null" end
 end
@@ -56,7 +57,7 @@ function QLOpenMenu(refresh)
     if closed then return end
     local newloadout = refresh or false
     local mainmenu = vgui.Create("DFrame")
-    mainmenu:SetSize(ScrW() * 0.5, ScrH() * 0.5)
+    mainmenu:SetSize(math.max(ScrW() * 0.5, 640), math.max(ScrH() * 0.5, 480))
     mainmenu:Center()
     mainmenu:SetTitle("Loadout")
     mainmenu:SetVisible(true)
@@ -321,7 +322,7 @@ concommand.Add("quickloadout_menu", QLOpenMenu)
 cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
 
 hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Admin", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
+    spawnmenu.AddToolMenuOption("Options", "Loadout", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
         panel:Help("Server settings")
         panel:CheckBox("Enable quick loadouts", "quickloadout_enable")
         panel:ControlHelp("Globally enables quick loadout on server.")
@@ -330,7 +331,7 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 600, 0)
         panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.")
         panel:NumSlider("Maximum weapon slots", "quickloadout_maxslots", 0, 32, 0)
-        panel:ControlHelp("Amount of weapons you can have on spawn. Max 32.")
+        panel:ControlHelp("Amount of weapons you can have on spawn. Max 32, 0 is infinite.")
         panel:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
         panel:ControlHelp("Whether pressing the attack button disables grace period.")
         panel:Help("Client settings")

@@ -6,7 +6,7 @@ local timestop = GetConVar("quickloadout_switchtime_override")
 
 util.AddNetworkString("quickloadout")
 if game.SinglePlayer then
-    local keybind = nil
+    local keybind = KEY_N
     util.AddNetworkString("QLSPHack")
     net.Receive("QLSPHack", function() keybind = net.ReadInt(9) end)
     hook.Add("PlayerButtonDown", "QuickLoadoutBind", function(ply, key)
@@ -39,7 +39,7 @@ function QuickLoadout(ply)
     ply:StripWeapons()
     if !override:GetBool() then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
-        if k <= maxslots:GetInt() then
+        if !maxslots:GetBool() or maxslots:GetInt() >= k then
             ply:Give(v)
         end
     end
