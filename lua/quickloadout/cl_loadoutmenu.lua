@@ -36,6 +36,12 @@ local function GenerateButton(frame, name, index, off)
     return button
 end
 
+local function TestImage(item)
+    if file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
+    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
+    else return "vgui/null" end
+end
+
 local function NetworkLoadout()
     net.Start("quickloadout")
     net.WriteTable(ptable)
@@ -100,9 +106,9 @@ function QLOpenMenu(refresh)
     local subcat = GenerateCategory(mainmenu)
     local subcat2 = GenerateCategory(mainmenu)
     local image = vgui.Create("DImage", mainmenu)
-    image:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
-    image:SetSize(mainmenu:GetTall() * 0.5, mainmenu:GetTall() * 0.5)
-    image:SetPos(mainmenu:GetWide() * 0.5, mainmenu:GetTall() * 0.1)
+    image:SetImage(TestImage(ptable[1]), "vgui/null")
+    image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
+    image:SetPos(mainmenu:GetTall() * 0.9, mainmenu:GetTall() * 0.1)
     image:SetKeepAspect(true)
     weplist:SetWidth(mainmenu:GetTall() * 0.3)
     weplist:DockMargin(0, 0, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
@@ -114,7 +120,7 @@ function QLOpenMenu(refresh)
         local cancel = GenerateButton(category, "x Cancel", collapse, 0)
         cancel.DoClick = function()
             buttonclicked = false
-            img:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
+            img:SetImage(TestImage(ptable[1]), "vgui/null")
             category:Clear()
             subcat2:Clear()
             subcat:Clear()
@@ -126,7 +132,7 @@ function QLOpenMenu(refresh)
             offset = offset + cat:GetTall() * 1.1
             cat.DoRightClick = function()
                 buttonclicked = false
-                img:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
+                img:SetImage(TestImage(ptable[1]), "vgui/null")
                 category:Clear()
                 subcat2:Clear()
                 subcat:Clear()
@@ -171,7 +177,7 @@ function QLOpenMenu(refresh)
                             subbutton2 = GenerateButton(subcat2, i, v, offset)
                             offset = offset + subbutton2:GetTall() * 1.1
                             subbutton2.OnCursorEntered = function()
-                                img:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", "vgui/null")
+                                img:SetImage(TestImage(v), "vgui/null")
                             end
                             subbutton2.OnCursorExited = function()
                                 img:SetImage(icon, "vgui/null")
@@ -190,7 +196,7 @@ function QLOpenMenu(refresh)
                     end
                     else
                         subbutton.OnCursorEntered = function()
-                            img:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", icon)
+                            img:SetImage(TestImage(v), icon)
                         end
                         subbutton.OnCursorExited = function()
                             img:SetImage(icon, "vgui/null")
@@ -221,15 +227,15 @@ function QLOpenMenu(refresh)
         offset = offset + slot:GetTall() * 1.1
         slot.OnCursorEntered = function()
             if buttonclicked then return end
-            image:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", "vgui/null")
+            image:SetImage(TestImage(v), "vgui/null")
         end
         slot.OnCursorExited = function()
             if buttonclicked then return end
-            image:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
+            image:SetImage(TestImage(ptable[1]), "vgui/null")
         end
         slot.DoClick = function()
             buttonclicked = true
-            image:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", "vgui/null")
+            image:SetImage(TestImage(v), "vgui/null")
             subcat2:Clear()
             subcat:Clear()
             category:Clear()
@@ -253,7 +259,7 @@ function QLOpenMenu(refresh)
     end
     slot.OnCursorExited = function()
         if buttonclicked then return end
-        image:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null", "vgui/null")
+        image:SetImage(TestImage(ptable[1]), "vgui/null")
     end
     slot.DoClick = function()
         buttonclicked = true
