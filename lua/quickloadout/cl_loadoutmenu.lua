@@ -11,7 +11,7 @@ local closed = false
 local function GenerateCategory(frame)
     local category = vgui.Create("DScrollPanel", frame)
     local bar = category:GetVBar()
-    category:SetWidth(frame:GetTall() * 0.3)
+    category:SetWidth(0)
     category:Dock(2)
     category:DockMargin(0, 0, 0, frame:GetTall() * 0.1)
     bar:SetHideButtons(true)
@@ -28,9 +28,8 @@ local function GenerateButton(frame, name, index, off)
         end
     end
     local text = NameSetup() or "Uh oh! Broken!"
-    button:SetWrap(true)
     button:SetWidth(frame:GetWide() - 1)
-    button:SetHeight(frame:GetWide() * 0.15)
+    button:SetHeight(frame:GetWide() * 0.125)
     button:SetTextInset(frame:GetWide() * 0.05, 0)
     button:SetText(text)
     button:SetPos(0, off)
@@ -50,7 +49,6 @@ local wtable = {}
 function QLOpenMenu(refresh)
     if closed then return end
     local newloadout = refresh or false
-    local focus = true
     local mainmenu = vgui.Create("DFrame")
     mainmenu:SetSize(ScrW() * 0.5, ScrH() * 0.5)
     mainmenu:Center()
@@ -58,7 +56,7 @@ function QLOpenMenu(refresh)
     mainmenu:SetVisible(true)
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
-    mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, mainmenu:GetTall() * 0.02, 0)
+    mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, (mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0)
     mainmenu:MakePopup()
     local options = vgui.Create("DPanel", mainmenu)
     options:SetHeight(mainmenu:GetTall() * 0.1)
@@ -77,7 +75,7 @@ function QLOpenMenu(refresh)
         end
     end
 
-    if GetConVar("sv_cheats"):GetBool() and GetConVar("developer"):GetBool() then
+    if table.IsEmpty(wtable) then
         for k, v in SortedPairs(list.Get( "Weapon" )) do
             if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
                 local reftable = weapons.Get(k)
@@ -101,11 +99,22 @@ function QLOpenMenu(refresh)
     local category = GenerateCategory(mainmenu)
     local subcat = GenerateCategory(mainmenu)
     local subcat2 = GenerateCategory(mainmenu)
+    local image = vgui.Create("DImage", mainmenu)
+    image:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
+    image:SetSize(mainmenu:GetTall() * 0.5, mainmenu:GetTall() * 0.5)
+    image:SetPos(mainmenu:GetWide() * 0.5, mainmenu:GetTall() * 0.1)
+    image:SetKeepAspect(true)
+    weplist:SetWidth(mainmenu:GetTall() * 0.3)
     weplist:DockMargin(0, 0, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
+    category:SetWidth(mainmenu:GetTall() * 0.3)
     local offset = 0
-    local function WepSelector(button, index, wep, frame)
+    local buttonclicked = false
+    local function WepSelector(button, index, img, frame)
+        local icon = img:GetImage()
         local cancel = GenerateButton(category, "x Cancel", collapse, 0)
         cancel.DoClick = function()
+            buttonclicked = false
+            img:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
             category:Clear()
             subcat2:Clear()
             subcat:Clear()
@@ -116,6 +125,8 @@ function QLOpenMenu(refresh)
             cat = GenerateButton(category, k, nil, offset)
             offset = offset + cat:GetTall() * 1.1
             cat.DoRightClick = function()
+                buttonclicked = false
+                img:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
                 category:Clear()
                 subcat2:Clear()
                 subcat:Clear()
@@ -129,6 +140,7 @@ function QLOpenMenu(refresh)
                 local catbut = GenerateButton(subcat, "< Categories", collapse, 0)
                 catbut.DoClick = function()
                     category:SetWidth(frame:GetTall() * 0.3)
+                    subcat:SetWidth(0)
                     subcat2:Clear()
                     subcat:Clear()
                 end
@@ -137,34 +149,53 @@ function QLOpenMenu(refresh)
                     subbutton = GenerateButton(subcat, i, v, offset)
                     offset = offset + subbutton:GetTall() * 1.1
                     subbutton.DoRightClick = function()
+                        img:SetImage(icon, "vgui/null")
                         category:SetWidth(frame:GetTall() * 0.3)
+                        subcat:SetWidth(0)
                         subcat2:Clear()
                         subcat:Clear()
                     end
-                    subbutton.DoClick = function()
-                        local temptbl = v
-                        if istable(temptbl) then
-                            subcat:SetWidth(0)
-                            subcat2:SetWidth(frame:GetTall() * 0.3)
-                            local catbut2 = GenerateButton(subcat2, "< Subcategories", collapse, 0)
-                            catbut2.DoClick = function()
+                    local temptbl = v
+                    if istable(temptbl) then
+                        subbutton.DoClick = function()
+                        subcat:SetWidth(0)
+                        subcat2:SetWidth(frame:GetTall() * 0.3)
+                        local catbut2 = GenerateButton(subcat2, "< Subcategories", collapse, 0)
+                        catbut2.DoClick = function()
+                            subcat:SetWidth(frame:GetTall() * 0.3)
+                            subcat2:SetWidth(0)
+                            subcat2:Clear()
+                        end
+                        offset = cat:GetTall() * 1.1
+                        for i, v in SortedPairs(temptbl) do
+                            subbutton2 = GenerateButton(subcat2, i, v, offset)
+                            offset = offset + subbutton2:GetTall() * 1.1
+                            subbutton2.OnCursorEntered = function()
+                                img:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", "vgui/null")
+                            end
+                            subbutton2.OnCursorExited = function()
+                                img:SetImage(icon, "vgui/null")
+                            end
+                            subbutton2.DoRightClick = function()
+                                img:SetImage(icon, "vgui/null")
                                 subcat:SetWidth(frame:GetTall() * 0.3)
+                                subcat2:SetWidth(0)
                                 subcat2:Clear()
                             end
-                            offset = cat:GetTall() * 1.1
-                            for i, v in SortedPairs(temptbl) do
-                                subbutton2 = GenerateButton(subcat2, i, v, offset)
-                                offset = offset + subbutton2:GetTall() * 1.1
-                                subbutton2.DoRightClick = function()
-                                    subcat:SetWidth(frame:GetTall() * 0.3)
-                                    subcat2:Clear()
-                                end
-                                subbutton2.DoClick = function()
-                                    table.Merge(ptable, {[index] = v})
-                                    ResetMenu()
-                                end
+                            subbutton2.DoClick = function()
+                                table.Merge(ptable, {[index] = v})
+                                ResetMenu()
                             end
-                        else
+                        end
+                    end
+                    else
+                        subbutton.OnCursorEntered = function()
+                            img:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", icon)
+                        end
+                        subbutton.OnCursorExited = function()
+                            img:SetImage(icon, "vgui/null")
+                        end
+                        subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = v})
                             ResetMenu()
                         end
@@ -188,12 +219,21 @@ function QLOpenMenu(refresh)
         end
         local slot = GenerateButton(weplist, QuickName(), v, offset)
         offset = offset + slot:GetTall() * 1.1
+        slot.OnCursorEntered = function()
+            if buttonclicked then return end
+            image:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", "vgui/null")
+        end
+        slot.OnCursorExited = function()
+            if buttonclicked then return end
+            image:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null")
+        end
         slot.DoClick = function()
-            category:SetWidth(mainmenu:GetTall() * 0.3)
+            buttonclicked = true
+            image:SetImage("vgui/entities/" .. v .. ".vmt" or "entities/" .. v .. ".png", "vgui/null")
             subcat2:Clear()
             subcat:Clear()
             category:Clear()
-            WepSelector(slot, i, v, mainmenu)
+            WepSelector(slot, i, image, mainmenu)
             for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
                 button:SetSelected(false)
             end
@@ -207,8 +247,32 @@ function QLOpenMenu(refresh)
         end
     end
     local slot = GenerateButton(weplist, nil,"+ Add Weapon",  offset)
-    slot.DoClick = function() WepSelector(slot, #ptable + 1, nil, mainmenu) end
-    slot.DoRightClick = function() WepEjector(slot, #ptable + 1, nil) end
+    slot.OnCursorEntered = function()
+        if buttonclicked then return end
+        image:SetImage("vgui/cursors/crosshair", "vgui/null")
+    end
+    slot.OnCursorExited = function()
+        if buttonclicked then return end
+        image:SetImage("vgui/entities/" .. ptable[1] .. ".vmt" or "entities/" .. ptable[1] .. ".png", "vgui/null", "vgui/null")
+    end
+    slot.DoClick = function()
+        buttonclicked = true
+        image:SetImage("vgui/cursors/crosshair", "vgui/null")
+        subcat2:Clear()
+        subcat:Clear()
+        category:Clear()
+        WepSelector(slot, #ptable + 1, image, mainmenu)
+        for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
+            button:SetSelected(false)
+        end
+        slot:SetSelected(true)
+    end
+    slot.DoRightClick = function()
+        subcat2:Clear()
+        subcat:Clear()
+        category:Clear()
+        WepEjector(slot, #ptable + 1, nil)
+    end
     mainmenu.OnClose = function()
         closed = true
         timer.Simple(0, function() closed = false end)
