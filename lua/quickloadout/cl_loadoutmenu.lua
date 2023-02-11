@@ -37,6 +37,7 @@ local function GenerateButton(frame, name, index, off)
 end
 
 local function TestImage(item)
+    if !item then return "vgui/null" end
     if IsValid(weapons.GetStored(item)) and surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
     elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
@@ -57,7 +58,7 @@ function QLOpenMenu(refresh)
     if closed then return end
     local newloadout = refresh or false
     local mainmenu = vgui.Create("DFrame")
-    mainmenu:SetSize(math.max(ScrW() * 0.5, 640), math.max(ScrH() * 0.5, 480))
+    mainmenu:SetSize(ScrW() * 0.5, ScrH() * 0.5)
     mainmenu:Center()
     mainmenu:SetTitle("Loadout")
     mainmenu:SetVisible(true)
