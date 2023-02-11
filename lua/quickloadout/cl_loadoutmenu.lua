@@ -13,7 +13,7 @@ local function GenerateCategory(frame)
     local bar = category:GetVBar()
     category:SetWidth(frame:GetTall() * 0.3)
     category:Dock(2)
-    category:DockMargin(0, frame:GetTall() * 0.1, frame:GetTall() * 0.02, frame:GetTall() * 0.1)
+    category:DockMargin(0, frame:GetTall() * 0.1, 0, frame:GetTall() * 0.1)
     bar:SetHideButtons(true)
     return category
 end
@@ -34,11 +34,6 @@ local function GenerateButton(frame, name, index, off)
     button:SetTextInset(frame:GetWide() * 0.05, 0)
     button:SetText(text)
     button:SetPos(0, off)
-    button.OnReleased = function()
-        for k, v in ipairs(frame:GetChild(0):GetChildren()) do
-            v:SetSelected(false)
-        end
-        button:SetSelected(true) end
     return button
 end
 
@@ -62,7 +57,7 @@ function QLOpenMenu(refresh)
     mainmenu:SetVisible(true)
     mainmenu:SetDraggable(false)
     mainmenu:ShowCloseButton(true)
-    mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, 0, 0)
+    mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, mainmenu:GetTall() * 0.02, 0)
     mainmenu:MakePopup()
 
     local function ResetMenu()
@@ -101,26 +96,57 @@ function QLOpenMenu(refresh)
     local category = GenerateCategory(mainmenu)
     local subcat = GenerateCategory(mainmenu)
     local subcat2 = GenerateCategory(mainmenu)
+    weplist:DockMargin(0, mainmenu:GetTall() * 0.1, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
     local offset = 0
     local function WepSelector(button, index, wep, frame)
         offset = 0
         for k, _ in SortedPairs(wtable) do
             cat = GenerateButton(category, k, nil, offset)
-            offset = offset + cat:GetTall()
+            offset = offset + cat:GetTall() * 1.1
+            cat.DoRightClick = function()
+                category:Clear()
+                subcat2:Clear()
+                subcat:Clear()
+                button:SetSelected(false)
+            end
             cat.DoClick = function()
                 subcat2:Clear()
                 subcat:Clear()
-                offset = 0
+                category:SetWidth(0)
+                subcat:SetWidth(frame:GetTall() * 0.3)
+                local catbut = GenerateButton(subcat, "< Categories", collapse, 0)
+                catbut.DoClick = function()
+                    category:SetWidth(frame:GetTall() * 0.3)
+                    subcat2:Clear()
+                    subcat:Clear()
+                end
+                offset = cat:GetTall() * 1.1
                 for i, v in SortedPairsByMemberValue(wtable[k], _) do
                     subbutton = GenerateButton(subcat, v, i, offset)
-                    offset = offset + subbutton:GetTall()
+                    offset = offset + subbutton:GetTall() * 1.1
+                    subbutton.DoRightClick = function()
+                        category:SetWidth(frame:GetTall() * 0.3)
+                        subcat2:Clear()
+                        subcat:Clear()
+                    end
                     subbutton.DoClick = function()
                         local temptbl = v
                         if istable(temptbl) then
-                            offset = 0
+                            subcat:SetWidth(0)
+                            subcat2:SetWidth(frame:GetTall() * 0.3)
+                            local catbut2 = GenerateButton(subcat2, "< Subcategories", collapse, 0)
+                            catbut2.DoClick = function()
+                                subcat:SetWidth(frame:GetTall() * 0.3)
+                                subcat2:Clear()
+                            end
+                            offset = cat:GetTall() * 1.1
                             for i, v in SortedPairsByMemberValue(temptbl, v) do
                                 subbutton2 = GenerateButton(subcat2, v, i, offset)
-                                offset = offset + subbutton2:GetTall()
+                                offset = offset + subbutton2:GetTall() * 1.1
+                                subbutton2.DoRightClick = function()
+                                    subcat:SetWidth(frame:GetTall() * 0.3)
+                                    subcat2:Clear()
+                                end
                                 subbutton2.DoClick = function()
                                     table.Merge(ptable, {[index] = i})
                                     ResetMenu()
@@ -143,12 +169,17 @@ function QLOpenMenu(refresh)
     end
     for i, v in ipairs(ptable) do
         local slot = GenerateButton(weplist, list.Get("Weapon")[v].PrintName .. " (" .. list.Get("Weapon")[v].Category .. ")", v, offset)
-        offset = offset + slot:GetTall()
+        offset = offset + slot:GetTall() * 1.1
         slot.DoClick = function()
+            category:SetWidth(mainmenu:GetTall() * 0.3)
             subcat2:Clear()
             subcat:Clear()
             category:Clear()
             WepSelector(slot, i, v, mainmenu)
+            for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
+                button:SetSelected(false)
+            end
+            slot:SetSelected(true)
         end
         slot.DoRightClick = function()
             subcat2:Clear()
