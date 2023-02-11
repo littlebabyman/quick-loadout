@@ -26,15 +26,12 @@ end)
 
 net.Receive("quickloadout", function(len, ply)
     ply.quickloadout = net.ReadTable()
-    if ConVarExists("holsterweapon_weapon") then
-        table.Add(ply.quickloadout, {[1] = hwep})
-    end
     if (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
         net.Send(ply)
         return
     end
-    QuickLoadout(ply, time:GetFloat())
+    QuickLoadout(ply)
 end)
 
 function QuickLoadout(ply)
@@ -49,6 +46,7 @@ function QuickLoadout(ply)
     if ConVarExists("holsterweapon_weapon") then
         ply:Give(hwep)
     end
+    PrintTable(ply.quickloadout)
 end
 
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)

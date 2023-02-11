@@ -13,21 +13,21 @@ local function GenerateCategory(frame)
     local bar = category:GetVBar()
     category:SetWidth(frame:GetTall() * 0.3)
     category:Dock(2)
-    category:DockMargin(0, frame:GetTall() * 0.1, 0, frame:GetTall() * 0.1)
+    category:DockMargin(0, 0, 0, frame:GetTall() * 0.1)
     bar:SetHideButtons(true)
     return category
 end
 
 local function GenerateButton(frame, name, index, off)
     local button = vgui.Create("DButton", frame, index)
-    local function QuickName()
+    local function NameSetup()
         if istable(name) then
-            return index or "ASS"
+            return index or name
         else
-            return name or index or "ASS"
+            return name or index
         end
     end
-    local text = QuickName()
+    local text = NameSetup() or "Uh oh! Broken!"
     button:SetWrap(true)
     button:SetWidth(frame:GetWide() - 1)
     button:SetHeight(frame:GetWide() * 0.15)
@@ -50,6 +50,7 @@ local wtable = {}
 function QLOpenMenu(refresh)
     if closed then return end
     local newloadout = refresh or false
+    local focus = true
     local mainmenu = vgui.Create("DFrame")
     mainmenu:SetSize(ScrW() * 0.5, ScrH() * 0.5)
     mainmenu:Center()
@@ -59,6 +60,10 @@ function QLOpenMenu(refresh)
     mainmenu:ShowCloseButton(true)
     mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, mainmenu:GetTall() * 0.02, 0)
     mainmenu:MakePopup()
+    local options = vgui.Create("DPanel", mainmenu)
+    options:SetHeight(mainmenu:GetTall() * 0.1)
+    options:SetBackgroundColor(Color(0, 0, 0, 0))
+    options:Dock(TOP)
 
     local function ResetMenu()
         newloadout = true
@@ -83,9 +88,9 @@ function QLOpenMenu(refresh)
                     if !wtable[v.Category][reftable.SubCategory] then
                         wtable[v.Category][reftable.SubCategory] = {}
                     end
-                    table.Merge(wtable[v.Category][reftable.SubCategory], {[v.ClassName] = v.PrintName or v.ClassName})
+                    table.Merge(wtable[v.Category][reftable.SubCategory], {[v.PrintName or v.ClassName] = v.ClassName})
                 else
-                    table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
+                    table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
                 end
             end
         end
@@ -96,10 +101,17 @@ function QLOpenMenu(refresh)
     local category = GenerateCategory(mainmenu)
     local subcat = GenerateCategory(mainmenu)
     local subcat2 = GenerateCategory(mainmenu)
-    weplist:DockMargin(0, mainmenu:GetTall() * 0.1, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
+    weplist:DockMargin(0, 0, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
     local offset = 0
     local function WepSelector(button, index, wep, frame)
-        offset = 0
+        local cancel = GenerateButton(category, "x Cancel", collapse, 0)
+        cancel.DoClick = function()
+            category:Clear()
+            subcat2:Clear()
+            subcat:Clear()
+            button:SetSelected(false)
+        end
+        offset = button:GetTall() * 1.1
         for k, _ in SortedPairs(wtable) do
             cat = GenerateButton(category, k, nil, offset)
             offset = offset + cat:GetTall() * 1.1
@@ -121,8 +133,8 @@ function QLOpenMenu(refresh)
                     subcat:Clear()
                 end
                 offset = cat:GetTall() * 1.1
-                for i, v in SortedPairsByMemberValue(wtable[k], _) do
-                    subbutton = GenerateButton(subcat, v, i, offset)
+                for i, v in SortedPairs(_) do
+                    subbutton = GenerateButton(subcat, i, v, offset)
                     offset = offset + subbutton:GetTall() * 1.1
                     subbutton.DoRightClick = function()
                         category:SetWidth(frame:GetTall() * 0.3)
@@ -140,20 +152,20 @@ function QLOpenMenu(refresh)
                                 subcat2:Clear()
                             end
                             offset = cat:GetTall() * 1.1
-                            for i, v in SortedPairsByMemberValue(temptbl, v) do
-                                subbutton2 = GenerateButton(subcat2, v, i, offset)
+                            for i, v in SortedPairs(temptbl) do
+                                subbutton2 = GenerateButton(subcat2, i, v, offset)
                                 offset = offset + subbutton2:GetTall() * 1.1
                                 subbutton2.DoRightClick = function()
                                     subcat:SetWidth(frame:GetTall() * 0.3)
                                     subcat2:Clear()
                                 end
                                 subbutton2.DoClick = function()
-                                    table.Merge(ptable, {[index] = i})
+                                    table.Merge(ptable, {[index] = v})
                                     ResetMenu()
                                 end
                             end
                         else
-                            table.Merge(ptable, {[index] = i})
+                            table.Merge(ptable, {[index] = v})
                             ResetMenu()
                         end
                     end
@@ -167,8 +179,14 @@ function QLOpenMenu(refresh)
             ResetMenu()
         end
     end
+    PrintTable(ptable)
     for i, v in ipairs(ptable) do
-        local slot = GenerateButton(weplist, list.Get("Weapon")[v].PrintName .. " (" .. list.Get("Weapon")[v].Category .. ")", v, offset)
+        local function QuickName()
+            if list.Get("Weapon")[v] then
+            return list.Get("Weapon")[v].PrintName .. " (" .. list.Get("Weapon")[v].Category .. ")" or v
+            else return v end
+        end
+        local slot = GenerateButton(weplist, QuickName(), v, offset)
         offset = offset + slot:GetTall() * 1.1
         slot.DoClick = function()
             category:SetWidth(mainmenu:GetTall() * 0.3)
@@ -196,7 +214,6 @@ function QLOpenMenu(refresh)
         timer.Simple(0, function() closed = false end)
         if !newloadout then return end
         weaponlist:SetString(table.concat(ptable, ", "))
-        NetworkLoadout()
     end
 end
 
@@ -211,14 +228,13 @@ hook.Add("InitPostEntity", "QuickLoadoutInit", function()
                 if !wtable[v.Category][reftable.SubCategory] then
                     wtable[v.Category][reftable.SubCategory] = {}
                 end
-                table.Merge(wtable[v.Category][reftable.SubCategory], {[v.ClassName] = v.PrintName or v.ClassName})
+                table.Merge(wtable[v.Category][reftable.SubCategory], {[v.PrintName or v.ClassName] = v.ClassName})
             else
-                table.Merge(wtable[v.Category], {[v.ClassName] = v.PrintName or v.ClassName})
+                table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
             end
         end
     end
     if game.SinglePlayer() then
-        if input.LookupBinding("quickloadout_menu") then return end
         net.Start("QLSPHack")
         net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
         net.SendToServer()
