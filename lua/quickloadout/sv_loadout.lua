@@ -46,7 +46,7 @@ function QuickLoadout(ply)
     if ConVarExists("holsterweapon_weapon") then
         ply:Give(hwep)
     end
-    PrintTable(ply.quickloadout)
+    -- PrintTable(ply.quickloadout)
 end
 
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)

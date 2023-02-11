@@ -179,7 +179,7 @@ function QLOpenMenu(refresh)
             ResetMenu()
         end
     end
-    PrintTable(ptable)
+    -- PrintTable(ptable)
     for i, v in ipairs(ptable) do
         local function QuickName()
             if list.Get("Weapon")[v] then
