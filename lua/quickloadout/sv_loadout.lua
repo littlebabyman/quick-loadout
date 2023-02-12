@@ -49,6 +49,8 @@ function QuickLoadout(ply)
     -- PrintTable(ply.quickloadout)
 end
 
+hook.Add("PlayerInitialSpawn", "QuickLoadoutInitTable", function(ply) ply.quickloadout = {} end)
+
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)
     ply.qlspawntime = CurTime()
     timer.Simple(0, function() QuickLoadout(ply) end)

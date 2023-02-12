@@ -95,8 +95,10 @@ end
 net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
 
 local wtable = {}
+local closing = false
 
 function QLOpenMenu(refresh)
+    if closing then return end
     local newloadout = refresh or false
 
     local mainmenu = vgui.Create("DPanel")
@@ -126,8 +128,12 @@ function QLOpenMenu(refresh)
     end
 
     local function CloseMenu()
+        closing = true
+        mainmenu:SetKeyboardInputEnabled(false)
+        mainmenu:SetMouseInputEnabled(false)
         mainmenu:MoveTo(-mainmenu:GetWide(), 0, 0.25, 0, 0.9)
         timer.Simple(0.25, function()
+            closing = false
             mainmenu:Remove()
             if !newloadout then return end
             weaponlist:SetString(table.concat(ptable, ", "))
