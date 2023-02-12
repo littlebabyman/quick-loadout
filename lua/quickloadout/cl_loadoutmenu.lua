@@ -117,7 +117,7 @@ function QLOpenMenu(refresh)
     grad:SetImageColor(col_bg)
     if !newloadout then
         mainmenu:SetX(-mainmenu:GetWide())
-        mainmenu:MoveTo(0, 0, 0.25, 0, 0.9)
+        mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
     end
     mainmenu:SetVisible(true)
     mainmenu:MakePopup()
@@ -131,7 +131,7 @@ function QLOpenMenu(refresh)
         closing = true
         mainmenu:SetKeyboardInputEnabled(false)
         mainmenu:SetMouseInputEnabled(false)
-        mainmenu:MoveTo(-mainmenu:GetWide(), 0, 0.25, 0, 0.9)
+        mainmenu:MoveTo(-mainmenu:GetWide(), 0, 0.25, 0, 1.5)
         timer.Simple(0.25, function()
             closing = false
             mainmenu:Remove()
