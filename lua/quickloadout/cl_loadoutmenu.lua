@@ -1,25 +1,56 @@
 AddCSLuaFile()
 local weaponlist = GetConVar("quickloadout_weapons")
-local ptable = string.Explode(", ", weaponlist:GetString())
+local ptable = {}
+table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
+local showcat = GetConVar("quickloadout_showcategory")
+local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), Color(0,128,0,128), Color(0,96,0,128)
 -- local enabled = GetConVar("quickloadout_enable")
 -- local override = GetConVar("quickloadout_override")
 -- local maxslots = GetConVar("quickloadout_maxslots")
 -- local time = GetConVar("quickloadout_switchtime")
-local closed = false
+
+local function CreateFonts()
+    surface.CreateFont("quickloadout_font", {
+        font = "Carbon Plus Bold",
+        extended = true,
+        size = ScrH() * 0.04
+    })
+end
+
+CreateFonts()
+
+hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
 local function GenerateCategory(frame)
-    local category = vgui.Create("DScrollPanel", frame)
+    local category = frame:Add("DScrollPanel")
     local bar = category:GetVBar()
-    category:SetWidth(0)
-    category:Dock(2)
-    category:DockMargin(0, 0, 0, frame:GetTall() * 0.1)
+    category:SetZPos(1)
+    category:SetSize(frame:GetWide(), frame:GetTall() * 0.8)
+    category:SetY(frame:GetTall() * 0.1)
     bar:SetHideButtons(true)
     return category
 end
 
-local function GenerateButton(frame, name, index, off)
-    local button = vgui.Create("DButton", frame, index)
+local function TestImage(item, frame)
+    local image, parent = frame:GetImage(), frame:GetParent()
+    if !item or istable(item) then return image end
+    frame:SetSize(parent:GetTall() * 0.4, parent:GetTall() * 0.4)
+    frame:SetPos((parent:GetWide() - parent:GetTall()) * 0.25 + parent:GetTall() * 0.7, parent:GetTall() * 0.05)
+    if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
+    elseif !list.Get("Weapon")[item] then return "vgui/avatar_default"
+    elseif IsValid(weapons.Get(item)) and surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
+    elseif file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then
+        frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
+        frame:SetPos((parent:GetWide() - parent:GetTall()) * 0.25 + parent:GetTall() * 0.7, parent:GetTall() * 0.15)
+        return "vgui/hud/" .. item .. ".vmt"
+    elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
+    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
+    else return "vgui/null" end
+end
+
+local function GenerateLabel(frame, name, index, img)
+    local button = frame:Add("DLabel")
     local function NameSetup()
         if istable(name) then
             return index or name
@@ -28,20 +59,31 @@ local function GenerateButton(frame, name, index, off)
         end
     end
     local text = NameSetup() or "Uh oh! Broken!"
+    button:SetName(index)
+    button:SetMouseInputEnabled(true)
     button:SetWidth(frame:GetWide() - 1)
     button:SetHeight(frame:GetWide() * 0.125)
-    button:SetTextInset(frame:GetWide() * 0.05, 0)
+    button:SetFontInternal("quickloadout_font")
+    button:SetTextInset(button:GetWide() * 0.05, 0)
+    button:SetWrap(true)
+    button:SetAutoStretchVertical(true)
     button:SetText(text)
-    button:SetPos(0, off)
+    if ispanel(img) then
+        button:SetPaintBackgroundEnabled(true)
+        button.ApplySchemeSettings = function(self)
+            self:SetBGColor(col_but)
+        end
+        button.OnCursorEntered = function(self)
+            img:SetImage(TestImage(index, img), "vgui/null")
+            self:SetBGColor(col_hl)
+        end
+        button.OnCursorExited = function(self)
+            self:SetBGColor(col_but)
+        end
+    end
+    button:DockMargin(button:GetTall() * 0.05, button:GetTall() * 0.05, button:GetTall() * 0.05, math.max(button:GetTall() * 0.05, 1))
+    button:Dock(TOP)
     return button
-end
-
-local function TestImage(item)
-    if !item then return "vgui/null" end
-    if IsValid(weapons.GetStored(item)) and surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
-    elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
-    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
-    else return "vgui/null" end
 end
 
 local function NetworkLoadout()
@@ -55,31 +97,46 @@ net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTE
 local wtable = {}
 
 function QLOpenMenu(refresh)
-    if closed then return end
     local newloadout = refresh or false
-    local mainmenu = vgui.Create("DFrame")
-    mainmenu:SetSize(ScrW() * 0.5, ScrH() * 0.5)
-    mainmenu:Center()
-    mainmenu:SetTitle("Loadout")
-    mainmenu:SetVisible(true)
-    mainmenu:SetDraggable(false)
-    mainmenu:ShowCloseButton(true)
-    mainmenu:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, (mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0)
-    mainmenu:MakePopup()
-    local options = vgui.Create("DPanel", mainmenu)
-    options:SetHeight(mainmenu:GetTall() * 0.1)
-    options:SetBackgroundColor(Color(0, 0, 0, 0))
-    options:Dock(TOP)
 
-    local function ResetMenu()
-        newloadout = true
-        QLOpenMenu(newloadout)
-        mainmenu:Remove()
+    local mainmenu = vgui.Create("DPanel")
+    mainmenu:SetZPos(-1)
+    mainmenu:SetSize(ScrW(), ScrH())
+    mainmenu:SetPaintBackgroundEnabled(true)
+    mainmenu:SetBackgroundColor(Color(0,0,0,0))
+    local solid = mainmenu:Add("DImage")
+    solid:SetSize(mainmenu:GetTall() * 0.5, mainmenu:GetTall())
+    solid:SetImage("color")
+    solid:SetImageColor(col_bg)
+    local grad = mainmenu:Add("DImage")
+    grad:SetSize(mainmenu:GetTall(), mainmenu:GetTall())
+    grad:SetPos(mainmenu:GetTall() * 0.5,0)
+    grad:SetImage("vgui/gradient-l")
+    grad:SetImageColor(col_bg)
+    if !newloadout then
+        mainmenu:SetX(-mainmenu:GetWide())
+        mainmenu:MoveTo(0, 0, 0.25, 0, 0.9)
+    end
+    mainmenu:SetVisible(true)
+    mainmenu:MakePopup()
+    function mainmenu:OnFocusChanged(bool)
+        if false then
+            mainmenu:Remove()
+        end
+    end
+
+    local function CloseMenu()
+        mainmenu:MoveTo(-mainmenu:GetWide(), 0, 0.25, 0, 0.9)
+        timer.Simple(0.25, function()
+            mainmenu:Remove()
+            if !newloadout then return end
+            weaponlist:SetString(table.concat(ptable, ", "))
+        end)
     end
 
     function mainmenu:OnKeyCodePressed(key)
         if key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
-            mainmenu:Close()
+            CloseMenu()
         end
     end
 
@@ -103,38 +160,93 @@ function QLOpenMenu(refresh)
     end
 
     table.RemoveByValue(ptable, "")
-    local weplist = GenerateCategory(mainmenu)
-    local category = GenerateCategory(mainmenu)
-    local subcat = GenerateCategory(mainmenu)
-    local subcat2 = GenerateCategory(mainmenu)
-    local image = vgui.Create("DImage", mainmenu)
-    image:SetImage(TestImage(ptable[1]), "vgui/null")
+    local buttonclicked = false
+    local lcont, rcont = mainmenu:Add("Panel"), mainmenu:Add("Panel")
+    lcont:SetPaintBackgroundEnabled(true)
+    lcont:SetZPos(0)
+    lcont.ApplySchemeSettings = function(self)
+        self:SetBGColor(col_col)
+    end
+    lcont:SetSize(mainmenu:GetTall() * 0.3, mainmenu:GetTall())
+    lcont:SetX((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25)
+    rcont:CopyBase(lcont)
+    rcont.ApplySchemeSettings = function(self)
+        self:SetBGColor(col_col)
+    end
+    rcont:SetX(lcont:GetPos() + lcont:GetWide() * 1.1)
+    rcont:SetVisible(false)
+    local weplist = GenerateCategory(lcont)
+    weplist:SetHeight(weplist:GetTall() * 0.9)
+    weplist:SetY(lcont:GetTall() * 0.1 + lcont:GetWide() * 0.125)
+    local category = GenerateCategory(rcont)
+    local subcat = GenerateCategory(rcont)
+    local subcat2 = GenerateCategory(rcont)
+    local image = mainmenu:Add("DImage")
+    image:SetImage("vgui/null", "vgui/null")
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
     image:SetPos((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25 + mainmenu:GetTall() * 0.7, mainmenu:GetTall() * 0.1)
     image:SetKeepAspect(true)
-    weplist:SetWidth(mainmenu:GetTall() * 0.3)
-    weplist:DockMargin(0, 0, mainmenu:GetTall() * 0.02, mainmenu:GetTall() * 0.1)
-    category:SetWidth(mainmenu:GetTall() * 0.3)
-    local offset = 0
-    local buttonclicked = false
+    local toptext = GenerateLabel(lcont, "Loadout", nil)
+    toptext:Dock(0)
+    toptext:SetY(lcont:GetTall() * 0.1)
+    local closer = GenerateLabel(lcont, "Close", nil)
+    closer:Dock(0)
+    closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
+    closer:SetPaintBackgroundEnabled(true)
+    closer.DoClick = CloseMenu
+    closer.ApplySchemeSettings = function(self)
+        self:SetBGColor(col_but)
+    end
+    closer.OnCursorEntered = function(self)
+        self:SetBGColor(col_hl)
+    end
+    closer.OnCursorExited = function(self)
+        self:SetBGColor(col_but)
+    end
+    mainmenu.OnCursorEntered = function()
+        if buttonclicked then return end
+        image:SetImage("vgui/null", "vgui/null")
+    end
+
+    local options = mainmenu:Add("Panel")
+    options:SetSize(mainmenu:GetWide(), mainmenu:GetTall() * 0.1)
+    options:DockPadding((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25, 0, 0, 0)
+    options.ApplySchemeSettings = function(self)
+        self:SetBGColor(Color(0,0,0,0))
+    end
+
+    local enablecat = options:Add("DCheckBoxLabel")
+    enablecat:SetConVar("quickloadout_showcategory")
+    enablecat:SetText("Show weapon categories\non equipped weapons.")
+    enablecat:SetWidth(mainmenu:GetTall() * 0.3)
+    enablecat:SetValue(showcat:GetBool())
+    enablecat:SetWrap(true)
+    enablecat:DockMargin(10, options:GetTall() * 0.5, 0, options:GetTall() * 0.1)
+    enablecat:Dock(LEFT)
+
+    local function ResetMenu()
+        newloadout = true
+        QLOpenMenu(newloadout)
+        mainmenu:Remove()
+    end
+
     local function WepSelector(button, index, img, frame)
         local icon = img:GetImage()
-        local cancel = GenerateButton(category, "x Cancel", collapse, 0)
+        local cancel = GenerateLabel(category, "x Cancel", collapse, image)
         cancel.DoClick = function()
             buttonclicked = false
-            img:SetImage(TestImage(ptable[1]), "vgui/null")
+            img:SetImage(TestImage(ptable[1], img), "vgui/null")
             category:Clear()
             subcat2:Clear()
             subcat:Clear()
             button:SetSelected(false)
         end
-        offset = button:GetTall() * 1.1
         for k, _ in SortedPairs(wtable) do
-            cat = GenerateButton(category, k, nil, offset)
-            offset = offset + cat:GetTall() * 1.1
+            cat = GenerateLabel(category, k, nil, image)
             cat.DoRightClick = function()
                 buttonclicked = false
-                img:SetImage(TestImage(ptable[1]), "vgui/null")
+                img:SetImage("vgui/null", "vgui/null")
+                rcont:SetVisible(false)
                 category:Clear()
                 subcat2:Clear()
                 subcat:Clear()
@@ -145,7 +257,7 @@ function QLOpenMenu(refresh)
                 subcat:Clear()
                 category:SetWidth(0)
                 subcat:SetWidth(frame:GetTall() * 0.3)
-                local catbut = GenerateButton(subcat, "< Categories", collapse, 0)
+                local catbut = GenerateLabel(subcat, "< Categories", collapse, image)
                 catbut.DoClick = function()
                     category:SetWidth(frame:GetTall() * 0.3)
                     img:SetImage(icon, "vgui/null")
@@ -153,10 +265,8 @@ function QLOpenMenu(refresh)
                     subcat2:Clear()
                     subcat:Clear()
                 end
-                offset = cat:GetTall() * 1.1
                 for i, v in SortedPairs(_) do
-                    subbutton = GenerateButton(subcat, i, v, offset)
-                    offset = offset + subbutton:GetTall() * 1.1
+                    subbutton = GenerateLabel(subcat, i, v, image)
                     subbutton.DoRightClick = function()
                         img:SetImage(icon, "vgui/null")
                         category:SetWidth(frame:GetTall() * 0.3)
@@ -169,20 +279,15 @@ function QLOpenMenu(refresh)
                         subbutton.DoClick = function()
                         subcat:SetWidth(0)
                         subcat2:SetWidth(frame:GetTall() * 0.3)
-                        local catbut2 = GenerateButton(subcat2, "< Subcategories", collapse, 0)
+                        local catbut2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
                         catbut2.DoClick = function()
                             img:SetImage(icon, "vgui/null")
                             subcat:SetWidth(frame:GetTall() * 0.3)
                             subcat2:SetWidth(0)
                             subcat2:Clear()
                         end
-                        offset = cat:GetTall() * 1.1
                         for i, v in SortedPairs(temptbl) do
-                            subbutton2 = GenerateButton(subcat2, i, v, offset)
-                            offset = offset + subbutton2:GetTall() * 1.1
-                            subbutton2.OnCursorEntered = function()
-                                img:SetImage(TestImage(v), "vgui/null")
-                            end
+                            subbutton2 = GenerateLabel(subcat2, i, v, image)
                             subbutton2.DoRightClick = function()
                                 img:SetImage(icon, "vgui/null")
                                 subcat:SetWidth(frame:GetTall() * 0.3)
@@ -196,9 +301,6 @@ function QLOpenMenu(refresh)
                         end
                     end
                     else
-                        subbutton.OnCursorEntered = function()
-                            img:SetImage(TestImage(v), icon)
-                        end
                         subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = v})
                             ResetMenu()
@@ -211,6 +313,7 @@ function QLOpenMenu(refresh)
     local function WepEjector(button, index, wep)
         if table.HasValue(ptable, wep) then
             table.remove(ptable, index)
+            rcont:SetVisible(false)
             ResetMenu()
         end
     end
@@ -218,22 +321,20 @@ function QLOpenMenu(refresh)
     for i, v in ipairs(ptable) do
         local function QuickName()
             if list.Get("Weapon")[v] then
-            return list.Get("Weapon")[v].PrintName .. " (" .. list.Get("Weapon")[v].Category .. ")" or v
+                if showcat:GetBool() then return list.Get("Weapon")[v].PrintName .. "\n(" .. list.Get("Weapon")[v].Category .. ")" or v
+                else return list.Get("Weapon")[v].PrintName or v end
             else return v end
         end
-        local slot = GenerateButton(weplist, QuickName(), v, offset)
-        offset = offset + slot:GetTall() * 1.1
-        slot.OnCursorEntered = function()
-            if buttonclicked then return end
-            image:SetImage(TestImage(v), "vgui/null")
-        end
+        local slot = GenerateLabel(weplist, QuickName(), v, image)
         slot.DoClick = function()
             buttonclicked = true
-            image:SetImage(TestImage(v), "vgui/null")
+            image:SetImage(TestImage(v, image), "vgui/null")
             category:SetWidth(mainmenu:GetTall() * 0.3)
+            rcont:SetVisible(true)
             subcat2:Clear()
             subcat:Clear()
             category:Clear()
+            category:GetVBar():SetScroll(0)
             WepSelector(slot, i, image, mainmenu)
             for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
                 button:SetSelected(false)
@@ -247,18 +348,16 @@ function QLOpenMenu(refresh)
             WepEjector(slot, i, v)
         end
     end
-    local slot = GenerateButton(weplist, nil,"+ Add Weapon",  offset)
-    slot.OnCursorEntered = function()
-        if buttonclicked then return end
-        image:SetImage("vgui/cursors/crosshair", "vgui/null")
-    end
+    local slot = GenerateLabel(weplist, "+ Add Weapon", nil, image)
     slot.DoClick = function()
         buttonclicked = true
-        image:SetImage("vgui/cursors/crosshair", "vgui/null")
+        image:SetImage("vgui/null", "vgui/null")
         category:SetWidth(mainmenu:GetTall() * 0.3)
+        rcont:SetVisible(true)
         subcat2:Clear()
         subcat:Clear()
         category:Clear()
+        category:GetVBar():SetScroll(0)
         WepSelector(slot, #ptable + 1, image, mainmenu)
         for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
             button:SetSelected(false)
@@ -271,12 +370,7 @@ function QLOpenMenu(refresh)
         category:Clear()
         WepEjector(slot, #ptable + 1, nil)
     end
-    mainmenu.OnClose = function()
-        closed = true
-        timer.Simple(0, function() closed = false end)
-        if !newloadout then return end
-        weaponlist:SetString(table.concat(ptable, ", "))
-    end
+
 end
 
 hook.Add("InitPostEntity", "QuickLoadoutInit", function()
@@ -338,7 +432,7 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         panel:Help("Client settings")
         panel:Help("Loadout window bind")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
-        local binder = vgui.Create("DBinder", panel)
+        local binder = panel:Add("DBinder")
         binder:DockMargin(60,10,60,10)
         binder:Dock(TOP)
         binder:CenterHorizontal()

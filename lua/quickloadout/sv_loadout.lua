@@ -37,7 +37,7 @@ end)
 function QuickLoadout(ply)
     if !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
-    if !override:GetBool() then hook.Run("PlayerLoadout", ply) end
+    if !override:GetBool() or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
         if !maxslots:GetBool() or maxslots:GetInt() >= k then
             ply:Give(v)
