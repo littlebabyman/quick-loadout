@@ -4,7 +4,7 @@ local ptable = {}
 table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
-local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), Color(0,128,0,128), Color(0,96,0,128)
+local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), Color(0,96,0,128), Color(0,128,0,128)
 -- local enabled = GetConVar("quickloadout_enable")
 -- local override = GetConVar("quickloadout_override")
 -- local maxslots = GetConVar("quickloadout_maxslots")
