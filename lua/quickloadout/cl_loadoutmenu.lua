@@ -4,30 +4,52 @@ local ptable = {}
 table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
-local fonts = GetConVar("quickloadout_fonts")
-local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), Color(0,96,0,128), Color(0,128,0,128)
+local fontbig, fontsmall = GetConVar("quickloadout_ui_font"), GetConVar("quickloadout_ui_font_small")
+
 -- local enabled = GetConVar("quickloadout_enable")
 -- local override = GetConVar("quickloadout_override")
 -- local maxslots = GetConVar("quickloadout_maxslots")
 -- local time = GetConVar("quickloadout_switchtime")
 
 local function CreateFonts()
-    local fontbig, fontsmall = fonts:GetString() or "Tahoma"
     surface.CreateFont("quickloadout_font_large", {
-        font = fontbig,
+        font = fontbig:GetString(),
         extended = true,
         size = ScrH() * 0.04
     })
     surface.CreateFont("quickloadout_font_small", {
-        font = fontsmall or fontbig,
+        font = fontsmall:GetString() or fontbig:GetString(),
         extended = true,
         size = ScrH() * 0.02
     })
 end
 
-CreateFonts()
+local function RefreshColors()
+    local cvar_bg, cvar_but = string.ToColor(GetConVar("quickloadout_ui_color_bg"):GetString() .. " 69"), string.ToColor(GetConVar("quickloadout_ui_color_button"):GetString() .. " 69")
+    local function LessenBG(color)
+        local temptbl = {r = 0, g = 0, b = 0, a = 0}
+        for k, v in SortedPairs(color) do
+            table.Merge(temptbl, {[k] = math.floor(v * 0.125)})
+        end
+    return Color(temptbl.r, temptbl.g, temptbl.b) end
+    local function LessenButton(color)
+        local temptbl = {r = 0, g = 0, b = 0, a = 0}
+        for k, v in SortedPairs(color) do
+           table.Merge(temptbl, {[k] = math.floor(v * 0.75)})
+        end
+    return Color(temptbl.r, temptbl.g, temptbl.b) end
+    print(cvar_bg, LessenBG(cvar_bg), cvar_but, LessenButton(cvar_but)) 
+    local a, b, c, d = ColorAlpha(cvar_bg, 64) or Color(0,128,0,64), IsColor(LessenBG(cvar_bg)) and ColorAlpha(LessenBG(cvar_bg), 128) or Color(0,16,0,128), ColorAlpha(LessenButton(cvar_but), 128) or Color(0,96,0,128), ColorAlpha(cvar_but, 128) or Color(0,128,0,128)
+    return a, b, c, d
+end
 
-cvars.AddChangeCallback("quickloadout_fonts", function() timer.Simple(0, CreateFonts) end)
+CreateFonts()
+local col_bg, col_col, col_but, col_hl = RefreshColors()
+
+cvars.AddChangeCallback("quickloadout_ui_color_bg" , function() col_bg, col_col, col_but, col_hl = RefreshColors() end)
+cvars.AddChangeCallback("quickloadout_ui_color_button", function() col_bg, col_col, col_but, col_hl = RefreshColors() end)
+cvars.AddChangeCallback("quickloadout_ui_font", function() timer.Simple(0, CreateFonts) end)
+cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
 local function GenerateCategory(frame)
@@ -248,6 +270,30 @@ function QLOpenMenu(refresh)
     enablecat:DockMargin(10, options:GetTall() * 0.5, 0, options:GetTall() * 0.1)
     enablecat:Dock(LEFT)
 
+    local bgcolor = options:Add("DColorMixer")
+    Derma_Install_Convar_Functions(bgcolor)
+    bgcolor:SetConVar("quickloadout_ui_color_bg")
+    bgcolor:SetColor(ColorAlpha(col_bg, 128))
+    bgcolor:Dock(LEFT)
+    bgcolor:SetPalette(false)
+    bgcolor.Think = function(self)
+        col_bg = self:GetColor()
+        self:SetColor(ColorAlpha(col_bg, 128))
+        self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
+    end
+    
+    local buttoncolor = options:Add("DColorMixer")
+    Derma_Install_Convar_Functions(buttoncolor)
+    buttoncolor:SetConVar("quickloadout_ui_color_button")
+    buttoncolor:SetColor(ColorAlpha(col_hl, 128))
+    buttoncolor:Dock(LEFT)
+    buttoncolor:SetPalette(false)
+    buttoncolor.Think = function(self)
+        col_hl = self:GetColor()
+        self:SetColor(ColorAlpha(col_hl, 128))
+        self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
+    end
+
     local function ResetMenu()
         newloadout = true
         QLOpenMenu(newloadout)
@@ -334,7 +380,6 @@ function QLOpenMenu(refresh)
             ResetMenu()
         end
     end
-    -- PrintTable(ptable)
     for i, v in ipairs(ptable) do
         local function QuickName()
             if list.Get("Weapon")[v] then
@@ -451,7 +496,7 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         panel:Help("Client settings")
         panel:Help("Loadout window bind")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
-        local binder = panel:Add("DBinder")
+        local binder = vgui.Create("DBinder", panel)
         binder:DockMargin(60,10,60,10)
         binder:Dock(TOP)
         binder:CenterHorizontal()
