@@ -12,7 +12,7 @@ local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), C
 -- local time = GetConVar("quickloadout_switchtime")
 
 local function CreateFonts()
-    local fontbig, fontsmall = fonts:GetString()
+    local fontbig, fontsmall = fonts:GetString() or "Tahoma"
     surface.CreateFont("quickloadout_font_large", {
         font = fontbig,
         extended = true,
