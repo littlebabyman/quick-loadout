@@ -27,7 +27,7 @@ end)
 net.Receive("quickloadout", function(len, ply)
     ply.quickloadout = net.ReadTable()
     for i, v in ipairs(ply.quickloadout) do
-        if !list.Get("Weapon")[v] then timer.Simple(0, function() table.Remove(ply.quickloadout, i) end) end
+        if !list.Get("Weapon")[v] then timer.Simple(0, function() table.remove(ply.quickloadout, i) end) end
     end
     if (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
