@@ -49,7 +49,7 @@ local function TestImage(item, frame)
     else return "vgui/null" end
 end
 
-local function GenerateLabel(frame, name, index, img)
+local function GenerateLabel(frame, name, index, panel)
     local button = frame:Add("DLabel")
     local function NameSetup()
         if istable(name) then
@@ -68,13 +68,19 @@ local function GenerateLabel(frame, name, index, img)
     button:SetWrap(true)
     button:SetAutoStretchVertical(true)
     button:SetText(text)
-    if ispanel(img) then
+    if ispanel(panel) then
         button:SetPaintBackgroundEnabled(true)
         button.ApplySchemeSettings = function(self)
             self:SetBGColor(col_but)
         end
+        button.DoClickInternal = function(self)
+            surface.PlaySound("garrysmod/ui_click.wav")
+        end
         button.OnCursorEntered = function(self)
-            img:SetImage(TestImage(index, img), "vgui/null")
+            surface.PlaySound("garrysmod/ui_hover.wav")
+            if panel:GetClassName() == "DImage" then
+                panel:SetImage(TestImage(index, panel), "vgui/null")
+            end
             self:SetBGColor(col_hl)
         end
         button.OnCursorExited = function(self)
@@ -192,23 +198,16 @@ function QLOpenMenu(refresh)
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
     image:SetPos((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25 + mainmenu:GetTall() * 0.7, mainmenu:GetTall() * 0.1)
     image:SetKeepAspect(true)
+
     local toptext = GenerateLabel(lcont, "Loadout", nil)
     toptext:Dock(0)
     toptext:SetY(lcont:GetTall() * 0.1)
-    local closer = GenerateLabel(lcont, "Close", nil)
+
+    local closer = GenerateLabel(lcont, "Close", nil, lcont)
     closer:Dock(0)
     closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
     closer:SetPaintBackgroundEnabled(true)
     closer.DoClick = CloseMenu
-    closer.ApplySchemeSettings = function(self)
-        self:SetBGColor(col_but)
-    end
-    closer.OnCursorEntered = function(self)
-        self:SetBGColor(col_hl)
-    end
-    closer.OnCursorExited = function(self)
-        self:SetBGColor(col_but)
-    end
     mainmenu.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/null", "vgui/null")
@@ -251,6 +250,7 @@ function QLOpenMenu(refresh)
             cat = GenerateLabel(category, k, nil, image)
             cat.DoRightClick = function()
                 buttonclicked = false
+                surface.PlaySound("garrysmod/ui_return.wav")
                 img:SetImage("vgui/null", "vgui/null")
                 rcont:SetVisible(false)
                 category:Clear()
@@ -274,6 +274,7 @@ function QLOpenMenu(refresh)
                 for i, v in SortedPairs(_) do
                     subbutton = GenerateLabel(subcat, i, v, image)
                     subbutton.DoRightClick = function()
+                        surface.PlaySound("garrysmod/ui_return.wav")
                         img:SetImage(icon, "vgui/null")
                         category:SetWidth(frame:GetTall() * 0.3)
                         subcat:SetWidth(0)
@@ -295,6 +296,7 @@ function QLOpenMenu(refresh)
                         for i, v in SortedPairs(temptbl) do
                             subbutton2 = GenerateLabel(subcat2, i, v, image)
                             subbutton2.DoRightClick = function()
+                                surface.PlaySound("garrysmod/ui_return.wav")
                                 img:SetImage(icon, "vgui/null")
                                 subcat:SetWidth(frame:GetTall() * 0.3)
                                 subcat2:SetWidth(0)
@@ -348,6 +350,7 @@ function QLOpenMenu(refresh)
             slot:SetSelected(true)
         end
         slot.DoRightClick = function()
+            surface.PlaySound("garrysmod/ui_return.wav")
             subcat2:Clear()
             subcat:Clear()
             category:Clear()
@@ -371,6 +374,7 @@ function QLOpenMenu(refresh)
         slot:SetSelected(true)
     end
     slot.DoRightClick = function()
+        surface.PlaySound("garrysmod/ui_return.wav")
         subcat2:Clear()
         subcat:Clear()
         category:Clear()

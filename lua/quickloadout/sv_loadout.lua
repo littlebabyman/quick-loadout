@@ -26,16 +26,21 @@ end)
 
 net.Receive("quickloadout", function(len, ply)
     ply.quickloadout = net.ReadTable()
+    for i, v in ipairs(ply.quickloadout) do
+        if !list.Get("Weapon")[v] then timer.Simple(0, function() table.Remove(ply.quickloadout, i) end) end
+    end
     if (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
         net.Send(ply)
         return
     end
-    QuickLoadout(ply)
+    timer.Simple(0, function()
+        QuickLoadout(ply)
+    end)
 end)
 
 function QuickLoadout(ply)
-    if !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
+    if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
     if !override:GetBool() or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
