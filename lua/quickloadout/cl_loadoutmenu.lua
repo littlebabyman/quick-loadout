@@ -78,9 +78,7 @@ local function GenerateLabel(frame, name, index, panel)
         end
         button.OnCursorEntered = function(self)
             surface.PlaySound("garrysmod/ui_hover.wav")
-            if panel:GetClassName() == "DImage" then
-                panel:SetImage(TestImage(index, panel), "vgui/null")
-            end
+            panel:SetImage(TestImage(index, panel), "vgui/null")
             self:SetBGColor(col_hl)
         end
         button.OnCursorExited = function(self)
@@ -202,12 +200,23 @@ function QLOpenMenu(refresh)
     local toptext = GenerateLabel(lcont, "Loadout", nil)
     toptext:Dock(0)
     toptext:SetY(lcont:GetTall() * 0.1)
+    toptext.OnCursorEntered = function()
+        if buttonclicked then return end
+        image:SetImage("vgui/null", "vgui/null")
+    end
 
     local closer = GenerateLabel(lcont, "Close", nil, lcont)
     closer:Dock(0)
     closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
     closer:SetPaintBackgroundEnabled(true)
-    closer.DoClick = CloseMenu
+    closer.DoClickInternal = function(self)
+        CloseMenu()
+        surface.PlaySound("garrysmod/ui_return.wav")
+    end
+    closer.OnCursorEntered = function(self)
+        surface.PlaySound("garrysmod/ui_hover.wav")
+        self:SetBGColor(col_hl)
+    end
     mainmenu.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/null", "vgui/null")
@@ -241,9 +250,7 @@ function QLOpenMenu(refresh)
         cancel.DoClick = function()
             buttonclicked = false
             img:SetImage(TestImage(ptable[1], img), "vgui/null")
-            category:Clear()
-            subcat2:Clear()
-            subcat:Clear()
+            rcont:SetVisible(false)
             button:SetSelected(false)
         end
         for k, _ in SortedPairs(wtable) do
@@ -253,61 +260,53 @@ function QLOpenMenu(refresh)
                 surface.PlaySound("garrysmod/ui_return.wav")
                 img:SetImage("vgui/null", "vgui/null")
                 rcont:SetVisible(false)
-                category:Clear()
-                subcat2:Clear()
-                subcat:Clear()
                 button:SetSelected(false)
             end
             cat.DoClick = function()
                 subcat2:Clear()
                 subcat:Clear()
-                category:SetWidth(0)
-                subcat:SetWidth(frame:GetTall() * 0.3)
+                category:SetVisible(false)
+                subcat:SetVisible(true)
                 local catbut = GenerateLabel(subcat, "< Categories", collapse, image)
                 catbut.DoClick = function()
-                    category:SetWidth(frame:GetTall() * 0.3)
+                    category:SetVisible(true)
                     img:SetImage(icon, "vgui/null")
-                    subcat:SetWidth(0)
-                    subcat2:Clear()
-                    subcat:Clear()
+                    subcat:SetVisible(false)
                 end
                 for i, v in SortedPairs(_) do
                     subbutton = GenerateLabel(subcat, i, v, image)
                     subbutton.DoRightClick = function()
                         surface.PlaySound("garrysmod/ui_return.wav")
                         img:SetImage(icon, "vgui/null")
-                        category:SetWidth(frame:GetTall() * 0.3)
-                        subcat:SetWidth(0)
-                        subcat2:Clear()
-                        subcat:Clear()
+                        category:SetVisible(true)
+                        subcat:SetVisible(false)
                     end
                     local temptbl = v
                     if istable(temptbl) then
                         subbutton.DoClick = function()
-                        subcat:SetWidth(0)
-                        subcat2:SetWidth(frame:GetTall() * 0.3)
-                        local catbut2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
-                        catbut2.DoClick = function()
-                            img:SetImage(icon, "vgui/null")
-                            subcat:SetWidth(frame:GetTall() * 0.3)
-                            subcat2:SetWidth(0)
+                            subcat:SetVisible(false)
                             subcat2:Clear()
-                        end
-                        for i, v in SortedPairs(temptbl) do
-                            subbutton2 = GenerateLabel(subcat2, i, v, image)
-                            subbutton2.DoRightClick = function()
-                                surface.PlaySound("garrysmod/ui_return.wav")
+                            subcat2:SetVisible(true)
+                            local catbut2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
+                            catbut2.DoClick = function()
                                 img:SetImage(icon, "vgui/null")
-                                subcat:SetWidth(frame:GetTall() * 0.3)
-                                subcat2:SetWidth(0)
-                                subcat2:Clear()
+                                subcat:SetVisible(true)
+                                subcat2:SetVisible(false)
                             end
-                            subbutton2.DoClick = function()
-                                table.Merge(ptable, {[index] = v})
-                                ResetMenu()
+                            for i, v in SortedPairs(temptbl) do
+                                subbutton2 = GenerateLabel(subcat2, i, v, image)
+                                subbutton2.DoRightClick = function()
+                                    surface.PlaySound("garrysmod/ui_return.wav")
+                                    img:SetImage(icon, "vgui/null")
+                                    subcat:SetVisible(true)
+                                    subcat2:SetVisible(false)
+                                end
+                                subbutton2.DoClick = function()
+                                    table.Merge(ptable, {[index] = v})
+                                    ResetMenu()
+                                end
                             end
                         end
-                    end
                     else
                         subbutton.DoClick = function()
                             table.Merge(ptable, {[index] = v})
@@ -337,47 +336,47 @@ function QLOpenMenu(refresh)
         slot.DoClick = function()
             buttonclicked = true
             image:SetImage(TestImage(v, image), "vgui/null")
-            category:SetWidth(mainmenu:GetTall() * 0.3)
             rcont:SetVisible(true)
-            subcat2:Clear()
-            subcat:Clear()
             category:Clear()
             category:GetVBar():SetScroll(0)
+            subcat2:SetVisible(false)
+            subcat:SetVisible(false)
+            slot:SetSelected(true)
             WepSelector(slot, i, image, mainmenu)
             for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
                 button:SetSelected(false)
             end
-            slot:SetSelected(true)
+            category:SetVisible(true)
         end
         slot.DoRightClick = function()
             surface.PlaySound("garrysmod/ui_return.wav")
-            subcat2:Clear()
-            subcat:Clear()
-            category:Clear()
+            subcat2:SetVisible(false)
+            subcat:SetVisible(false)
+            category:SetVisible(false)
             WepEjector(slot, i, v)
         end
     end
-    local slot = GenerateLabel(weplist, "+ Add Weapon", nil, image)
+    local slot = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
     slot.DoClick = function()
         buttonclicked = true
         image:SetImage("vgui/null", "vgui/null")
-        category:SetWidth(mainmenu:GetTall() * 0.3)
         rcont:SetVisible(true)
-        subcat2:Clear()
-        subcat:Clear()
         category:Clear()
         category:GetVBar():SetScroll(0)
+        subcat2:SetVisible(false)
+        subcat:SetVisible(false)
+        slot:SetSelected(true)
         WepSelector(slot, #ptable + 1, image, mainmenu)
         for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
             button:SetSelected(false)
         end
-        slot:SetSelected(true)
+        category:SetVisible(true)
     end
     slot.DoRightClick = function()
         surface.PlaySound("garrysmod/ui_return.wav")
-        subcat2:Clear()
-        subcat:Clear()
-        category:Clear()
+        subcat2:SetVisible(false)
+        subcat:SetVisible(false)
+        category:SetVisible(false)
         WepEjector(slot, #ptable + 1, nil)
     end
 
