@@ -12,7 +12,7 @@ local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), C
 -- local time = GetConVar("quickloadout_switchtime")
 
 local function CreateFonts()
-    local fontbig, fontsmall = GetConVar("quickloadout_fonts"):GetString()
+    local fontbig, fontsmall = fonts:GetString()
     surface.CreateFont("quickloadout_font_large", {
         font = fontbig,
         extended = true,
@@ -106,8 +106,6 @@ local wtable = {}
 local closing = false
 
 function QLOpenMenu(refresh)
-    local fontbig, fontsmall = GetConVar("quickloadout_fonts"):GetString()
-    print(fontbig, fontsmall)
     if closing then return end
     local newloadout = refresh or false
 
