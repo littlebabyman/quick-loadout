@@ -278,7 +278,6 @@ function QLOpenMenu(refresh)
     bgcolor:SetPalette(false)
     bgcolor.Think = function(self)
         col_bg = self:GetColor()
-        self:SetColor(ColorAlpha(col_bg, 128))
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
     
@@ -290,7 +289,6 @@ function QLOpenMenu(refresh)
     buttoncolor:SetPalette(false)
     buttoncolor.Think = function(self)
         col_hl = self:GetColor()
-        self:SetColor(ColorAlpha(col_hl, 128))
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
 
