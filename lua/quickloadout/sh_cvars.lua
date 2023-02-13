@@ -9,4 +9,5 @@ if CLIENT then
     CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes.")
     CreateClientConVar("quickloadout_key", "n", true, false, "Quick loadout keybind.")
     CreateClientConVar("quickloadout_showcategory", 1, true, false, "Show weapon categories on equipped weapons.")
+    CreateClientConVar("quickloadout_fonts", "Tahoma", true, false, "Fonts used for the loadout menu.")
 end

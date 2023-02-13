@@ -4,6 +4,7 @@ local ptable = {}
 table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
+local fonts = GetConVar("quickloadout_fonts")
 local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), Color(0,96,0,128), Color(0,128,0,128)
 -- local enabled = GetConVar("quickloadout_enable")
 -- local override = GetConVar("quickloadout_override")
@@ -11,24 +12,28 @@ local col_bg, col_col, col_but, col_hl = Color(0,128,0,64), Color(0,16,0,128), C
 -- local time = GetConVar("quickloadout_switchtime")
 
 local function CreateFonts()
-    surface.CreateFont("quickloadout_font", {
-        font = "Carbon Plus Bold",
+    local fontbig, fontsmall = GetConVar("quickloadout_fonts"):GetString()
+    surface.CreateFont("quickloadout_font_large", {
+        font = fontbig,
         extended = true,
         size = ScrH() * 0.04
+    })
+    surface.CreateFont("quickloadout_font_small", {
+        font = fontsmall or fontbig,
+        extended = true,
+        size = ScrH() * 0.02
     })
 end
 
 CreateFonts()
 
+cvars.AddChangeCallback("quickloadout_fonts", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
 local function GenerateCategory(frame)
-    local category = frame:Add("DScrollPanel")
-    local bar = category:GetVBar()
+    local category = frame:Add("DListLayout")
     category:SetZPos(1)
-    category:SetSize(frame:GetWide(), frame:GetTall() * 0.8)
-    category:SetY(frame:GetTall() * 0.1)
-    bar:SetHideButtons(true)
+    category:SetSize(frame:GetWide(), frame:GetTall())
     return category
 end
 
@@ -63,7 +68,7 @@ local function GenerateLabel(frame, name, index, panel)
     button:SetMouseInputEnabled(true)
     button:SetWidth(frame:GetWide() - 1)
     button:SetHeight(frame:GetWide() * 0.125)
-    button:SetFontInternal("quickloadout_font")
+    button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
     button:SetAutoStretchVertical(true)
@@ -86,7 +91,6 @@ local function GenerateLabel(frame, name, index, panel)
         end
     end
     button:DockMargin(button:GetTall() * 0.05, button:GetTall() * 0.05, button:GetTall() * 0.05, math.max(button:GetTall() * 0.05, 1))
-    button:Dock(TOP)
     return button
 end
 
@@ -102,6 +106,8 @@ local wtable = {}
 local closing = false
 
 function QLOpenMenu(refresh)
+    local fontbig, fontsmall = GetConVar("quickloadout_fonts"):GetString()
+    print(fontbig, fontsmall)
     if closing then return end
     local newloadout = refresh or false
 
@@ -123,7 +129,7 @@ function QLOpenMenu(refresh)
         mainmenu:SetX(-mainmenu:GetWide())
         mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
     end
-    mainmenu:SetVisible(true)
+    mainmenu:Show()
     mainmenu:MakePopup()
     function mainmenu:OnFocusChanged(bool)
         if false then
@@ -184,13 +190,18 @@ function QLOpenMenu(refresh)
         self:SetBGColor(col_col)
     end
     rcont:SetX(lcont:GetPos() + lcont:GetWide() * 1.1)
-    rcont:SetVisible(false)
-    local weplist = GenerateCategory(lcont)
-    weplist:SetHeight(weplist:GetTall() * 0.9)
-    weplist:SetY(lcont:GetTall() * 0.1 + lcont:GetWide() * 0.125)
-    local category = GenerateCategory(rcont)
-    local subcat = GenerateCategory(rcont)
-    local subcat2 = GenerateCategory(rcont)
+    rcont:Hide()
+    local lscroller, rscroller = lcont:Add("DScrollPanel"), rcont:Add("DScrollPanel")
+    lscroller:SetZPos(1)
+    lscroller:SetSize(lcont:GetWide(), lcont:GetTall() * 0.8)
+    rscroller:CopyBase(lscroller)
+    lscroller:SetHeight(lscroller:GetTall() * 0.9)
+    rscroller:SetY(lcont:GetTall() * 0.1)
+    lscroller:SetY(lcont:GetTall() * 0.1 + lcont:GetWide() * 0.125)
+    local weplist = GenerateCategory(lscroller)
+    local category = GenerateCategory(rscroller)
+    local subcat = GenerateCategory(rscroller)
+    local subcat2 = GenerateCategory(rscroller)
     local image = mainmenu:Add("DImage")
     image:SetImage("vgui/null", "vgui/null")
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
@@ -250,7 +261,7 @@ function QLOpenMenu(refresh)
         cancel.DoClick = function()
             buttonclicked = false
             img:SetImage(TestImage(ptable[1], img), "vgui/null")
-            rcont:SetVisible(false)
+            rcont:Hide()
             button:SetSelected(false)
         end
         for k, _ in SortedPairs(wtable) do
@@ -259,47 +270,47 @@ function QLOpenMenu(refresh)
                 buttonclicked = false
                 surface.PlaySound("garrysmod/ui_return.wav")
                 img:SetImage("vgui/null", "vgui/null")
-                rcont:SetVisible(false)
+                rcont:Hide()
                 button:SetSelected(false)
             end
             cat.DoClick = function()
                 subcat2:Clear()
                 subcat:Clear()
-                category:SetVisible(false)
-                subcat:SetVisible(true)
+                category:Hide()
+                subcat:Show()
                 local catbut = GenerateLabel(subcat, "< Categories", collapse, image)
                 catbut.DoClick = function()
-                    category:SetVisible(true)
+                    category:Show()
                     img:SetImage(icon, "vgui/null")
-                    subcat:SetVisible(false)
+                    subcat:Hide()
                 end
                 for i, v in SortedPairs(_) do
                     subbutton = GenerateLabel(subcat, i, v, image)
                     subbutton.DoRightClick = function()
                         surface.PlaySound("garrysmod/ui_return.wav")
                         img:SetImage(icon, "vgui/null")
-                        category:SetVisible(true)
-                        subcat:SetVisible(false)
+                        category:Show()
+                        subcat:Hide()
                     end
                     local temptbl = v
                     if istable(temptbl) then
                         subbutton.DoClick = function()
-                            subcat:SetVisible(false)
+                            subcat:Hide()
                             subcat2:Clear()
-                            subcat2:SetVisible(true)
+                            subcat2:Show()
                             local catbut2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
                             catbut2.DoClick = function()
                                 img:SetImage(icon, "vgui/null")
-                                subcat:SetVisible(true)
-                                subcat2:SetVisible(false)
+                                subcat:Show()
+                                subcat2:Hide()
                             end
                             for i, v in SortedPairs(temptbl) do
                                 subbutton2 = GenerateLabel(subcat2, i, v, image)
                                 subbutton2.DoRightClick = function()
                                     surface.PlaySound("garrysmod/ui_return.wav")
                                     img:SetImage(icon, "vgui/null")
-                                    subcat:SetVisible(true)
-                                    subcat2:SetVisible(false)
+                                    subcat:Show()
+                                    subcat2:Hide()
                                 end
                                 subbutton2.DoClick = function()
                                     table.Merge(ptable, {[index] = v})
@@ -320,7 +331,7 @@ function QLOpenMenu(refresh)
     local function WepEjector(button, index, wep)
         if table.HasValue(ptable, wep) then
             table.remove(ptable, index)
-            rcont:SetVisible(false)
+            rcont:Hide()
             ResetMenu()
         end
     end
@@ -336,23 +347,23 @@ function QLOpenMenu(refresh)
         slot.DoClick = function()
             buttonclicked = true
             image:SetImage(TestImage(v, image), "vgui/null")
-            rcont:SetVisible(true)
+            rcont:Show()
             category:Clear()
-            category:GetVBar():SetScroll(0)
-            subcat2:SetVisible(false)
-            subcat:SetVisible(false)
+            rscroller:GetVBar():SetScroll(0)
+            subcat2:Hide()
+            subcat:Hide()
             slot:SetSelected(true)
             WepSelector(slot, i, image, mainmenu)
             for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
                 button:SetSelected(false)
             end
-            category:SetVisible(true)
+            category:Show()
         end
         slot.DoRightClick = function()
             surface.PlaySound("garrysmod/ui_return.wav")
-            subcat2:SetVisible(false)
-            subcat:SetVisible(false)
-            category:SetVisible(false)
+            subcat2:Hide()
+            subcat:Hide()
+            category:Hide()
             WepEjector(slot, i, v)
         end
     end
@@ -360,23 +371,23 @@ function QLOpenMenu(refresh)
     slot.DoClick = function()
         buttonclicked = true
         image:SetImage("vgui/null", "vgui/null")
-        rcont:SetVisible(true)
+        rcont:Show()
         category:Clear()
-        category:GetVBar():SetScroll(0)
-        subcat2:SetVisible(false)
-        subcat:SetVisible(false)
+        rscroller:GetVBar():SetScroll(0)
+        subcat2:Hide()
+        subcat:Hide()
         slot:SetSelected(true)
         WepSelector(slot, #ptable + 1, image, mainmenu)
         for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
             button:SetSelected(false)
         end
-        category:SetVisible(true)
+        category:Show()
     end
     slot.DoRightClick = function()
         surface.PlaySound("garrysmod/ui_return.wav")
-        subcat2:SetVisible(false)
-        subcat:SetVisible(false)
-        category:SetVisible(false)
+        subcat2:Hide()
+        subcat:Hide()
+        category:Hide()
         WepEjector(slot, #ptable + 1, nil)
     end
 
