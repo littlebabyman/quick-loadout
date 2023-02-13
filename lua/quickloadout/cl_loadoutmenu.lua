@@ -38,7 +38,6 @@ local function RefreshColors()
            table.Merge(temptbl, {[k] = math.floor(v * 0.75)})
         end
     return Color(temptbl.r, temptbl.g, temptbl.b) end
-    print(cvar_bg, LessenBG(cvar_bg), cvar_but, LessenButton(cvar_but)) 
     local a, b, c, d = ColorAlpha(cvar_bg, 64) or Color(0,128,0,64), IsColor(LessenBG(cvar_bg)) and ColorAlpha(LessenBG(cvar_bg), 128) or Color(0,16,0,128), ColorAlpha(LessenButton(cvar_but), 128) or Color(0,96,0,128), ColorAlpha(cvar_but, 128) or Color(0,128,0,128)
     return a, b, c, d
 end
