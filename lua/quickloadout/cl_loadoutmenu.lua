@@ -18,9 +18,9 @@ local function CreateFonts()
         size = ScrH() * 0.04
     })
     surface.CreateFont("quickloadout_font_small", {
-        font = fontsmall:GetString() or fontbig:GetString(),
+        font = fontbig:GetString(),
         extended = true,
-        size = ScrH() * 0.02
+        size = ScrH() * 0.03
     })
 end
 
@@ -271,9 +271,10 @@ function QLOpenMenu(refresh)
     enablecat:SetConVar("quickloadout_showcategory")
     enablecat:SetText("Show weapon categories on equipped weapons.")
     enablecat:SetValue(showcat:GetBool())
-    enablecat:SetWrap(true)
+    enablecat:SetWide(options:GetWide())
+    enablecat:SetFont("quickloadout_font_small")
 
-    local bgcolor = options:Add("DColorMixer")
+    local bgcolor, buttoncolor = options:Add("DColorMixer"), options:Add("DColorMixer")
     Derma_Install_Convar_Functions(bgcolor)
     bgcolor:DockPadding(0, lcont:GetWide() * 0.05, 0, 0)
     bgcolor:SetConVar("quickloadout_ui_color_bg")
@@ -283,8 +284,6 @@ function QLOpenMenu(refresh)
         col_bg = ColorAlpha(self:GetColor(), 64)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
-    
-    local buttoncolor = options:Add("DColorMixer")
     Derma_Install_Convar_Functions(buttoncolor)
     buttoncolor:DockPadding(0, lcont:GetWide() * 0.05, 0, 0)
     buttoncolor:SetConVar("quickloadout_ui_color_button")
