@@ -98,7 +98,7 @@ local function GenerateLabel(frame, name, index, panel)
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
             surface.SetDrawColor(col_but)
-            if button:IsHovered() then
+            if button:IsHovered() or button:GetToggle() then
                 surface.SetDrawColor(col_hl)
             end
             surface.DrawRect(0,0, x, y)
@@ -251,14 +251,11 @@ function QLOpenMenu(refresh)
     options:SetZPos(2)
     options:SetVisible(false)
     options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
-    options:SetY(lcont:GetWide() * 0.15)
+    options:SetY(lcont:GetWide() * 0.2)
     options:DockPadding(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05)
-    options.Paint = function(self, x, y)
-        surface.SetDrawColor(col_col)
-        surface.DrawRect(0,0, x, y)
-    end
 
     local optbut = GenerateLabel(lcont, "Options", collapse, lcont)
+    optbut:SetY(lcont:GetWide() * 0.05)
     optbut.DoClickInternal = function(self)
         surface.PlaySound("garrysmod/ui_return.wav")
     end
@@ -267,6 +264,7 @@ function QLOpenMenu(refresh)
     end
     optbut.OnToggled = function(self, state)
         options:SetVisible(state)
+        weplist:SetVisible(!state)
     end
 
     local enablecat = options:Add("DCheckBoxLabel")
