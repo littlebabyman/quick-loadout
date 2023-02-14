@@ -307,7 +307,7 @@ function QLOpenMenu(refresh)
             buttonclicked = false
             img:SetImage(TestImage(ptable[1], img), "vgui/null")
             rcont:Hide()
-            button:SetSelected(false)
+            button:SetToggle(false)
         end
         for k, _ in SortedPairs(wtable) do
             cat = GenerateLabel(category, k, nil, image)
@@ -316,7 +316,7 @@ function QLOpenMenu(refresh)
                 surface.PlaySound("garrysmod/ui_return.wav")
                 img:SetImage("vgui/null", "vgui/null")
                 rcont:Hide()
-                button:SetSelected(false)
+                button:SetToggle(false)
             end
             cat.DoClick = function()
                 subcat2:Clear()
@@ -396,10 +396,10 @@ function QLOpenMenu(refresh)
             rscroller:GetVBar():SetScroll(0)
             subcat2:Hide()
             subcat:Hide()
-            slot:SetSelected(true)
+            slot:SetToggle(true)
             WepSelector(slot, i, image, mainmenu)
             for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
-                button:SetSelected(false)
+                button:SetToggle(false)
             end
             category:Show()
         end
@@ -420,10 +420,10 @@ function QLOpenMenu(refresh)
         rscroller:GetVBar():SetScroll(0)
         subcat2:Hide()
         subcat:Hide()
-        slot:SetSelected(true)
+        slot:SetToggle(true)
         WepSelector(slot, #ptable + 1, image, mainmenu)
         for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
-            button:SetSelected(false)
+            button:SetToggle(false)
         end
         category:Show()
     end
