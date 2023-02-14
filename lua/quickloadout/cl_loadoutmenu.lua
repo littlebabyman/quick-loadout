@@ -394,7 +394,7 @@ function QLOpenMenu(refresh)
             if list.Get("Weapon")[v] then
                 if showcat:GetBool() then return list.Get("Weapon")[v].PrintName .. "\n(" .. list.Get("Weapon")[v].Category .. ")" or v
                 else return list.Get("Weapon")[v].PrintName or v end
-            else return v end
+            else return "Weapon N/A!\n" .. v end
         end
         local slot = GenerateLabel(weplist, QuickName(), v, image)
         slot.DoClick = function()
