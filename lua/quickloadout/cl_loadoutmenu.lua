@@ -101,7 +101,7 @@ local function GenerateLabel(frame, name, index, panel)
             if button:IsHovered() or button:GetToggle() then
                 surface.SetDrawColor(col_hl)
             end
-            surface.DrawRect(0,0, x, y)
+            surface.DrawRect(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), x - math.max(button:GetWide() * 0.005, 1), y - math.max(button:GetWide() * 0.005, 1))
         end
         button.DoClickInternal = function(self)
             surface.PlaySound("garrysmod/ui_click.wav")
@@ -111,7 +111,6 @@ local function GenerateLabel(frame, name, index, panel)
             panel:SetImage(TestImage(index, panel), "vgui/null")
         end
     end
-    button:DockMargin(button:GetTall() * 0.05, button:GetTall() * 0.05, button:GetTall() * 0.05, math.max(button:GetTall() * 0.05, 1))
     return button
 end
 
@@ -248,7 +247,6 @@ function QLOpenMenu(refresh)
     end
 
     local options = GenerateCategory(lcont)
-    options:SetZPos(2)
     options:SetVisible(false)
     options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
     options:SetY(lcont:GetWide() * 0.2)
@@ -256,15 +254,19 @@ function QLOpenMenu(refresh)
 
     local optbut = GenerateLabel(lcont, "Options", collapse, lcont)
     optbut:SetY(lcont:GetWide() * 0.05)
-    optbut.DoClickInternal = function(self)
-        surface.PlaySound("garrysmod/ui_return.wav")
-    end
+    optbut.DoClickInternal = function() end
     optbut.OnCursorEntered = function(self)
         surface.PlaySound("garrysmod/ui_hover.wav")
     end
     optbut.OnToggled = function(self, state)
+        if state then
+            surface.PlaySound("garrysmod/ui_click.wav")
+        else
+            surface.PlaySound("garrysmod/ui_return.wav")
+        end
         options:SetVisible(state)
         weplist:SetVisible(!state)
+        toptext:SetVisible(!state)
     end
 
     local enablecat = options:Add("DCheckBoxLabel")
@@ -273,6 +275,10 @@ function QLOpenMenu(refresh)
     enablecat:SetValue(showcat:GetBool())
     enablecat:SetWide(options:GetWide())
     enablecat:SetFont("quickloadout_font_small")
+
+    local fontfield = options:Add("DTextEntry")
+    fontfield:SetConVar("quickloadout_ui_font")
+    fontfield:AllowInput(true)
 
     local bgcolor, buttoncolor = options:Add("DColorMixer"), options:Add("DColorMixer")
     Derma_Install_Convar_Functions(bgcolor)
@@ -303,7 +309,8 @@ function QLOpenMenu(refresh)
     local function WepSelector(button, index, img, frame)
         local icon = img:GetImage()
         local cancel = GenerateLabel(category, "x Cancel", collapse, image)
-        cancel.DoClick = function()
+        cancel.DoClickInternal = function(self)
+            surface.PlaySound("garrysmod/ui_return.wav")
             buttonclicked = false
             img:SetImage(TestImage(ptable[1], img), "vgui/null")
             rcont:Hide()
@@ -324,7 +331,8 @@ function QLOpenMenu(refresh)
                 category:Hide()
                 subcat:Show()
                 local catbut = GenerateLabel(subcat, "< Categories", collapse, image)
-                catbut.DoClick = function()
+                catbut.DoClickInternal = function(self)
+                    surface.PlaySound("garrysmod/ui_return.wav")
                     category:Show()
                     img:SetImage(icon, "vgui/null")
                     subcat:Hide()
@@ -344,7 +352,8 @@ function QLOpenMenu(refresh)
                             subcat2:Clear()
                             subcat2:Show()
                             local catbut2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
-                            catbut2.DoClick = function()
+                            catbut2.DoClickInternal = function(self)
+                                surface.PlaySound("garrysmod/ui_return.wav")
                                 img:SetImage(icon, "vgui/null")
                                 subcat:Show()
                                 subcat2:Hide()
