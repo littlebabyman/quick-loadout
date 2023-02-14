@@ -53,7 +53,7 @@ hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, Cr
 
 local function GenerateCategory(frame)
     local category = frame:Add("DListLayout")
-    category:SetZPos(1)
+    category:SetZPos(2)
     category:SetSize(frame:GetWide(), frame:GetTall())
     return category
 end
@@ -129,7 +129,7 @@ function QLOpenMenu(refresh)
     if closing then return end
     local newloadout = refresh or false
 
-    local mainmenu = vgui.Create("Panel")
+    local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
     mainmenu.Paint = function(self, x, y)
@@ -443,7 +443,6 @@ function QLOpenMenu(refresh)
         category:Hide()
         WepEjector(slot, #ptable + 1, nil)
     end
-
 end
 
 hook.Add("InitPostEntity", "QuickLoadoutInit", function()
