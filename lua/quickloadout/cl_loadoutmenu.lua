@@ -144,12 +144,6 @@ function QLOpenMenu(refresh)
     end
     mainmenu:Show()
     mainmenu:MakePopup()
-    function mainmenu:OnFocusChanged(bool)
-        if false then
-            mainmenu:Remove()
-        end
-    end
-
     local function CloseMenu()
         closing = true
         mainmenu:SetKeyboardInputEnabled(false)
@@ -161,6 +155,12 @@ function QLOpenMenu(refresh)
             if !newloadout then return end
             weaponlist:SetString(table.concat(ptable, ", "))
         end)
+    end
+
+    function mainmenu:OnFocusChanged(bool)
+        if !bool then
+            CloseMenu()
+        end
     end
 
     function mainmenu:OnKeyCodePressed(key)
@@ -221,7 +221,7 @@ function QLOpenMenu(refresh)
     image:SetImage("vgui/null", "vgui/null")
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
     image:SetPos((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25 + mainmenu:GetTall() * 0.7, mainmenu:GetTall() * 0.1)
-    image:SetKeepAspect(true)
+    -- image:SetKeepAspect(true)
 
     local toptext = GenerateLabel(lcont, "Loadout", nil)
     toptext:Dock(0)
