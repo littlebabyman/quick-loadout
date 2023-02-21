@@ -25,7 +25,8 @@ hook.Add("InitPostEntity", "QLHolsterCheck", function()
 end)
 
 net.Receive("quickloadout", function(len, ply)
-    ply.quickloadout = net.ReadTable()
+    if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
+    else ply.quickloadout = string.Explode(", ", ply:GetInfo("quickloadout_weapons")) end
     for i, v in ipairs(ply.quickloadout) do
         if !list.Get("Weapon")[v] then timer.Simple(0, function() table.remove(ply.quickloadout, i) end) end
     end

@@ -6,6 +6,7 @@ CreateConVar("quickloadout_switchtime", 15, {FCVAR_ARCHIVE + FCVAR_REPLICATED + 
 CreateConVar("quickloadout_switchtime_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Force grace period off on pressing primary attack.", 0, 1)
 
 if CLIENT then
+    CreateClientConVar("quickloadout_enable_client", 1, true, true, "Enable quick loadout sending.")
     CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes.")
     CreateClientConVar("quickloadout_key", "n", true, false, "Quick loadout keybind.")
     CreateClientConVar("quickloadout_showcategory", 1, true, false, "Show weapon categories on equipped weapons.")

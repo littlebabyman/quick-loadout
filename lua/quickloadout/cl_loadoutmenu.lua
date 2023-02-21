@@ -4,6 +4,7 @@ local ptable = {}
 table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
+local enabled = GetConVar("quickloadout_enable_client")
 local fontbig, fontsmall = GetConVar("quickloadout_ui_font"), GetConVar("quickloadout_ui_font_small")
 
 -- local enabled = GetConVar("quickloadout_enable")
@@ -116,7 +117,6 @@ end
 
 local function NetworkLoadout()
     net.Start("quickloadout")
-    net.WriteTable(ptable)
     net.SendToServer()
 end
 
@@ -269,9 +269,16 @@ function QLOpenMenu(refresh)
         toptext:SetVisible(!state)
     end
 
+    local enable = options:Add("DCheckBoxLabel")
+    enable:SetConVar("quickloadout_enable_client")
+    enable:SetText("Enable your custom loadout")
+    enable:SetValue(showcat:GetBool())
+    enable:SetWide(options:GetWide())
+    enable:SetFont("quickloadout_font_small")
+
     local enablecat = options:Add("DCheckBoxLabel")
     enablecat:SetConVar("quickloadout_showcategory")
-    enablecat:SetText("Show weapon categories on equipped weapons.")
+    enablecat:SetText("Show weapon categories on equipped weapons")
     enablecat:SetValue(showcat:GetBool())
     enablecat:SetWide(options:GetWide())
     enablecat:SetFont("quickloadout_font_small")
@@ -487,6 +494,7 @@ end
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
 cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
+cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
 
 hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Options", "Loadout", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
