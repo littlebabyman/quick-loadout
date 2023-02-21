@@ -272,7 +272,7 @@ function QLOpenMenu(refresh)
     local enable = options:Add("DCheckBoxLabel")
     enable:SetConVar("quickloadout_enable_client")
     enable:SetText("Enable your custom loadout")
-    enable:SetValue(showcat:GetBool())
+    enable:SetValue(enabled:GetBool())
     enable:SetWide(options:GetWide())
     enable:SetFont("quickloadout_font_small")
 
