@@ -279,6 +279,8 @@ function QLOpenMenu(refresh)
     -- enablecat:SetFont("quickloadout_font_small")
     enablecat:SetWrap(true)
 
+    local fonttext = GenerateLabel(options, "Font")
+    fonttext:SetFontInternal("quickloadout_font_small")
     local fontfield = options:Add("DTextEntry")
     fontfield:SetConVar("quickloadout_ui_font")
     fontfield:AllowInput(true)
@@ -303,7 +305,7 @@ function QLOpenMenu(refresh)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
     for k, v in ipairs(options:GetChildren()) do
-        v:DockMargin(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, 0)
+        v:DockMargin(lcont:GetWide() * 0.05, 0, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05)
     end
 
     local function ResetMenu()
