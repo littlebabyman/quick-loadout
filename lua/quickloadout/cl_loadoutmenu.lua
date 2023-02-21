@@ -157,12 +157,6 @@ function QLOpenMenu(refresh)
         end)
     end
 
-    function mainmenu:OnFocusChanged(bool)
-        if !bool then
-            CloseMenu()
-        end
-    end
-
     function mainmenu:OnKeyCodePressed(key)
         if key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
             CloseMenu()
@@ -250,7 +244,7 @@ function QLOpenMenu(refresh)
     options:SetVisible(false)
     options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
     options:SetY(lcont:GetWide() * 0.2)
-    options:DockPadding(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05)
+    -- options:DockPadding(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, 0)
 
     local optbut = GenerateLabel(lcont, "Options", collapse, lcont)
     optbut:SetY(lcont:GetWide() * 0.05)
@@ -307,6 +301,9 @@ function QLOpenMenu(refresh)
     buttoncolor.Think = function(self)
         col_hl = ColorAlpha(self:GetColor(), 128)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
+    end
+    for k, v in ipairs(options:GetChildren()) do
+        v:DockMargin(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, 0)
     end
 
     local function ResetMenu()
