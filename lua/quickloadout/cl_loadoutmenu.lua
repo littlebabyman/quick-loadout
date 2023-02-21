@@ -305,7 +305,7 @@ function QLOpenMenu(refresh)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
     for k, v in ipairs(options:GetChildren()) do
-        v:DockMargin(lcont:GetWide() * 0.05, 0, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05)
+        v:DockMargin(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, 0)
     end
 
     local function ResetMenu()
