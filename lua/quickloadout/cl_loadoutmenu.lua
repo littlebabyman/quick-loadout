@@ -218,7 +218,6 @@ function QLOpenMenu(refresh)
     -- image:SetKeepAspect(true)
 
     local toptext = GenerateLabel(lcont, "Loadout", nil)
-    toptext:Dock(0)
     toptext:SetY(lcont:GetTall() * 0.1)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
@@ -226,7 +225,6 @@ function QLOpenMenu(refresh)
     end
 
     local closer = GenerateLabel(lcont, "Close", nil, lcont)
-    closer:Dock(0)
     closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
     closer.DoClickInternal = function(self)
         CloseMenu()
@@ -265,18 +263,18 @@ function QLOpenMenu(refresh)
 
     local enable = options:Add("DCheckBoxLabel")
     enable:SetConVar("quickloadout_enable_client")
-    enable:SetText("Enable your custom loadout")
+    enable:SetText("Enable loadout")
     enable:SetValue(enabled:GetBool())
     enable:SetWide(options:GetWide())
-    -- enable:SetFont("quickloadout_font_small")
+    enable:SetFont("quickloadout_font_small")
     enable:SetWrap(true)
 
     local enablecat = options:Add("DCheckBoxLabel")
     enablecat:SetConVar("quickloadout_showcategory")
-    enablecat:SetText("Show weapon categories on equipped weapons")
+    enablecat:SetText("Show categories")
     enablecat:SetValue(showcat:GetBool())
     enablecat:SetWide(options:GetWide())
-    -- enablecat:SetFont("quickloadout_font_small")
+    enablecat:SetFont("quickloadout_font_small")
     enablecat:SetWrap(true)
 
     local fonttext = GenerateLabel(options, "Font")
@@ -287,7 +285,7 @@ function QLOpenMenu(refresh)
 
     local bgcolor, buttoncolor = options:Add("DColorMixer"), options:Add("DColorMixer")
     Derma_Install_Convar_Functions(bgcolor)
-    bgcolor:DockPadding(0, lcont:GetWide() * 0.05, 0, 0)
+    -- bgcolor:DockPadding(0, lcont:GetWide() * 0.05, 0, 0)
     bgcolor:SetConVar("quickloadout_ui_color_bg")
     bgcolor:SetColor(ColorAlpha(col_bg, 128))
     bgcolor:SetAlphaBar(false)
@@ -296,7 +294,7 @@ function QLOpenMenu(refresh)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
     Derma_Install_Convar_Functions(buttoncolor)
-    buttoncolor:DockPadding(0, lcont:GetWide() * 0.05, 0, 0)
+    -- buttoncolor:DockPadding(0, lcont:GetWide() * 0.05, 0, 0)
     buttoncolor:SetConVar("quickloadout_ui_color_button")
     buttoncolor:SetColor(ColorAlpha(col_hl, 128))
     buttoncolor:SetAlphaBar(false)
@@ -305,7 +303,7 @@ function QLOpenMenu(refresh)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
     for k, v in ipairs(options:GetChildren()) do
-        v:DockMargin(lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, lcont:GetWide() * 0.05, 0)
+        -- v:DockMargin(lcont:GetWide() * 0.05, 0, lcont:GetWide() * 0.05, 0)
     end
 
     local function ResetMenu()
