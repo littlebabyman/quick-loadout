@@ -331,7 +331,10 @@ function QLOpenMenu(refresh)
             buttonclicked = false
             img:SetImage(TestImage(ptable[1], img), "vgui/null")
             rcont:Hide()
-            button:SetToggle(false)
+            for key, val in ipairs(weplist:GetChildren()) do
+                val:SetToggle(false)
+            end
+            button:SetToggle(true)
         end
         for k, _ in SortedPairs(wtable) do
             cat = GenerateLabel(category, k, nil, image)
@@ -340,7 +343,11 @@ function QLOpenMenu(refresh)
                 surface.PlaySound("garrysmod/ui_return.wav")
                 img:SetImage("vgui/null", "vgui/null")
                 rcont:Hide()
-                button:SetToggle(false)
+                for key, val in ipairs(weplist:GetChildren()) do
+                    print(key, val)
+                    val:SetToggle(false)
+                end
+                button:SetToggle(true)
             end
             cat.DoClick = function()
                 subcat2:Clear()
@@ -422,11 +429,11 @@ function QLOpenMenu(refresh)
             rscroller:GetVBar():SetScroll(0)
             subcat2:Hide()
             subcat:Hide()
-            slot:SetToggle(true)
             WepSelector(slot, i, image, mainmenu)
-            for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
+            for k, button in ipairs(weplist:GetChildren()) do
                 button:SetToggle(false)
             end
+            slot:SetToggle(true)
             category:Show()
         end
         slot.DoRightClick = function()
@@ -446,11 +453,11 @@ function QLOpenMenu(refresh)
         rscroller:GetVBar():SetScroll(0)
         subcat2:Hide()
         subcat:Hide()
-        slot:SetToggle(true)
         WepSelector(slot, #ptable + 1, image, mainmenu)
-        for k, button in ipairs(weplist:GetChild(0):GetChildren()) do
+        for k, button in ipairs(weplist:GetChildren()) do
             button:SetToggle(false)
         end
+        slot:SetToggle(true)
         category:Show()
     end
     slot.DoRightClick = function()
