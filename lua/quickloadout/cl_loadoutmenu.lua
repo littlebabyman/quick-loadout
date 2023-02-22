@@ -300,9 +300,6 @@ function QLOpenMenu(refresh)
     bgcolor:SetAlphaBar(false)
     bgcolor:SetConVar("quickloadout_ui_color_bg")
     bgcolor:SetColor(ColorAlpha(col_bg, 128))
-    bgcolor.OnMouseReleased = function(self, key)
-        
-    end
     bgcolor.Think = function(self)
         col_bg = ColorAlpha(self:GetColor(), 64)
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
