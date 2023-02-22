@@ -103,12 +103,17 @@ local function GenerateLabel(frame, name, index, panel)
             end
             surface.DrawRect(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), x - math.max(button:GetWide() * 0.02, 1), y - math.max(button:GetWide() * 0.01, 1))
         end
-        button.DoClickInternal = function(self)
-            surface.PlaySound("garrysmod/ui_click.wav")
-        end
         button.OnCursorEntered = function(self)
+            if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
             panel:SetImage(TestImage(index, panel), "vgui/null")
+        end
+        button.OnToggled = function(self, state)
+            if state then
+                surface.PlaySound("garrysmod/ui_click.wav")
+            else
+                surface.PlaySound("garrysmod/ui_return.wav")
+            end
         end
     end
     return button
@@ -223,14 +228,10 @@ function QLOpenMenu(refresh)
         image:SetImage("vgui/null", "vgui/null")
     end
 
-    local closer = GenerateLabel(lcont, "Close", nil, lcont)
+    local closer = GenerateLabel(lcont, "Close", nil, image)
     closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
     closer.DoClickInternal = function(self)
         CloseMenu()
-        surface.PlaySound("garrysmod/ui_return.wav")
-    end
-    closer.OnCursorEntered = function(self)
-        surface.PlaySound("garrysmod/ui_hover.wav")
     end
     mainmenu.OnCursorEntered = function()
         if buttonclicked then return end
@@ -243,26 +244,18 @@ function QLOpenMenu(refresh)
     options:SetY(lcont:GetWide() * 0.2)
     options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
 
-    local optbut = GenerateLabel(lcont, "Options", collapse, lcont)
+    local optbut = GenerateLabel(lcont, "Options", collapse, image)
     optbut:SetY(lcont:GetWide() * 0.05)
-    optbut.DoClickInternal = function() end
-    optbut.OnCursorEntered = function(self)
-        surface.PlaySound("garrysmod/ui_hover.wav")
-    end
-    optbut.OnToggled = function(self, state)
-        if state then
-            surface.PlaySound("garrysmod/ui_click.wav")
-        else
-            surface.PlaySound("garrysmod/ui_return.wav")
-        end
-        options:SetVisible(state)
-        weplist:SetVisible(!state)
-        toptext:SetVisible(!state)
+    optbut.DoClickInternal = function(self)
+        options:SetVisible(!self:GetToggle())
+        weplist:SetVisible(self:GetToggle())
+        toptext:SetVisible(self:GetToggle())
     end
 
     local enable = options:Add("DCheckBoxLabel")
     enable:SetConVar("quickloadout_enable_client")
     enable:SetText("Enable loadout")
+    enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
     enable:SetValue(enabled:GetBool())
     enable:SetFont("quickloadout_font_small")
     enable:SetTall(options:GetWide() * 0.125)
@@ -271,30 +264,35 @@ function QLOpenMenu(refresh)
     local enablecat = options:Add("DCheckBoxLabel")
     enablecat:SetConVar("quickloadout_showcategory")
     enablecat:SetText("Show categories")
+    enablecat:SetTooltip("Toggles whether your equipped weapons should or should not show their weapon category underneath them.")
     enablecat:SetValue(showcat:GetBool())
     enablecat:SetFont("quickloadout_font_small")
     enablecat:SetWrap(true)
 
     local fontpanel = options:Add("EditablePanel")
+    fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
     local fonttext, fontfield = GenerateLabel(fontpanel, "Font"), fontpanel:Add("DTextEntry")
     fonttext:SetFontInternal("quickloadout_font_small")
     fonttext:SetWrap(false)
     fonttext:SetSize(fonttext:GetTextSize())
     fonttext:SetTextInset(0, 0)
-    fonttext:DockMargin(options:GetWide() * 0.025 + 16, 0, options:GetWide() * 0.025, options:GetWide() * 0.025)
+    fonttext:DockMargin(0, 0, options:GetWide() * 0.025, options:GetWide() * 0.025)
     fonttext:Dock(LEFT)
     fontfield:SetConVar("quickloadout_ui_font")
     fontfield:AllowInput(true)
-    fontfield:SetTall(fonttext:GetTall())
-    fontfield:Dock(TOP)
+    fontfield:Dock(FILL)
 
     local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
     colortext:SetFontInternal("quickloadout_font_small")
-    colortext:SetTextInset(options:GetWide() * 0.025 + 16, 0)
+    colortext:SetTextInset(0, 0)
+    for k, v in ipairs(options:GetChildren()) do
+        v:DockMargin(options:GetWide() * 0.025, 0, 0, options:GetWide() * 0.025)
+    end
     local bgcolor, buttoncolor = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
     Derma_Install_Convar_Functions(bgcolor)
     bgsheet:SetFontInternal("quickloadout_font_small")
     bgsheet:SetTall(math.max(options:GetWide() * 0.8, 240))
+    bgsheet:DockMargin(0, 0, 0, options:GetWide() * 0.025)
     bgsheet:AddSheet("Background", bgcolor, "icon16/script_palette.png")
     bgsheet:AddSheet("Buttons", buttoncolor, "icon16/style_edit.png")
     bgcolor:SetAlphaBar(false)
@@ -317,9 +315,6 @@ function QLOpenMenu(refresh)
     enablecat:SetSize(options:GetWide(), fonty)
     fontpanel:SetSize(options:GetWide(), fonty)
     colortext:SetSize(options:GetWide(), fonty)
-    for k, v in ipairs(options:GetChildren()) do
-        v:DockMargin(0, 0, 0, options:GetWide() * 0.025)
-    end
 
     local function ResetMenu()
         newloadout = true
@@ -331,73 +326,77 @@ function QLOpenMenu(refresh)
         local icon = img:GetImage()
         local cancel = GenerateLabel(category, "x Cancel", collapse, image)
         cancel.DoClickInternal = function(self)
-            surface.PlaySound("garrysmod/ui_return.wav")
-            buttonclicked = false
-            img:SetImage(TestImage(ptable[1], img), "vgui/null")
-            rcont:Hide()
+            self:SetToggle(true)
             button:SetToggle(false)
+            buttonclicked = button:GetToggle()
+            rcont:Hide()
+            img:SetImage("vgui/null", "vgui/null")
         end
         for k, _ in SortedPairs(wtable) do
-            cat = GenerateLabel(category, k, nil, image)
-            cat.DoRightClick = function()
-                buttonclicked = false
-                surface.PlaySound("garrysmod/ui_return.wav")
-                img:SetImage("vgui/null", "vgui/null")
-                rcont:Hide()
-                for key, val in ipairs(weplist:GetChildren()) do
-                    val:SetToggle(false)
-                end
+            local button1 = GenerateLabel(category, k, nil, image)
+            button1.DoRightClick = function(self)
+                self:SetToggle(true)
+                self:Toggle()
                 button:SetToggle(false)
+                buttonclicked = button:GetToggle()
+                rcont:Hide()
+                img:SetImage("vgui/null", "vgui/null")
             end
-            cat.DoClick = function()
+            button1.DoClickInternal = function()
                 subcat2:Clear()
                 subcat:Clear()
                 category:Hide()
                 subcat:Show()
-                local catbut = GenerateLabel(subcat, "< Categories", collapse, image)
-                catbut.DoClickInternal = function(self)
-                    surface.PlaySound("garrysmod/ui_return.wav")
+                local cancel1 = GenerateLabel(subcat, "< Categories", collapse, image)
+                cancel1.DoClickInternal = function(self)
+                    self:SetToggle(true)
+                    button1:SetToggle(false)
                     category:Show()
                     img:SetImage(icon, "vgui/null")
                     subcat:Hide()
                 end
                 for i, v in SortedPairs(_) do
-                    subbutton = GenerateLabel(subcat, i, v, image)
-                    subbutton.DoRightClick = function()
-                        surface.PlaySound("garrysmod/ui_return.wav")
-                        img:SetImage(icon, "vgui/null")
+                    local button2 = GenerateLabel(subcat, i, v, image)
+                    button2.DoRightClick = function(self)
+                        self:SetToggle(true)
+                        self:Toggle()
+                        button1:SetToggle(false)
                         category:Show()
                         subcat:Hide()
+                        img:SetImage(icon, "vgui/null")
                     end
                     local temptbl = v
                     if istable(temptbl) then
-                        subbutton.DoClick = function()
+                        button2.DoClickInternal = function()
                             subcat:Hide()
                             subcat2:Clear()
                             subcat2:Show()
-                            local catbut2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
-                            catbut2.DoClickInternal = function(self)
-                                surface.PlaySound("garrysmod/ui_return.wav")
-                                img:SetImage(icon, "vgui/null")
+                            local cancel2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
+                            cancel2.DoClickInternal = function(self)
+                                self:SetToggle(true)
+                                button2:SetToggle(false)
                                 subcat:Show()
                                 subcat2:Hide()
+                                img:SetImage(icon, "vgui/null")
                             end
                             for i, v in SortedPairs(temptbl) do
-                                subbutton2 = GenerateLabel(subcat2, i, v, image)
-                                subbutton2.DoRightClick = function()
-                                    surface.PlaySound("garrysmod/ui_return.wav")
-                                    img:SetImage(icon, "vgui/null")
+                                local button3 = GenerateLabel(subcat2, i, v, image)
+                                button3.DoRightClick = function(self)
+                                    button2:SetToggle(false)
+                                    self:SetToggle(true)
+                                    self:Toggle()
                                     subcat:Show()
                                     subcat2:Hide()
+                                    img:SetImage(icon, "vgui/null")
                                 end
-                                subbutton2.DoClick = function()
+                                button3.DoClickInternal = function(self)
                                     table.Merge(ptable, {[index] = v})
                                     ResetMenu()
                                 end
                             end
                         end
                     else
-                        subbutton.DoClick = function()
+                        button2.DoClickInternal = function()
                             table.Merge(ptable, {[index] = v})
                             ResetMenu()
                         end
@@ -421,8 +420,7 @@ function QLOpenMenu(refresh)
             else return "Weapon N/A!\n" .. v end
         end
         local slot = GenerateLabel(weplist, QuickName(), v, image)
-        slot.DoClick = function()
-            buttonclicked = true
+        slot.DoClickInternal = function(self)
             image:SetImage(TestImage(v, image), "vgui/null")
             rcont:Show()
             category:Clear()
@@ -430,14 +428,17 @@ function QLOpenMenu(refresh)
             subcat2:Hide()
             subcat:Hide()
             WepSelector(slot, i, image, mainmenu)
-            for k, button in ipairs(weplist:GetChildren()) do
-                button:SetToggle(false)
+            if self:GetToggle() then
+                rcont:Hide()
+            else
+                for k, button in ipairs(weplist:GetChildren()) do
+                    button:SetToggle(false)
+                end
+                category:Show()
             end
-            slot:SetToggle(true)
-            category:Show()
+            buttonclicked = self:GetToggle()
         end
-        slot.DoRightClick = function()
-            surface.PlaySound("garrysmod/ui_return.wav")
+        slot.DoRightClick = function(self)
             subcat2:Hide()
             subcat:Hide()
             category:Hide()
@@ -445,8 +446,7 @@ function QLOpenMenu(refresh)
         end
     end
     local slot = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-    slot.DoClick = function()
-        buttonclicked = true
+    slot.DoClickInternal = function(self)
         image:SetImage("vgui/null", "vgui/null")
         rcont:Show()
         category:Clear()
@@ -454,14 +454,17 @@ function QLOpenMenu(refresh)
         subcat2:Hide()
         subcat:Hide()
         WepSelector(slot, #ptable + 1, image, mainmenu)
-        for k, button in ipairs(weplist:GetChildren()) do
-            button:SetToggle(false)
+        if self:GetToggle() then
+            rcont:Hide()
+        else
+            for k, button in ipairs(weplist:GetChildren()) do
+                button:SetToggle(false)
+            end
+            category:Show()
         end
-        slot:SetToggle(true)
-        category:Show()
+        buttonclicked = self:GetToggle()
     end
-    slot.DoRightClick = function()
-        surface.PlaySound("garrysmod/ui_return.wav")
+    slot.DoRightClick = function(self)
         subcat2:Hide()
         subcat:Hide()
         category:Hide()
