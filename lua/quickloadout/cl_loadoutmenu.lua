@@ -334,7 +334,6 @@ function QLOpenMenu(refresh)
             for key, val in ipairs(weplist:GetChildren()) do
                 val:SetToggle(false)
             end
-            button:SetToggle(true)
         end
         for k, _ in SortedPairs(wtable) do
             cat = GenerateLabel(category, k, nil, image)
@@ -344,10 +343,8 @@ function QLOpenMenu(refresh)
                 img:SetImage("vgui/null", "vgui/null")
                 rcont:Hide()
                 for key, val in ipairs(weplist:GetChildren()) do
-                    print(key, val)
                     val:SetToggle(false)
                 end
-                button:SetToggle(true)
             end
             cat.DoClick = function()
                 subcat2:Clear()
