@@ -329,7 +329,7 @@ function QLOpenMenu(refresh)
         cancel.DoClickInternal = function(self)
             self:SetToggle(true)
             button:SetToggle(false)
-            buttonclicked = button:GetToggle()
+            buttonclicked = false
             rcont:Hide()
             img:SetImage("vgui/null", "vgui/null")
         end
@@ -339,7 +339,7 @@ function QLOpenMenu(refresh)
                 self:SetToggle(true)
                 self:Toggle()
                 button:SetToggle(false)
-                buttonclicked = button:GetToggle()
+                buttonclicked = false
                 rcont:Hide()
                 img:SetImage("vgui/null", "vgui/null")
             end
@@ -437,9 +437,11 @@ function QLOpenMenu(refresh)
                 end
                 category:Show()
             end
-            buttonclicked = self:GetToggle()
+            buttonclicked = true
         end
         slot.DoRightClick = function(self)
+            self:SetToggle(true)
+            self:Toggle()
             subcat2:Hide()
             subcat:Hide()
             category:Hide()
@@ -463,13 +465,7 @@ function QLOpenMenu(refresh)
             end
             category:Show()
         end
-        buttonclicked = self:GetToggle()
-    end
-    slot.DoRightClick = function(self)
-        subcat2:Hide()
-        subcat:Hide()
-        category:Hide()
-        WepEjector(slot, #ptable + 1, nil)
+        buttonclicked = true
     end
 end
 
