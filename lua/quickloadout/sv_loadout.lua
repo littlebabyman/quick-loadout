@@ -1,5 +1,5 @@
 local enabled = GetConVar("quickloadout_enable")
-local override = GetConVar("quickloadout_override")
+local default = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_switchtime")
 local timestop = GetConVar("quickloadout_switchtime_override")
@@ -43,7 +43,7 @@ end)
 function QuickLoadout(ply)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
-    if !override:GetBool() or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
+    if default:GetInt() >= 1 or (default:GetInt() <= -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
         if !maxslots:GetBool() or maxslots:GetInt() >= k then
             ply:Give(v)

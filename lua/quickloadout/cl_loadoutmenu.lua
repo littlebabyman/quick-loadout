@@ -4,8 +4,8 @@ local ptable = {}
 table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
-local enabled = GetConVar("quickloadout_enable_client")
 local fontbig, fontsmall = GetConVar("quickloadout_ui_font"), GetConVar("quickloadout_ui_font_small")
+local lastgiven = 0
 
 -- local enabled = GetConVar("quickloadout_enable")
 -- local override = GetConVar("quickloadout_override")
@@ -120,6 +120,8 @@ local function GenerateLabel(frame, name, index, panel)
 end
 
 local function NetworkLoadout()
+    if CurTime() < lastgiven + 10 then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "You're sending loadouts too quick! Calm down.") return end
+    lastgiven = CurTime()
     net.Start("quickloadout")
     net.SendToServer()
 end
@@ -132,7 +134,7 @@ local closing = false
 function QLOpenMenu(refresh)
     if closing then return end
     local newloadout = refresh or false
-
+    local function Refresh() newloadout = true end
     local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
@@ -148,6 +150,7 @@ function QLOpenMenu(refresh)
     end
     mainmenu:Show()
     mainmenu:MakePopup()
+
     local function CloseMenu()
         closing = true
         mainmenu:SetKeyboardInputEnabled(false)
@@ -158,6 +161,7 @@ function QLOpenMenu(refresh)
             mainmenu:Remove()
             if !newloadout then return end
             weaponlist:SetString(table.concat(ptable, ", "))
+            NetworkLoadout()
         end)
     end
 
@@ -257,10 +261,19 @@ function QLOpenMenu(refresh)
     enable:SetConVar("quickloadout_enable_client")
     enable:SetText("Enable loadout")
     enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
-    enable:SetValue(enabled:GetBool())
     enable:SetFont("quickloadout_font_small")
     enable:SetTall(options:GetWide() * 0.125)
     enable:SetWrap(true)
+    enable.OnChange = Refresh
+
+    local default = options:Add("DCheckBoxLabel")
+    default:SetConVar("quickloadout_default_client")
+    default:SetText("Give Sandbox loadout")
+    default:SetTooltip("Toggles default sandbox loadout on or off.")
+    default:SetFont("quickloadout_font_small")
+    default:SetTall(options:GetWide() * 0.125)
+    default:SetWrap(true)
+    default.OnChange = Refresh
 
     local enablecat = options:Add("DCheckBoxLabel")
     enablecat:SetConVar("quickloadout_showcategory")
@@ -318,7 +331,7 @@ function QLOpenMenu(refresh)
     colortext:SetSize(options:GetWide(), fonty)
 
     local function ResetMenu()
-        newloadout = true
+        Refresh()
         QLOpenMenu(newloadout)
         mainmenu:Remove()
     end
@@ -510,15 +523,19 @@ else
 end
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
-cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
-cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
+-- cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
+-- cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
 
 hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Options", "Loadout", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
         panel:Help("Server settings")
         panel:CheckBox("Enable quick loadouts", "quickloadout_enable")
         panel:ControlHelp("Globally enables quick loadout on server.")
-        panel:CheckBox("Override default loadout", "quickloadout_override")
+        local default = panel:ComboBox("Allow default loadout", "quickloadout_default")
+        default:SetSortItems(false)
+        default:AddChoice("User-defined", -1)
+        default:AddChoice("Disabled", 0)
+        default:AddChoice("Enabled", 1)
         panel:ControlHelp("Forcibly removes other weapons players spawn with.")
         panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 600, 0)
         panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.")
