@@ -264,7 +264,8 @@ function QLOpenMenu(change)
     enable:SetFont("quickloadout_font_small")
     enable:SetTall(options:GetWide() * 0.125)
     enable:SetWrap(true)
-    enable.OnChange = function(self)
+    enable.Button.Toggle = function(self)
+        self:SetValue( !self:GetChecked() )
         RefreshLoadout()
     end
 
@@ -275,7 +276,8 @@ function QLOpenMenu(change)
     default:SetFont("quickloadout_font_small")
     default:SetTall(options:GetWide() * 0.125)
     default:SetWrap(true)
-    default.OnChange = function(self)
+    default.Button.Toggle = function(self)
+        self:SetValue( !self:GetChecked() )
         RefreshLoadout()
     end
 
