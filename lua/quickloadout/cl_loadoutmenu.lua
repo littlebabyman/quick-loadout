@@ -231,6 +231,7 @@ function QLOpenMenu(refresh)
     local closer = GenerateLabel(lcont, "Close", nil, image)
     closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
     closer.DoClickInternal = function(self)
+        self:SetToggle(true)
         CloseMenu()
     end
     mainmenu.OnCursorEntered = function()
