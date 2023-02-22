@@ -133,9 +133,9 @@ function QLOpenMenu(refresh)
     mainmenu:SetSize(ScrW(), ScrH())
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
-        surface.DrawRect(0,0, y * 0.5, y)
+        surface.DrawRect(0,0, (x - y) * 0.25, y)
         surface.SetMaterial(Material("vgui/gradient-l"))
-        surface.DrawTexturedRect(y * 0.5, 0, y, y)
+        surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
     end
     if !newloadout then
         mainmenu:SetX(-mainmenu:GetWide())
