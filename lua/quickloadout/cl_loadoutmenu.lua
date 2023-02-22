@@ -131,10 +131,10 @@ net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTE
 local wtable = {}
 local closing = false
 
-function QLOpenMenu(refresh)
+function QLOpenMenu(change)
     if closing then return end
-    local newloadout = refresh or false
-    local function Refresh() newloadout = true end
+    local newloadout = change or false
+    local function RefreshLoadout() newloadout = true end
     local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
@@ -264,7 +264,9 @@ function QLOpenMenu(refresh)
     enable:SetFont("quickloadout_font_small")
     enable:SetTall(options:GetWide() * 0.125)
     enable:SetWrap(true)
-    enable.OnChange = Refresh
+    enable.OnChange = function(self)
+        RefreshLoadout()
+    end
 
     local default = options:Add("DCheckBoxLabel")
     default:SetConVar("quickloadout_default_client")
@@ -273,7 +275,9 @@ function QLOpenMenu(refresh)
     default:SetFont("quickloadout_font_small")
     default:SetTall(options:GetWide() * 0.125)
     default:SetWrap(true)
-    default.OnChange = Refresh
+    default.OnChange = function(self)
+        RefreshLoadout()
+    end
 
     local enablecat = options:Add("DCheckBoxLabel")
     enablecat:SetConVar("quickloadout_showcategory")
@@ -331,7 +335,7 @@ function QLOpenMenu(refresh)
     colortext:SetSize(options:GetWide(), fonty)
 
     local function ResetMenu()
-        Refresh()
+        RefreshLoadout()
         QLOpenMenu(newloadout)
         mainmenu:Remove()
     end
@@ -551,9 +555,9 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         binder:Dock(TOP)
         binder:CenterHorizontal()
         binder:SetText(string.upper(keybind:GetString() or "none"))
-        function binder:OnChange(key)
+        binder.OnChange = function(self, key)
             keybind:SetString(input.GetKeyName(key))
-            binder:SetText(string.upper(input.GetKeyName(key) or "none"))
+            self:SetText(string.upper(input.GetKeyName(key) or "none"))
         end
     end)
 end)
