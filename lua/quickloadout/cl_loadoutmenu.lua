@@ -480,7 +480,6 @@ function QLOpenMenu(change)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
         WepSelector(newwep, #ptable+1, image)
-        PrintTable(ptable)
     end
 
     CreateWeaponButtons()
