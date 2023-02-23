@@ -357,7 +357,7 @@ function QLOpenMenu(change)
             else return list.Get("Weapon")[name].PrintName or name end
         else return "Weapon N/A!\n" .. name end
     end
-
+    -- my god this is awful but IT WORKS FLAWLESSLY??
     local function CreateWeaponButtons()
         rcont:Hide()
         weplist:Clear()
