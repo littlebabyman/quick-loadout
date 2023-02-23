@@ -128,11 +128,11 @@ end
 net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
 
 local wtable = {}
-local closing = false
+local open = false
 
-function QLOpenMenu(change)
-    if closing then return end
-    local newloadout = change or false
+function QLOpenMenu()
+    if open then return else open = true end
+    local newloadout = false
     local function RefreshLoadout()
         newloadout = true
     end
@@ -145,20 +145,17 @@ function QLOpenMenu(change)
         surface.SetMaterial(Material("vgui/gradient-l"))
         surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
     end
-    if !newloadout then
-        mainmenu:SetX(-mainmenu:GetWide())
-        mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
-    end
+    mainmenu:SetX(-mainmenu:GetWide())
+    mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
     mainmenu:Show()
     mainmenu:MakePopup()
 
     local function CloseMenu()
-        closing = true
         mainmenu:SetKeyboardInputEnabled(false)
         mainmenu:SetMouseInputEnabled(false)
         mainmenu:MoveTo(-mainmenu:GetWide(), 0, 0.25, 0, 1.5)
         timer.Simple(0.25, function()
-            closing = false
+            open = false
             mainmenu:Remove()
             if !newloadout then return end
             weaponlist:SetString(table.concat(ptable, ", "))
@@ -167,7 +164,7 @@ function QLOpenMenu(change)
     end
 
     function mainmenu:OnKeyCodePressed(key)
-        if key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
+        if input.IsKeyDown(input.GetKeyCode(keybind:GetString())) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
             CloseMenu()
         end
     end
@@ -521,7 +518,7 @@ if game.SinglePlayer() then
     net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
 else
     hook.Add("PlayerButtonDown", "QuickLoadoutBind", function(ply, key)
-        if key == input.GetKeyCode(keybind:GetString()) and !input.LookupBinding("quickloadout_menu") and IsFirstTimePredicted() then QLOpenMenu() end
+        if input.IsKeyDown(input.GetKeyCode(keybind:GetString())) and !input.LookupBinding("quickloadout_menu") and IsFirstTimePredicted() then QLOpenMenu() end
     end)
 end
 
@@ -550,6 +547,7 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         panel:Help("Loadout window bind")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
         local binder = vgui.Create("DBinder", panel)
+        -- binder:SetConVar("quickloadout_key")
         binder:DockMargin(60,10,60,10)
         binder:Dock(TOP)
         binder:CenterHorizontal()
