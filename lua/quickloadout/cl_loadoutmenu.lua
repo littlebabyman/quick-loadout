@@ -54,7 +54,7 @@ hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, Cr
 
 local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
-    category:SetName(name)
+    if name then category:SetName(name) end
     category:SetZPos(2)
     category:SetSize(frame:GetWide(), frame:GetTall())
     return category
@@ -231,11 +231,11 @@ function QLOpenMenu()
     rbar.btnGrip.Paint = function(self, x, y)
         draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
     end
-    local weplist = GenerateCategory(lscroller, qlweplist)
+    local weplist = GenerateCategory(lscroller)
     weplist:MakeDroppable("quickloadoutarrange", false)
-    local category = GenerateCategory(rscroller, qlcategory)
-    -- local subcat = GenerateCategory(rscroller)
-    -- local subcat2 = GenerateCategory(rscroller)
+    local category1 = GenerateCategory(rscroller, "x Cancel")
+    local category2 = GenerateCategory(rscroller, "< Categories")
+    local category3 = GenerateCategory(rscroller, "< Subcategories")
     local image = mainmenu:Add("DImage")
     image:SetImage("vgui/null", "vgui/null")
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
@@ -260,7 +260,7 @@ function QLOpenMenu()
         image:SetImage("vgui/null", "vgui/null")
     end
 
-    local options = GenerateCategory(lcont, qloptions)
+    local options = GenerateCategory(lcont)
     options:SetVisible(false)
     options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
     options:SetY(lcont:GetWide() * 0.2)
@@ -361,35 +361,40 @@ function QLOpenMenu()
         else return "Weapon N/A!\n" .. name end
     end
 
+    local function TheCats(cat)
+        if cat == category1 then return category2 else return category3 end
+    end
+
     local function CreateWeaponButtons() -- my god this is awful but IT WORKS FLAWLESSLY?? -- it's a lot better now i think :)
         local icon = image:GetImage()
 
         local function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
             cat:Clear()
-            local cancel = GenerateLabel(cat, "< " .. cat:GetName(), collapse, image)
+            local cancel = GenerateLabel(cat, cat:GetName(), collapse, image)
             cancel.DoClickInternal = function(self)
+                cat:Hide()
                 self:SetToggle(true)
                 parent:SetToggle(false)
                 parent:GetParent():Show()
-                if cat == category then rcont:Hide() else cat:Remove() end
                 image:SetImage(icon, "vgui/null")
+                if cat == category1 then cont:GetParent():Hide() end
             end
             for i, v in SortedPairs(tbl) do
                 local button = GenerateLabel(cat, i, v, image)
                 button.DoRightClick = cancel.DoClickInternal
                 button.DoClickInternal = function()
                     if istable(v) then
+                        PopulateCategory(button, v, cont, TheCats(cat), slot)
                         cat:Hide()
-                        local subcat = GenerateCategory(cont, i)
-                        PopulateCategory(button, v, cont, subcat, slot)
                     else
                         table.Merge(ptable, {[slot] = v})
+                        cat:Clear()
                         CreateWeaponButtons()
-                        cat:Remove()
                         RefreshLoadout()
                     end
                 end
             end
+            cat:Show()
         end
 
         rcont:Hide()
@@ -400,14 +405,17 @@ function QLOpenMenu()
                 image:SetImage(TestImage(button:GetName(), image), "vgui/null")
                 rcont:Show()
                 rscroller:GetVBar():SetScroll(0)
-                PopulateCategory(button, wtable, rscroller, category, index)
+                category1:Hide()
+                category2:Hide()
+                category3:Hide()
+                PopulateCategory(button, wtable, rscroller, category1, index)
                 if button:GetToggle() then
                     rcont:Hide()
                 else
                     for k, v in ipairs(weplist:GetChildren()) do
                         v:SetToggle(false)
                     end
-                    category:Show()
+                    category1:Show()
                 end
                 buttonclicked = true
             end
