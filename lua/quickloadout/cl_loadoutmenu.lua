@@ -361,47 +361,43 @@ function QLOpenMenu()
         else return "Weapon N/A!\n" .. name end
     end
 
-    local function RefreshCategory(cont, cat)
-        for k, v in ipairs(cont:GetChildren()) do
-            v:Hide()
-        end
-        -- cat:Clear()
-        -- cat:Show()
+    local function RefreshCategory(button, cat)
+        cat:Clear()
+        cat:Show()
     end
 
     local function CreateWeaponButtons() -- my god this is awful but IT WORKS FLAWLESSLY??
+        local icon = image:GetImage()
         local function PopulateCategory(parent, tbl, cont, cat, slot) -- todo automated container refresh
-            RefreshCategory(cont, cat)
-            cat:Show()
-            print(cat)
-            local cancel = GenerateLabel(cat, "< " .. cont:GetName(), collapse, image)
+            RefreshCategory(parent, cat)
+            -- cat:Show()
+            local cancel = GenerateLabel(cat, "< " .. cat:GetName(), collapse, image)
             cancel.DoClickInternal = function(self)
+                cat:Hide()
                 self:SetToggle(true)
                 parent:SetToggle(false)
-                RefreshCategory(cont, parent:GetParent())
+                parent:GetParent():Show()
+                RefreshCategory(parent, cat)
                 image:SetImage(icon, "vgui/null")
             end
-            -- PrintTable(tbl)
             for i, v in SortedPairs(tbl) do
                 local button = GenerateLabel(cat, i, v, image)
                 button.DoRightClick = function(self)
+                    cat:Hide()
                     self:SetToggle(true)
                     self:Toggle()
                     parent:SetToggle(false)
-                    RefreshCategory(cont, parent:GetParent())
                     parent:GetParent():Show()
+                    RefreshCategory(parent, cat)
                     image:SetImage(icon, "vgui/null")
                 end
                 if istable(v) then
-                    print(i)
-                    -- PrintTable(v)
                     button.DoClickInternal = function()
                         local subcat = GenerateCategory(cont, i)
-                        PrintTable(subcat)
                         PopulateCategory(button, v, cont, subcat, slot)
+                        cat:Hide()
                     end
                 else
-                    -- print(v)
                     button.DoClickInternal = function()
                         table.Merge(ptable, {[slot] = v})
                         CreateWeaponButtons()
@@ -413,16 +409,15 @@ function QLOpenMenu()
 
         rcont:Hide()
         weplist:Clear()
-        local function WepSelector(button, index, img)
+        local function WepSelector(button, index)
             button.DoClickInternal = function()
                 image:SetImage(TestImage(button:GetName(), image), "vgui/null")
                 rcont:Show()
+                rscroller:GetVBar():SetScroll(0)
                 PopulateCategory(button, wtable, rscroller, category, index)
                 --[[category:Clear()
-                rbar:SetScroll(0)
                 subcat2:Hide()
                 subcat:Hide()
-                local icon = img:GetImage()
                 local cancel = GenerateLabel(category, "< Back", collapse, image)
                 cancel.DoClickInternal = function(self)
                     self:SetToggle(true)
@@ -508,8 +503,8 @@ function QLOpenMenu()
                 if button:GetToggle() then
                     rcont:Hide()
                 else
-                    for k, b in ipairs(weplist:GetChildren()) do
-                        b:SetToggle(false)
+                    for k, v in ipairs(weplist:GetChildren()) do
+                        v:SetToggle(false)
                     end
                     category:Show()
                 end
@@ -521,9 +516,9 @@ function QLOpenMenu()
                 -- subcat2:Hide()
                 -- subcat:Hide()
                 -- category:Hide()
-                for k, v in ipairs(rscroller:GetChildren()) do
-                    v:Hide()
-                end
+                -- for k, v in ipairs(rscroller:GetChildren()) do
+                --     v:Hide()
+                -- end
                 if index > #ptable then return end
                 table.remove(ptable, index)
                 CreateWeaponButtons()
@@ -532,10 +527,10 @@ function QLOpenMenu()
         end
         for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(v), v, image)
-            WepSelector(button, i, image)
+            WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-        WepSelector(newwep, #ptable+1, image)
+        WepSelector(newwep, #ptable+1)
     end
 
     CreateWeaponButtons()
