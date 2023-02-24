@@ -190,7 +190,7 @@ function QLOpenMenu()
     end
 
     if table.IsEmpty(wtable) then
-        -- print("Generating weapon table...")
+        print("Generating weapon table...")
         GenerateWeaponTable()
     end
 
