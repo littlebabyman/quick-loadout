@@ -52,8 +52,9 @@ cvars.AddChangeCallback("quickloadout_ui_font", function() timer.Simple(0, Creat
 cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
-local function GenerateCategory(frame)
+local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
+    category:SetName(name)
     category:SetZPos(2)
     category:SetSize(frame:GetWide(), frame:GetTall())
     return category
@@ -189,7 +190,7 @@ function QLOpenMenu()
     end
 
     if table.IsEmpty(wtable) then
-        print("Generating weapon table...")
+        -- print("Generating weapon table...")
         GenerateWeaponTable()
     end
 
@@ -230,11 +231,11 @@ function QLOpenMenu()
     rbar.btnGrip.Paint = function(self, x, y)
         draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
     end
-    local weplist = GenerateCategory(lscroller)
+    local weplist = GenerateCategory(lscroller, qlweplist)
     weplist:MakeDroppable("quickloadoutarrange", false)
-    local category = GenerateCategory(rscroller)
-    local subcat = GenerateCategory(rscroller)
-    local subcat2 = GenerateCategory(rscroller)
+    local category = GenerateCategory(rscroller, qlcategory)
+    -- local subcat = GenerateCategory(rscroller)
+    -- local subcat2 = GenerateCategory(rscroller)
     local image = mainmenu:Add("DImage")
     image:SetImage("vgui/null", "vgui/null")
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
@@ -259,7 +260,7 @@ function QLOpenMenu()
         image:SetImage("vgui/null", "vgui/null")
     end
 
-    local options = GenerateCategory(lcont)
+    local options = GenerateCategory(lcont, qloptions)
     options:SetVisible(false)
     options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
     options:SetY(lcont:GetWide() * 0.2)
@@ -359,106 +360,52 @@ function QLOpenMenu()
             else return list.Get("Weapon")[name].PrintName or name end
         else return "Weapon N/A!\n" .. name end
     end
-    -- my god this is awful but IT WORKS FLAWLESSLY??
-    local function CreateWeaponButtons()
+
+    local function CreateWeaponButtons() -- my god this is awful but IT WORKS FLAWLESSLY?? -- it's a lot better now i think :)
+        local icon = image:GetImage()
+
+        local function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
+            cat:Clear()
+            local cancel = GenerateLabel(cat, "< " .. cat:GetName(), collapse, image)
+            cancel.DoClickInternal = function(self)
+                self:SetToggle(true)
+                parent:SetToggle(false)
+                parent:GetParent():Show()
+                if cat == category then rcont:Hide() else cat:Remove() end
+                image:SetImage(icon, "vgui/null")
+            end
+            for i, v in SortedPairs(tbl) do
+                local button = GenerateLabel(cat, i, v, image)
+                button.DoRightClick = cancel.DoClickInternal
+                button.DoClickInternal = function()
+                    if istable(v) then
+                        cat:Hide()
+                        local subcat = GenerateCategory(cont, i)
+                        PopulateCategory(button, v, cont, subcat, slot)
+                    else
+                        table.Merge(ptable, {[slot] = v})
+                        CreateWeaponButtons()
+                        cat:Remove()
+                        RefreshLoadout()
+                    end
+                end
+            end
+        end
+
         rcont:Hide()
         weplist:Clear()
-        local function WepSelector(button, index, img)
+
+        local function WepSelector(button, index)
             button.DoClickInternal = function()
                 image:SetImage(TestImage(button:GetName(), image), "vgui/null")
                 rcont:Show()
-                category:Clear()
-                rbar:SetScroll(0)
-                subcat2:Hide()
-                subcat:Hide()
-                local icon = img:GetImage()
-                local cancel = GenerateLabel(category, "x Cancel", collapse, image)
-                cancel.DoClickInternal = function(self)
-                    self:SetToggle(true)
-                    button:SetToggle(false)
-                    buttonclicked = false
-                    rcont:Hide()
-                    img:SetImage("vgui/null", "vgui/null")
-                end
-                for k, _ in SortedPairs(wtable) do
-                    local button1 = GenerateLabel(category, k, nil, image)
-                    button1.DoRightClick = function(self)
-                        self:SetToggle(true)
-                        self:Toggle()
-                        button:SetToggle(false)
-                        buttonclicked = false
-                        rcont:Hide()
-                        img:SetImage("vgui/null", "vgui/null")
-                    end
-                    button1.DoClickInternal = function()
-                        subcat2:Clear()
-                        subcat:Clear()
-                        category:Hide()
-                        subcat:Show()
-                        local cancel1 = GenerateLabel(subcat, "< Categories", collapse, image)
-                        cancel1.DoClickInternal = function(self)
-                            self:SetToggle(true)
-                            button1:SetToggle(false)
-                            category:Show()
-                            img:SetImage(icon, "vgui/null")
-                            subcat:Hide()
-                        end
-                        for i, v in SortedPairs(_) do
-                            local button2 = GenerateLabel(subcat, i, v, image)
-                            button2.DoRightClick = function(self)
-                                self:SetToggle(true)
-                                self:Toggle()
-                                button1:SetToggle(false)
-                                category:Show()
-                                subcat:Hide()
-                                img:SetImage(icon, "vgui/null")
-                            end
-                            local temptbl = v
-                            if istable(temptbl) then
-                                button2.DoClickInternal = function()
-                                    subcat:Hide()
-                                    subcat2:Clear()
-                                    subcat2:Show()
-                                    local cancel2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
-                                    cancel2.DoClickInternal = function(self)
-                                        self:SetToggle(true)
-                                        button2:SetToggle(false)
-                                        subcat:Show()
-                                        subcat2:Hide()
-                                        img:SetImage(icon, "vgui/null")
-                                    end
-                                    for i, v in SortedPairs(temptbl) do
-                                        local button3 = GenerateLabel(subcat2, i, v, image)
-                                        button3.DoRightClick = function(self)
-                                            button2:SetToggle(false)
-                                            self:SetToggle(true)
-                                            self:Toggle()
-                                            subcat:Show()
-                                            subcat2:Hide()
-                                            img:SetImage(icon, "vgui/null")
-                                        end
-                                        button3.DoClickInternal = function(self)
-                                            table.Merge(ptable, {[index] = v})
-                                            CreateWeaponButtons()
-                                            RefreshLoadout()
-                                        end
-                                    end
-                                end
-                            else
-                                button2.DoClickInternal = function()
-                                    table.Merge(ptable, {[index] = v})
-                                    CreateWeaponButtons()
-                                    RefreshLoadout()
-                                end
-                            end
-                        end
-                    end
-                end
+                rscroller:GetVBar():SetScroll(0)
+                PopulateCategory(button, wtable, rscroller, category, index)
                 if button:GetToggle() then
                     rcont:Hide()
                 else
-                    for k, b in ipairs(weplist:GetChildren()) do
-                        b:SetToggle(false)
+                    for k, v in ipairs(weplist:GetChildren()) do
+                        v:SetToggle(false)
                     end
                     category:Show()
                 end
@@ -467,9 +414,6 @@ function QLOpenMenu()
             button.DoRightClick = function(self)
                 self:SetToggle(true)
                 self:Toggle()
-                subcat2:Hide()
-                subcat:Hide()
-                category:Hide()
                 if index > #ptable then return end
                 table.remove(ptable, index)
                 CreateWeaponButtons()
@@ -478,10 +422,10 @@ function QLOpenMenu()
         end
         for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(v), v, image)
-            WepSelector(button, i, image)
+            WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-        WepSelector(newwep, #ptable+1, image)
+        WepSelector(newwep, #ptable+1)
     end
 
     CreateWeaponButtons()
