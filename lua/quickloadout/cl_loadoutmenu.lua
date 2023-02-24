@@ -380,17 +380,23 @@ function QLOpenMenu()
                 if cat == category1 then cont:GetParent():Hide() end
             end
             for i, v in SortedPairs(tbl) do
-                local button = GenerateLabel(cat, i, v, image)
-                button.DoRightClick = cancel.DoClickInternal
-                button.DoClickInternal = function()
-                    if istable(v) then
-                        PopulateCategory(button, v, cont, TheCats(cat), slot)
-                        cat:Hide()
-                    else
-                        table.Merge(ptable, {[slot] = v})
-                        cat:Clear()
-                        CreateWeaponButtons()
-                        RefreshLoadout()
+                if !(table.HasValue(ptable, v) and !ptable[slot]) then
+                    local button = GenerateLabel(cat, i, v, image)
+                    button.DoRightClick = cancel.DoClickInternal
+                    button.DoClickInternal = function()
+                        if istable(v) then
+                            PopulateCategory(button, v, cont, TheCats(cat), slot)
+                            cat:Hide()
+                        else
+                            if table.HasValue(ptable, v) and ptable[slot] then
+                                table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
+                            end
+                            table.Merge(ptable, {[slot] = v})
+                            cat:Clear()
+                            CreateWeaponButtons()
+                            RefreshLoadout()
+                            PrintTable(ptable)
+                        end
                     end
                 end
             end
@@ -426,6 +432,7 @@ function QLOpenMenu()
                 table.remove(ptable, index)
                 CreateWeaponButtons()
                 RefreshLoadout()
+                PrintTable(ptable)
             end
         end
         for i, v in ipairs(ptable) do
