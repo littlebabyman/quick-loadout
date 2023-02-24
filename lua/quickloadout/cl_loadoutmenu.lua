@@ -130,6 +130,25 @@ net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTE
 local wtable = {}
 local open = false
 
+local function GenerateWeaponTable()
+    for k, v in SortedPairs(list.Get( "Weapon" )) do
+        if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
+            local reftable = weapons.Get(k)
+            if !wtable[v.Category] then
+                wtable[v.Category] = {}
+            end
+            if reftable and reftable.SubCategory then
+                if !wtable[v.Category][reftable.SubCategory] then
+                    wtable[v.Category][reftable.SubCategory] = {}
+                end
+                table.Merge(wtable[v.Category][reftable.SubCategory], {[v.PrintName or v.ClassName] = v.ClassName})
+            else
+                table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
+            end
+        end
+    end
+end
+
 function QLOpenMenu()
     if open then return else open = true end
     local newloadout = false
@@ -170,22 +189,8 @@ function QLOpenMenu()
     end
 
     if table.IsEmpty(wtable) then
-        for k, v in SortedPairs(list.Get( "Weapon" )) do
-            if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
-                local reftable = weapons.Get(k)
-                if !wtable[v.Category] then
-                    wtable[v.Category] = {}
-                end
-                if reftable and reftable.SubCategory then
-                    if !wtable[v.Category][reftable.SubCategory] then
-                        wtable[v.Category][reftable.SubCategory] = {}
-                    end
-                    table.Merge(wtable[v.Category][reftable.SubCategory], {[v.PrintName or v.ClassName] = v.ClassName})
-                else
-                    table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
-                end
-            end
-        end
+        print("Generating weapon table...")
+        GenerateWeaponTable()
     end
 
     table.RemoveByValue(ptable, "")
@@ -483,22 +488,7 @@ function QLOpenMenu()
 end
 
 hook.Add("InitPostEntity", "QuickLoadoutInit", function()
-    for k, v in SortedPairs(list.Get( "Weapon" )) do
-        if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
-            local reftable = weapons.Get(k)
-            if !wtable[v.Category] then
-                wtable[v.Category] = {}
-            end
-            if reftable and reftable.SubCategory then
-                if !wtable[v.Category][reftable.SubCategory] then
-                    wtable[v.Category][reftable.SubCategory] = {}
-                end
-                table.Merge(wtable[v.Category][reftable.SubCategory], {[v.PrintName or v.ClassName] = v.ClassName})
-            else
-                table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
-            end
-        end
-    end
+    GenerateWeaponTable()
     if game.SinglePlayer() then
         net.Start("QLSPHack")
         net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
