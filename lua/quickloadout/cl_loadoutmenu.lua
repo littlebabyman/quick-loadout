@@ -361,46 +361,31 @@ function QLOpenMenu()
         else return "Weapon N/A!\n" .. name end
     end
 
-    local function RefreshCategory(button, cat)
-        cat:Clear()
-        cat:Show()
-    end
-
-    local function CreateWeaponButtons() -- my god this is awful but IT WORKS FLAWLESSLY??
+    local function CreateWeaponButtons() -- my god this is awful but IT WORKS FLAWLESSLY?? -- it's a lot better now i think :)
         local icon = image:GetImage()
-        local function PopulateCategory(parent, tbl, cont, cat, slot) -- todo automated container refresh
-            RefreshCategory(parent, cat)
-            -- cat:Show()
+
+        local function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
+            cat:Clear()
             local cancel = GenerateLabel(cat, "< " .. cat:GetName(), collapse, image)
             cancel.DoClickInternal = function(self)
-                cat:Hide()
                 self:SetToggle(true)
                 parent:SetToggle(false)
                 parent:GetParent():Show()
-                RefreshCategory(parent, cat)
+                if cat == category then rcont:Hide() else cat:Remove() end
                 image:SetImage(icon, "vgui/null")
             end
             for i, v in SortedPairs(tbl) do
                 local button = GenerateLabel(cat, i, v, image)
-                button.DoRightClick = function(self)
-                    cat:Hide()
-                    self:SetToggle(true)
-                    self:Toggle()
-                    parent:SetToggle(false)
-                    parent:GetParent():Show()
-                    RefreshCategory(parent, cat)
-                    image:SetImage(icon, "vgui/null")
-                end
-                if istable(v) then
-                    button.DoClickInternal = function()
+                button.DoRightClick = cancel.DoClickInternal
+                button.DoClickInternal = function()
+                    if istable(v) then
+                        cat:Hide()
                         local subcat = GenerateCategory(cont, i)
                         PopulateCategory(button, v, cont, subcat, slot)
-                        cat:Hide()
-                    end
-                else
-                    button.DoClickInternal = function()
+                    else
                         table.Merge(ptable, {[slot] = v})
                         CreateWeaponButtons()
+                        cat:Remove()
                         RefreshLoadout()
                     end
                 end
@@ -409,97 +394,13 @@ function QLOpenMenu()
 
         rcont:Hide()
         weplist:Clear()
+
         local function WepSelector(button, index)
             button.DoClickInternal = function()
                 image:SetImage(TestImage(button:GetName(), image), "vgui/null")
                 rcont:Show()
                 rscroller:GetVBar():SetScroll(0)
                 PopulateCategory(button, wtable, rscroller, category, index)
-                --[[category:Clear()
-                subcat2:Hide()
-                subcat:Hide()
-                local cancel = GenerateLabel(category, "< Back", collapse, image)
-                cancel.DoClickInternal = function(self)
-                    self:SetToggle(true)
-                    button:SetToggle(false)
-                    buttonclicked = false
-                    rcont:Hide()
-                    img:SetImage("vgui/null", "vgui/null")
-                end
-                for k, _ in SortedPairs(wtable) do
-                    local button1 = GenerateLabel(category, k, nil, image)
-                    button1.DoRightClick = function(self)
-                        self:SetToggle(true)
-                        self:Toggle()
-                        button:SetToggle(false)
-                        buttonclicked = false
-                        rcont:Hide()
-                        img:SetImage("vgui/null", "vgui/null")
-                    end
-                    button1.DoClickInternal = function()
-                        subcat2:Clear()
-                        subcat:Clear()
-                        category:Hide()
-                        subcat:Show()
-                        local cancel1 = GenerateLabel(subcat, "< Categories", collapse, image)
-                        cancel1.DoClickInternal = function(self)
-                            self:SetToggle(true)
-                            button1:SetToggle(false)
-                            category:Show()
-                            img:SetImage(icon, "vgui/null")
-                            subcat:Hide()
-                        end
-                        for i, v in SortedPairs(_) do
-                            local button2 = GenerateLabel(subcat, i, v, image)
-                            button2.DoRightClick = function(self)
-                                self:SetToggle(true)
-                                self:Toggle()
-                                button1:SetToggle(false)
-                                category:Show()
-                                subcat:Hide()
-                                img:SetImage(icon, "vgui/null")
-                            end
-                            local temptbl = v
-                            if istable(temptbl) then
-                                button2.DoClickInternal = function()
-                                    subcat:Hide()
-                                    subcat2:Clear()
-                                    subcat2:Show()
-                                    local cancel2 = GenerateLabel(subcat2, "< Subcategories", collapse, image)
-                                    cancel2.DoClickInternal = function(self)
-                                        self:SetToggle(true)
-                                        button2:SetToggle(false)
-                                        subcat:Show()
-                                        subcat2:Hide()
-                                        img:SetImage(icon, "vgui/null")
-                                    end
-                                    for i, v in SortedPairs(temptbl) do
-                                        local button3 = GenerateLabel(subcat2, i, v, image)
-                                        button3.DoRightClick = function(self)
-                                            button2:SetToggle(false)
-                                            self:SetToggle(true)
-                                            self:Toggle()
-                                            subcat:Show()
-                                            subcat2:Hide()
-                                            img:SetImage(icon, "vgui/null")
-                                        end
-                                        button3.DoClickInternal = function(self)
-                                            table.Merge(ptable, {[index] = v})
-                                            CreateWeaponButtons()
-                                            RefreshLoadout()
-                                        end
-                                    end
-                                end
-                            else
-                                button2.DoClickInternal = function()
-                                    table.Merge(ptable, {[index] = v})
-                                    CreateWeaponButtons()
-                                    RefreshLoadout()
-                                end
-                            end
-                        end
-                    end
-                end]]
                 if button:GetToggle() then
                     rcont:Hide()
                 else
@@ -513,12 +414,6 @@ function QLOpenMenu()
             button.DoRightClick = function(self)
                 self:SetToggle(true)
                 self:Toggle()
-                -- subcat2:Hide()
-                -- subcat:Hide()
-                -- category:Hide()
-                -- for k, v in ipairs(rscroller:GetChildren()) do
-                --     v:Hide()
-                -- end
                 if index > #ptable then return end
                 table.remove(ptable, index)
                 CreateWeaponButtons()
