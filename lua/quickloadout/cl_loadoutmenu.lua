@@ -368,7 +368,8 @@ function QLOpenMenu()
     fontpanel:SetSize(options:GetWide(), fonty)
     colortext:SetSize(options:GetWide(), fonty)
 
-    local function QuickName(name)
+    local function QuickName(dev, name)
+        if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         if list.Get("Weapon")[name] then
             if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
             else return list.Get("Weapon")[name].PrintName or name end
@@ -450,7 +451,7 @@ function QLOpenMenu()
             end
         end
         for i, v in ipairs(ptable) do
-            local button = GenerateLabel(weplist, QuickName(v), v, image)
+            local button = GenerateLabel(weplist, QuickName(i, v), v, image)
             WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)

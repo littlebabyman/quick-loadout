@@ -28,7 +28,7 @@ net.Receive("quickloadout", function(len, ply)
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
     else ply.quickloadout = string.Explode(", ", ply:GetInfo("quickloadout_weapons")) end
     for i, v in ipairs(ply.quickloadout) do
-        if !list.Get("Weapon")[v] or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then timer.Simple(0, function() table.remove(ply.quickloadout, i) end) end
+        if !list.Get("Weapon")[v] or list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin() then timer.Simple(0, function() table.remove(ply.quickloadout, i) end) end
     end
     if (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
