@@ -88,15 +88,16 @@ local function GenerateLabel(frame, name, class, panel)
     end
     surface.SetFont("quickloadout_font_large")
     local text = button:Add("RichText")
-    button:SetFontInternal("quickloadout_font_large")
-    text:Dock(FILL)
-    text:SetText(NameSetup())
-    text:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetName(class)
     button:SetMouseInputEnabled(true)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
     button:SetWrap(true)
     button:SetText("")
+    -- button:SetFontInternal("quickloadout_font_large")
+    text:SetWide(button:GetWide())
+    text:DockMargin(button:GetWide() * 0.05, 0, button:GetWide() * 0.05, 0)
+    text:Dock(FILL)
+    text:SetText(NameSetup())
     button:SizeToContentsY(surface.GetTextSize("."))
     button:SetTextColor(Color(255, 255, 255, 192))
     if ispanel(panel) then
@@ -443,8 +444,10 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index)
-        if showcat:GetBool() then
-            button:AppendText("(" .. list.Get("Weapon")[name].Category .. ")")
+        print(button:GetName(), ptable[index])
+        if showcat:GetBool() and ptable[index] then
+            print(button:GetChild(0))
+            button:GetChild(0):AppendText("\n(" .. list.Get("Weapon")[ptable[index]].Category .. ")")
         end
         button.DoClickInternal = function()
             rcont:Show()
@@ -477,22 +480,22 @@ function QLOpenMenu()
 
     CreateWeaponButtons()
 end
-local function QLSPHack()
+
+hook.Add("InitPostEntity", "QuickLoadoutInit", function()
+    GenerateWeaponTable()
     if game.SinglePlayer() then
         net.Start("QLSPHack")
         net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
         net.SendToServer()
     end
-end
-hook.Add("InitPostEntity", "QuickLoadoutInit", function()
-    GenerateWeaponTable()
-    QLSPHack()
     NetworkLoadout()
 end)
 
 if game.SinglePlayer() then
     cvars.AddChangeCallback("quickloadout_key", function()
-        QLSPHack()
+        net.Start("QLSPHack")
+        net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
+        net.SendToServer()
     end)
     net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
 else
