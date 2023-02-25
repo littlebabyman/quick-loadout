@@ -6,6 +6,7 @@ local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
 local fontbig, fontsmall = GetConVar("quickloadout_ui_font"), GetConVar("quickloadout_ui_font_small")
 local lastgiven = 0
+local buttonclicked = nil
 
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
@@ -16,12 +17,12 @@ local function CreateFonts()
     surface.CreateFont("quickloadout_font_large", {
         font = fontbig:GetString(),
         extended = true,
-        size = ScrH() * 0.04
+        size = ScrH() * 0.04,
     })
     surface.CreateFont("quickloadout_font_small", {
         font = fontbig:GetString(),
         extended = true,
-        size = ScrH() * 0.03
+        size = ScrH() * 0.03,
     })
 end
 
@@ -56,7 +57,7 @@ local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
     if name then category:SetName(name) end
     category:SetZPos(2)
-    category:SetSize(frame:GetWide(), frame:GetTall())
+    category:SetSize(frame:GetParent():GetSize())
     return category
 end
 
@@ -85,17 +86,21 @@ local function GenerateLabel(frame, name, class, panel)
             return name or class
         end
     end
-    local text = NameSetup() or "Uh oh! Broken!"
+    surface.SetFont("quickloadout_font_large")
+    local text = button:Add("RichText")
+    button:SetFontInternal("quickloadout_font_large")
+    text:Dock(FILL)
+    text:SetText(NameSetup())
+    text:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetName(class)
     button:SetMouseInputEnabled(true)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
-    button:SetFontInternal("quickloadout_font_large")
-    button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
-    button:SetAutoStretchVertical(true)
-    button:SetText(text)
+    button:SetText("")
+    button:SizeToContentsY(surface.GetTextSize("."))
     button:SetTextColor(Color(255, 255, 255, 192))
     if ispanel(panel) then
+        button:SetContentAlignment(7)
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
             surface.SetDrawColor(col_but)
@@ -153,6 +158,7 @@ local function GenerateWeaponTable()
 end
 
 function QLOpenMenu()
+    buttonclicked = nil
     if open then return else open = true end
     local newloadout = false
     function RefreshLoadout()
@@ -210,7 +216,6 @@ function QLOpenMenu()
     end
 
     table.RemoveByValue(ptable, "")
-    local buttonclicked = nil
     local lcont, rcont = mainmenu:Add("Panel"), mainmenu:Add("Panel")
     lcont:SetZPos(0)
     lcont.Paint = function(self, x, y)
@@ -219,28 +224,14 @@ function QLOpenMenu()
     end
     lcont:SetSize(height * 0.3, height)
     lcont:SetX((width - height) * 0.25)
+    lcont:DockPadding(0, lcont:GetTall() * 0.1, 0, lcont:GetTall() * 0.1)
     rcont:CopyBase(lcont)
+    rcont:DockPadding(0, lcont:GetTall() * 0.1, 0, lcont:GetTall() * 0.1)
     rcont.Paint = lcont.Paint
     rcont:SetX(lcont:GetPos() + lcont:GetWide() * 1.1)
     rcont:Hide()
     local lscroller, rscroller = lcont:Add("DScrollPanel"), rcont:Add("DScrollPanel")
-    lscroller:SetZPos(1)
-    lscroller:SetSize(lcont:GetWide(), lcont:GetTall() * 0.8)
-    rscroller:CopyBase(lscroller)
-    lscroller:SetHeight(lscroller:GetTall() * 0.9)
-    lscroller:SetY(lcont:GetTall() * 0.1 + lcont:GetWide() * 0.125)
-    rscroller:SetY(lcont:GetTall() * 0.1)
     local lbar, rbar = lscroller:GetVBar(), rscroller:GetVBar()
-    lbar:SetHideButtons(true)
-    rbar:SetHideButtons(true)
-    lbar:SetWide(lcont:GetWide() * 0.05)
-    rbar:SetWide(lcont:GetWide() * 0.05)
-    lbar.Paint = nil
-    rbar.Paint = nil
-    lbar.btnGrip.Paint = function(self, x, y)
-        draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
-    end
-    rbar.btnGrip.Paint = lbar.btnGrip.Paint
     local weplist = GenerateCategory(lscroller)
     weplist:MakeDroppable("quickloadoutarrange", false)
     local category1 = GenerateCategory(rscroller, "x Cancel")
@@ -253,14 +244,29 @@ function QLOpenMenu()
     -- image:SetKeepAspect(true)
 
     local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil)
-    toptext:SetY(lcont:GetTall() * 0.1)
+    toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/null", "vgui/null")
     end
+    lscroller:SetZPos(1)
+    lscroller:DockMargin(0, math.max(lscroller:GetParent():GetWide() * 0.005, 1), 0, math.max(lscroller:GetParent():GetWide() * 0.005, 1))
+    lscroller:Dock(FILL)
+    rscroller:CopyBase(lscroller)
+    rscroller:DockMargin(0, math.max(rscroller:GetParent():GetWide() * 0.005, 1), 0, math.max(rscroller:GetParent():GetWide() * 0.005, 1))
+    lbar:SetHideButtons(true)
+    rbar:SetHideButtons(true)
+    lbar:SetWide(lcont:GetWide() * 0.05)
+    rbar:SetWide(lcont:GetWide() * 0.05)
+    lbar.Paint = nil
+    rbar.Paint = nil
+    lbar.btnGrip.Paint = function(self, x, y)
+        draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
+    end
+    rbar.btnGrip.Paint = lbar.btnGrip.Paint
 
     local closer = GenerateLabel(lcont, "Close", nil, image)
-    closer:SetY(lcont:GetTall() * 0.9 - lcont:GetWide() * 0.13)
+    closer:Dock(BOTTOM)
     closer.DoClickInternal = function(self)
         self:SetToggle(true)
         CloseMenu()
@@ -378,9 +384,10 @@ function QLOpenMenu()
     function QuickName(dev, name)
         if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         if list.Get("Weapon")[name] then
-            if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
-            else return list.Get("Weapon")[name].PrintName or name end
-        else return "Weapon N/A!\n" .. name end
+            return list.Get("Weapon")[name].PrintName or name
+        else
+            return "Weapon N/A!\n" .. name
+        end
     end
 
     function TheCats(cat)
@@ -436,6 +443,9 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index)
+        if showcat:GetBool() then
+            button:AppendText("(" .. list.Get("Weapon")[name].Category .. ")")
+        end
         button.DoClickInternal = function()
             rcont:Show()
             rscroller:GetVBar():SetScroll(0)
@@ -467,24 +477,22 @@ function QLOpenMenu()
 
     CreateWeaponButtons()
 end
-
-hook.Add("InitPostEntity", "QuickLoadoutInit", function()
-    GenerateWeaponTable()
+local function QLSPHack()
     if game.SinglePlayer() then
         net.Start("QLSPHack")
         net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
         net.SendToServer()
     end
+end
+hook.Add("InitPostEntity", "QuickLoadoutInit", function()
+    GenerateWeaponTable()
+    QLSPHack()
     NetworkLoadout()
 end)
 
 if game.SinglePlayer() then
     cvars.AddChangeCallback("quickloadout_key", function()
-        if game.SinglePlayer() then
-            net.Start("QLSPHack")
-            net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
-            net.SendToServer()
-        end
+        QLSPHack()
     end)
     net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
 else
