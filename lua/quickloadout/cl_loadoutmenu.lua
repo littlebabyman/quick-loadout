@@ -395,7 +395,7 @@ function QLOpenMenu()
                             cat:Clear()
                             CreateWeaponButtons()
                             RefreshLoadout()
-                            PrintTable(ptable)
+                            -- PrintTable(ptable)
                         end
                     end
                 end
@@ -432,7 +432,7 @@ function QLOpenMenu()
                 table.remove(ptable, index)
                 CreateWeaponButtons()
                 RefreshLoadout()
-                PrintTable(ptable)
+                -- PrintTable(ptable)
             end
         end
         for i, v in ipairs(ptable) do
