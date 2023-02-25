@@ -26,7 +26,7 @@ end)
 
 net.Receive("quickloadout", function(len, ply)
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
-    else ply.quickloadout = net.ReadTable() end
+    else ply.quickloadout = net.ReadTable() end -- whaddya know this IS more reliable!
     for i, v in ipairs(ply.quickloadout) do
         if !list.Get("Weapon")[v] or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then timer.Simple(0, function() table.remove(ply.quickloadout, i) end) end
     end
@@ -35,11 +35,12 @@ net.Receive("quickloadout", function(len, ply)
         net.Send(ply)
         return
     end
-    hook.Run("PlayerLoadout", ply)
+    timer.Simple(0, function() QuickLoadout(ply) end)
 end)
 
 function QuickLoadout(ply)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
+    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     ply:StripWeapons()
     for k, v in ipairs(ply.quickloadout) do
         if !maxslots:GetBool() or maxslots:GetInt() >= k then
@@ -56,10 +57,9 @@ end
 
 hook.Add("PlayerInitialSpawn", "QuickLoadoutInitTable", function(ply) ply.quickloadout = {} end)
 
-hook.Add("PlayerLoadout", "QuickLoadoutSpawn", function(ply)
+hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)
     ply.qlspawntime = CurTime()
-    QuickLoadout(ply)
-    return default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout)
+    timer.Simple(0, function() QuickLoadout(ply) end)
 end)
 
 hook.Add("KeyPress", "QuickLoadoutCancel", function(ply, key)
