@@ -241,8 +241,11 @@ function QLOpenMenu()
     image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
     image:SetPos((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25 + mainmenu:GetTall() * 0.7, mainmenu:GetTall() * 0.1)
     -- image:SetKeepAspect(true)
+    local function GetMaxSlots()
+        if maxslots:GetBool() then return " (Max " .. maxslots:GetInt() .. ")" else return "" end
+    end
 
-    local toptext = GenerateLabel(lcont, "Loadout", nil)
+    local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil)
     toptext:SetY(lcont:GetTall() * 0.1)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
