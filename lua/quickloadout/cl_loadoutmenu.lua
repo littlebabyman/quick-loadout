@@ -86,18 +86,15 @@ local function GenerateLabel(frame, name, class, panel)
             return name or class
         end
     end
+    local text = NameSetup() or "Uh oh! Broken!"
     surface.SetFont("quickloadout_font_large")
-    local text = button:Add("RichText")
     button:SetName(class)
     button:SetMouseInputEnabled(true)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
+    button:SetFontInternal("quickloadout_font_large")
+    button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
-    button:SetText("")
-    -- button:SetFontInternal("quickloadout_font_large")
-    text:SetWide(button:GetWide())
-    text:DockMargin(button:GetWide() * 0.05, 0, button:GetWide() * 0.05, 0)
-    text:Dock(FILL)
-    text:SetText(NameSetup())
+    button:SetText(text)
     button:SizeToContentsY(surface.GetTextSize("."))
     button:SetTextColor(Color(255, 255, 255, 192))
     if ispanel(panel) then
@@ -385,10 +382,9 @@ function QLOpenMenu()
     function QuickName(dev, name)
         if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         if list.Get("Weapon")[name] then
-            return list.Get("Weapon")[name].PrintName or name
-        else
-            return "Weapon N/A!\n" .. name
-        end
+            if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
+            else return list.Get("Weapon")[name].PrintName or name end
+        else return "Weapon N/A!\n" .. name end
     end
 
     function TheCats(cat)
@@ -444,11 +440,6 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index)
-        print(button:GetName(), ptable[index])
-        if showcat:GetBool() and ptable[index] then
-            print(button:GetChild(0))
-            button:GetChild(0):AppendText("\n(" .. list.Get("Weapon")[ptable[index]].Category .. ")")
-        end
         button.DoClickInternal = function()
             rcont:Show()
             rscroller:GetVBar():SetScroll(0)
@@ -493,9 +484,11 @@ end)
 
 if game.SinglePlayer() then
     cvars.AddChangeCallback("quickloadout_key", function()
-        net.Start("QLSPHack")
-        net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
-        net.SendToServer()
+        if game.SinglePlayer() then
+            net.Start("QLSPHack")
+            net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
+            net.SendToServer()
+        end
     end)
     net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
 else
