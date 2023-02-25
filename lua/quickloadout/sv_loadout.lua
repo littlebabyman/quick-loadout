@@ -40,8 +40,8 @@ end)
 
 function QuickLoadout(ply)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
-    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     ply:StripWeapons()
+    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
         if !maxslots:GetBool() or maxslots:GetInt() >= k then
             if k == 1 and weapons.Get(v) and weapons.Get(v).ARC9 then ply:PrintMessage(HUD_PRINTCENTER, "ARC9 SWEP prevented from crashing the game. Please don't set it as your first weapon!") v = "weapon_stunstick" end
