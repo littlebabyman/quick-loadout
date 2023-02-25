@@ -7,8 +7,8 @@ local showcat = GetConVar("quickloadout_showcategory")
 local fontbig, fontsmall = GetConVar("quickloadout_ui_font"), GetConVar("quickloadout_ui_font_small")
 local lastgiven = 0
 
--- local enabled = GetConVar("quickloadout_enable")
--- local override = GetConVar("quickloadout_override")
+local enabled = GetConVar("quickloadout_enable")
+local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 -- local time = GetConVar("quickloadout_switchtime")
 
@@ -277,28 +277,42 @@ function QLOpenMenu()
         toptext:SetVisible(self:GetToggle())
     end
 
-    local enable = options:Add("DCheckBoxLabel")
-    enable:SetConVar("quickloadout_enable_client")
-    enable:SetText("Enable loadout")
-    enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
-    enable:SetFont("quickloadout_font_small")
-    enable:SetTall(options:GetWide() * 0.125)
-    enable:SetWrap(true)
-    enable.Button.Toggle = function(self)
-        self:SetValue( !self:GetChecked() )
-        RefreshLoadout()
+    if enabled:GetBool() then
+        local enable = options:Add("DCheckBoxLabel")
+        enable:SetConVar("quickloadout_enable_client")
+        enable:SetText("Enable loadout")
+        enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
+        enable:SetFont("quickloadout_font_small")
+        enable:SetTall(options:GetWide() * 0.125)
+        enable:SetWrap(true)
+        enable.Button.Toggle = function(self)
+            self:SetValue( !self:GetChecked() )
+            RefreshLoadout()
+        end
+    else
+        local enable = GenerateLabel(options, "Loadouts are disabled.")
+        enable:SetTextInset(0, 0)
+        enable:SetFont("quickloadout_font_small")
     end
+    
+    local function DefaultEnabled() if override:GetBool() then return "Default loadout is on." else return "Default loadout is off." end end
 
-    local default = options:Add("DCheckBoxLabel")
-    default:SetConVar("quickloadout_default_client")
-    default:SetText("Give default loadout")
-    default:SetTooltip("Toggles default sandbox loadout on or off.")
-    default:SetFont("quickloadout_font_small")
-    default:SetTall(options:GetWide() * 0.125)
-    default:SetWrap(true)
-    default.Button.Toggle = function(self)
-        self:SetValue( !self:GetChecked() )
-        RefreshLoadout()
+    if override:GetInt() == -1 then
+        local default = options:Add("DCheckBoxLabel")
+        default:SetConVar("quickloadout_default_client")
+        default:SetText("Give default loadout")
+        default:SetTooltip("Toggles default sandbox loadout on or off.")
+        default:SetFont("quickloadout_font_small")
+        default:SetTall(options:GetWide() * 0.125)
+        default:SetWrap(true)
+        default.Button.Toggle = function(self)
+            self:SetValue( !self:GetChecked() )
+            RefreshLoadout()
+        end
+    else
+        local default = GenerateLabel(options, DefaultEnabled())
+        default:SetTextInset(0, 0)
+        default:SetFont("quickloadout_font_small")
     end
 
     local enablecat = options:Add("DCheckBoxLabel")
@@ -351,11 +365,8 @@ function QLOpenMenu()
         self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
     end
     local fontx, fonty = fonttext:GetTextSize()
-    enable:SetSize(options:GetWide(), fonty)
-    enablecat:SetSize(options:GetWide(), fonty)
     fontpanel:SetSize(options:GetWide(), fonty)
     colortext:SetSize(options:GetWide(), fonty)
-
 
     local function QuickName(name)
         if list.Get("Weapon")[name] then
