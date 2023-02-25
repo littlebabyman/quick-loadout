@@ -53,7 +53,7 @@ function QuickLoadout(ply)
     if ConVarExists("holsterweapon_weapon") then
         ply:Give(hwep)
     end
-    print("Given weapons!")
+    -- print("Given weapons!")
     -- PrintTable(ply.quickloadout)
 end
 

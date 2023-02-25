@@ -10,7 +10,7 @@ local lastgiven = 0
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
--- local time = GetConVar("quickloadout_switchtime")
+local time = GetConVar("quickloadout_switchtime")
 
 local function CreateFonts()
     surface.CreateFont("quickloadout_font_large", {
@@ -277,12 +277,12 @@ function QLOpenMenu()
         toptext:SetVisible(self:GetToggle())
     end
 
+    local enable
     if enabled:GetBool() then
-        local enable = options:Add("DCheckBoxLabel")
+        enable = options:Add("DCheckBoxLabel")
         enable:SetConVar("quickloadout_enable_client")
         enable:SetText("Enable loadout")
         enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
-        enable:SetFont("quickloadout_font_small")
         enable:SetTall(options:GetWide() * 0.125)
         enable:SetWrap(true)
         enable.Button.Toggle = function(self)
@@ -290,19 +290,19 @@ function QLOpenMenu()
             RefreshLoadout()
         end
     else
-        local enable = GenerateLabel(options, "Loadouts are disabled.")
+        enable = GenerateLabel(options, "Loadouts are disabled.")
         enable:SetTextInset(0, 0)
-        enable:SetFont("quickloadout_font_small")
     end
+    enable:SetFont("quickloadout_font_small")
     
     local function DefaultEnabled() if override:GetBool() then return "Default loadout is on." else return "Default loadout is off." end end
 
+    local default
     if override:GetInt() == -1 then
-        local default = options:Add("DCheckBoxLabel")
+        default = options:Add("DCheckBoxLabel")
         default:SetConVar("quickloadout_default_client")
         default:SetText("Give default loadout")
         default:SetTooltip("Toggles default sandbox loadout on or off.")
-        default:SetFont("quickloadout_font_small")
         default:SetTall(options:GetWide() * 0.125)
         default:SetWrap(true)
         default.Button.Toggle = function(self)
@@ -310,10 +310,10 @@ function QLOpenMenu()
             RefreshLoadout()
         end
     else
-        local default = GenerateLabel(options, DefaultEnabled())
+        default = GenerateLabel(options, DefaultEnabled())
         default:SetTextInset(0, 0)
-        default:SetFont("quickloadout_font_small")
     end
+    default:SetFont("quickloadout_font_small")
 
     local enablecat = options:Add("DCheckBoxLabel")
     enablecat:SetConVar("quickloadout_showcategory")
@@ -455,6 +455,10 @@ function QLOpenMenu()
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
         WepSelector(newwep, #ptable+1)
+    end
+    enablecat.Button.Toggle = function(self)
+        self:SetValue( !self:GetChecked() )
+        timer.Simple(0, CreateWeaponButtons)
     end
 
     CreateWeaponButtons()
