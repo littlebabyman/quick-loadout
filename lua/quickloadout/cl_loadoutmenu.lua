@@ -27,13 +27,13 @@ end
 
 local function RefreshColors()
     local cvar_bg, cvar_but = string.ToColor(GetConVar("quickloadout_ui_color_bg"):GetString() .. " 69"), string.ToColor(GetConVar("quickloadout_ui_color_button"):GetString() .. " 69")
-    local function LessenBG(color)
+    function LessenBG(color)
         local temptbl = {r = 0, g = 0, b = 0, a = 0}
         for k, v in SortedPairs(color) do
             table.Merge(temptbl, {[k] = math.floor(v * 0.125)})
         end
     return Color(temptbl.r, temptbl.g, temptbl.b) end
-    local function LessenButton(color)
+    function LessenButton(color)
         local temptbl = {r = 0, g = 0, b = 0, a = 0}
         for k, v in SortedPairs(color) do
            table.Merge(temptbl, {[k] = math.floor(v * 0.75)})
@@ -61,15 +61,15 @@ local function GenerateCategory(frame, name)
 end
 
 local function TestImage(item, frame)
-    local image, parent = frame:GetImage(), frame:GetParent()
+    local image, x, y = frame:GetImage(), frame:GetParent():GetSize()
     if !item or istable(item) then return image end
-    frame:SetSize(parent:GetTall() * 0.4, parent:GetTall() * 0.4)
-    frame:SetPos((parent:GetWide() - parent:GetTall()) * 0.25 + parent:GetTall() * 0.7, parent:GetTall() * 0.05)
+    frame:SetSize(y * 0.4, y * 0.4)
+    frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
     if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
     elseif IsValid(weapons.Get(item)) and surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
     elseif file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then
         frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
-        frame:SetPos((parent:GetWide() - parent:GetTall()) * 0.25 + parent:GetTall() * 0.7, parent:GetTall() * 0.15)
+        frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
         return "vgui/hud/" .. item .. ".vmt"
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
     elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
@@ -78,7 +78,7 @@ end
 
 local function GenerateLabel(frame, name, class, panel)
     local button = frame:Add("DLabel")
-    local function NameSetup()
+    function NameSetup()
         if istable(name) then
             return class or name
         else
@@ -94,6 +94,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetWrap(true)
     button:SetAutoStretchVertical(true)
     button:SetText(text)
+    button:SetTextColor(Color(255, 255, 255, 192))
     if ispanel(panel) then
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
@@ -153,27 +154,40 @@ end
 function QLOpenMenu()
     if open then return else open = true end
     local newloadout = false
-    local function RefreshLoadout()
+    function RefreshLoadout()
         newloadout = true
     end
     local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
+    local width, height = mainmenu:GetSize()
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
         surface.DrawRect(0,0, (x - y) * 0.25, y)
         surface.SetMaterial(Material("vgui/gradient-l"))
         surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
     end
-    mainmenu:SetX(-mainmenu:GetWide())
+    mainmenu:SetX(-width)
     mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
     mainmenu:Show()
     mainmenu:MakePopup()
 
-    local function CloseMenu()
+    function DefaultEnabled()
+        if override:GetBool() then
+            return "Default loadout is on."
+        else
+            return "Default loadout is off."
+        end
+    end
+
+    function GetMaxSlots()
+        if maxslots:GetBool() then return " (Max " .. maxslots:GetInt() .. ")" else return "" end
+    end
+
+    function CloseMenu()
         mainmenu:SetKeyboardInputEnabled(false)
         mainmenu:SetMouseInputEnabled(false)
-        mainmenu:MoveTo(-mainmenu:GetWide(), 0, 0.25, 0, 1.5)
+        mainmenu:MoveTo(-width, 0, 0.25, 0, 1.5)
         timer.Simple(0.25, function()
             open = false
             mainmenu:Remove()
@@ -195,42 +209,37 @@ function QLOpenMenu()
     end
 
     table.RemoveByValue(ptable, "")
-    local buttonclicked = false
+    local buttonclicked = nil
     local lcont, rcont = mainmenu:Add("Panel"), mainmenu:Add("Panel")
     lcont:SetZPos(0)
     lcont.Paint = function(self, x, y)
         surface.SetDrawColor(col_col)
         surface.DrawRect(0,0, x, y)
     end
-    lcont:SetSize(mainmenu:GetTall() * 0.3, mainmenu:GetTall())
-    lcont:SetX((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25)
+    lcont:SetSize(height * 0.3, height)
+    lcont:SetX((width - height) * 0.25)
     rcont:CopyBase(lcont)
-    rcont.Paint = function(self, x, y)
-        surface.SetDrawColor(col_col)
-        surface.DrawRect(0,0, x, y)
-    end
+    rcont.Paint = lcont.Paint
     rcont:SetX(lcont:GetPos() + lcont:GetWide() * 1.1)
     rcont:Hide()
     local lscroller, rscroller = lcont:Add("DScrollPanel"), rcont:Add("DScrollPanel")
-    local lbar, rbar = lscroller:GetVBar(), rscroller:GetVBar()
-    lbar:SetHideButtons(true)
-    rbar:SetHideButtons(true)
-    lbar:SetWide(lcont:GetWide() * 0.05)
-    rbar:SetWide(lcont:GetWide() * 0.05)
-    lbar.Paint = function() end
-    rbar.Paint = function() end
     lscroller:SetZPos(1)
     lscroller:SetSize(lcont:GetWide(), lcont:GetTall() * 0.8)
     rscroller:CopyBase(lscroller)
     lscroller:SetHeight(lscroller:GetTall() * 0.9)
     lscroller:SetY(lcont:GetTall() * 0.1 + lcont:GetWide() * 0.125)
     rscroller:SetY(lcont:GetTall() * 0.1)
+    local lbar, rbar = lscroller:GetVBar(), rscroller:GetVBar()
+    lbar:SetHideButtons(true)
+    rbar:SetHideButtons(true)
+    lbar:SetWide(lcont:GetWide() * 0.05)
+    rbar:SetWide(lcont:GetWide() * 0.05)
+    lbar.Paint = nil
+    rbar.Paint = nil
     lbar.btnGrip.Paint = function(self, x, y)
         draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
     end
-    rbar.btnGrip.Paint = function(self, x, y)
-        draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
-    end
+    rbar.btnGrip.Paint = lbar.btnGrip.Paint
     local weplist = GenerateCategory(lscroller)
     weplist:MakeDroppable("quickloadoutarrange", false)
     local category1 = GenerateCategory(rscroller, "x Cancel")
@@ -238,12 +247,9 @@ function QLOpenMenu()
     local category3 = GenerateCategory(rscroller, "< Subcategories")
     local image = mainmenu:Add("DImage")
     image:SetImage("vgui/null", "vgui/null")
-    image:SetSize(mainmenu:GetTall() * 0.4, mainmenu:GetTall() * 0.4)
-    image:SetPos((mainmenu:GetWide() - mainmenu:GetTall()) * 0.25 + mainmenu:GetTall() * 0.7, mainmenu:GetTall() * 0.1)
+    image:SetSize(height * 0.4, height * 0.4)
+    image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
-    local function GetMaxSlots()
-        if maxslots:GetBool() then return " (Max " .. maxslots:GetInt() .. ")" else return "" end
-    end
 
     local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil)
     toptext:SetY(lcont:GetTall() * 0.1)
@@ -258,10 +264,7 @@ function QLOpenMenu()
         self:SetToggle(true)
         CloseMenu()
     end
-    mainmenu.OnCursorEntered = function()
-        if buttonclicked then return end
-        image:SetImage("vgui/null", "vgui/null")
-    end
+    mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
     local options = GenerateCategory(lcont)
     options:SetVisible(false)
@@ -295,8 +298,7 @@ function QLOpenMenu()
     end
     enable:SetFont("quickloadout_font_small")
     
-    local function DefaultEnabled() if override:GetBool() then return "Default loadout is on." else return "Default loadout is off." end end
-
+    
     local default
     if override:GetInt() == -1 then
         default = options:Add("DCheckBoxLabel")
@@ -322,6 +324,10 @@ function QLOpenMenu()
     enablecat:SetValue(showcat:GetBool())
     enablecat:SetFont("quickloadout_font_small")
     enablecat:SetWrap(true)
+    enablecat.Button.Toggle = function(self)
+        self:SetValue( !self:GetChecked() )
+        timer.Simple(0, CreateWeaponButtons)
+    end
 
     local fontpanel = options:Add("EditablePanel")
     fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
@@ -368,7 +374,7 @@ function QLOpenMenu()
     fontpanel:SetSize(options:GetWide(), fonty)
     colortext:SetSize(options:GetWide(), fonty)
 
-    local function QuickName(dev, name)
+    function QuickName(dev, name)
         if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         if list.Get("Weapon")[name] then
             if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
@@ -376,80 +382,15 @@ function QLOpenMenu()
         else return "Weapon N/A!\n" .. name end
     end
 
-    local function TheCats(cat)
+    function TheCats(cat)
         if cat == category1 then return category2 else return category3 end
     end
 
-    local function CreateWeaponButtons() -- my god this is awful but IT WORKS FLAWLESSLY?? -- it's a lot better now i think :)
-        local icon = image:GetImage()
 
-        local function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
-            cat:Clear()
-            local cancel = GenerateLabel(cat, cat:GetName(), collapse, image)
-            cancel.DoClickInternal = function(self)
-                cat:Hide()
-                self:SetToggle(true)
-                parent:SetToggle(false)
-                parent:GetParent():Show()
-                image:SetImage(icon, "vgui/null")
-                if cat == category1 then cont:GetParent():Hide() end
-            end
-            for i, v in SortedPairs(tbl) do
-                if !(table.HasValue(ptable, v) and !ptable[slot]) then
-                    local button = GenerateLabel(cat, i, v, image)
-                    button.DoRightClick = cancel.DoClickInternal
-                    button.DoClickInternal = function()
-                        if istable(v) then
-                            PopulateCategory(button, v, cont, TheCats(cat), slot)
-                            cat:Hide()
-                        else
-                            if table.HasValue(ptable, v) and ptable[slot] then
-                                table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
-                            end
-                            table.Merge(ptable, {[slot] = v})
-                            cat:Clear()
-                            CreateWeaponButtons()
-                            RefreshLoadout()
-                            -- PrintTable(ptable)
-                        end
-                    end
-                end
-            end
-            cat:Show()
-        end
-
+    function CreateWeaponButtons() -- it's a lot better now i think :)
         rcont:Hide()
         weplist:Clear()
 
-        local function WepSelector(button, index)
-            button.DoClickInternal = function()
-                image:SetImage(TestImage(button:GetName(), image), "vgui/null")
-                rcont:Show()
-                rscroller:GetVBar():SetScroll(0)
-                category1:Hide()
-                category2:Hide()
-                category3:Hide()
-                PopulateCategory(button, wtable, rscroller, category1, index)
-                if button:GetToggle() then
-                    rcont:Hide()
-                else
-                    for k, v in ipairs(weplist:GetChildren()) do
-                        v:SetToggle(false)
-                    end
-                    category1:Show()
-                end
-                buttonclicked = true
-            end
-            button.DoRightClick = function(self)
-                self:SetToggle(true)
-                self:Toggle()
-                if index > #ptable then return end
-                table.remove(ptable, index)
-                CreateWeaponButtons()
-                RefreshLoadout()
-                -- PrintTable(ptable)
-            end
-        end
         for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(i, v), v, image)
             WepSelector(button, i)
@@ -457,10 +398,71 @@ function QLOpenMenu()
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
         WepSelector(newwep, #ptable+1)
     end
-    enablecat.Button.Toggle = function(self)
-        self:SetValue( !self:GetChecked() )
-        timer.Simple(0, CreateWeaponButtons)
+
+    function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
+        cat:Clear()
+        local cancel = GenerateLabel(cat, cat:GetName(), collapse, image)
+        cancel.DoClickInternal = function(self)
+            cat:Hide()
+            self:SetToggle(true)
+            parent:SetToggle(false)
+            parent:GetParent():Show()
+            image:SetImage(TestImage(ptable[slot], image), "vgui/null")
+            if cat == category1 then cont:GetParent():Hide() buttonclicked = nil end
+        end
+        for i, v in SortedPairs(tbl) do
+            if !(table.HasValue(ptable, v) and !ptable[slot]) then
+                local button = GenerateLabel(cat, i, v, image)
+                button.DoRightClick = cancel.DoClickInternal
+                button.DoClickInternal = function()
+                    if istable(v) then
+                        PopulateCategory(button, v, cont, TheCats(cat), slot)
+                        cat:Hide()
+                    else
+                        if table.HasValue(ptable, v) and ptable[slot] then
+                            table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
+                        end
+                        table.Merge(ptable, {[slot] = v})
+                        cat:Clear()
+                        CreateWeaponButtons()
+                        RefreshLoadout()
+                        -- PrintTable(ptable)
+                    end
+                end
+            end
+        end
+        cat:Show()
     end
+
+    function WepSelector(button, index)
+        button.DoClickInternal = function()
+            rcont:Show()
+            rscroller:GetVBar():SetScroll(0)
+            category1:Hide()
+            category2:Hide()
+            category3:Hide()
+            PopulateCategory(button, wtable, rscroller, category1, index)
+            if button:GetToggle() then
+                rcont:Hide()
+            else
+                for k, v in ipairs(weplist:GetChildren()) do
+                    v:SetToggle(false)
+                end
+                category1:Show()
+            end
+            buttonclicked = index
+        end
+        button.DoRightClick = function(self)
+            self:SetToggle(true)
+            self:Toggle()
+            if index > #ptable then return end
+            table.remove(ptable, index)
+            CreateWeaponButtons()
+            RefreshLoadout()
+            -- PrintTable(ptable)
+        end
+    end
+
 
     CreateWeaponButtons()
 end
