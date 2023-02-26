@@ -238,7 +238,7 @@ function QLOpenMenu()
     local image = mainmenu:Add("DImage")
     image:SetImage("vgui/null", "vgui/null")
     image:SetSize(height * 0.4, height * 0.4)
-    image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
+    image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.05)
     -- image:SetKeepAspect(true)
 
     local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil)
