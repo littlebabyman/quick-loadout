@@ -30,7 +30,7 @@ net.Receive("quickloadout", function(len, ply)
     for i, v in ipairs(ply.quickloadout) do
         if !list.Get("Weapon")[v] or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then timer.Simple(0, function() table.remove(ply.quickloadout, i) end) end
     end
-    if (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
+    if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
         net.Send(ply)
         return

@@ -203,7 +203,7 @@ function QLOpenMenu()
     end
 
     function mainmenu:OnKeyCodePressed(key)
-        if input.IsKeyDown(input.GetKeyCode(keybind:GetString())) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
+        if input.GetKeyCode(keybind:GetString()) != -1 and input.IsKeyDown(input.GetKeyCode(keybind:GetString())) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
             CloseMenu()
         end
     end
@@ -271,114 +271,118 @@ function QLOpenMenu()
     end
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
-    local options = GenerateCategory(lcont)
-    options:SetVisible(false)
-    options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
-    options:SetY(lcont:GetWide() * 0.2)
-    options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
+    function CreateOptionsMenu()
+        local options = GenerateCategory(lcont)
+        options:SetVisible(false)
+        options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
+        options:SetY(lcont:GetWide() * 0.2)
+        options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
 
-    local optbut = GenerateLabel(lcont, "Options", collapse, image)
-    optbut:SetY(lcont:GetWide() * 0.05)
-    optbut.DoClickInternal = function(self)
-        options:SetVisible(!self:GetToggle())
-        weplist:SetVisible(self:GetToggle())
-        toptext:SetVisible(self:GetToggle())
-    end
-
-    local enable
-    if enabled:GetBool() then
-        enable = options:Add("DCheckBoxLabel")
-        enable:SetConVar("quickloadout_enable_client")
-        enable:SetText("Enable loadout")
-        enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
-        enable:SetTall(options:GetWide() * 0.125)
-        enable:SetWrap(true)
-        enable.Button.Toggle = function(self)
-            self:SetValue( !self:GetChecked() )
-            RefreshLoadout()
+        local optbut = GenerateLabel(lcont, "Options", collapse, image)
+        optbut:SetY(lcont:GetWide() * 0.05)
+        optbut.DoClickInternal = function(self)
+            options:SetVisible(!self:GetToggle())
+            weplist:SetVisible(self:GetToggle())
+            toptext:SetVisible(self:GetToggle())
         end
-    else
-        enable = GenerateLabel(options, "Loadouts are disabled.")
-        enable:SetTextInset(0, 0)
-    end
-    enable:SetFont("quickloadout_font_small")
-    
-    
-    local default
-    if override:GetInt() == -1 then
-        default = options:Add("DCheckBoxLabel")
-        default:SetConVar("quickloadout_default_client")
-        default:SetText("Give default loadout")
-        default:SetTooltip("Toggles default sandbox loadout on or off.")
-        default:SetTall(options:GetWide() * 0.125)
-        default:SetWrap(true)
-        default.Button.Toggle = function(self)
-            self:SetValue( !self:GetChecked() )
-            RefreshLoadout()
+
+        local enable
+        if enabled:GetBool() then
+            enable = options:Add("DCheckBoxLabel")
+            enable:SetConVar("quickloadout_enable_client")
+            enable:SetText("Enable loadout")
+            enable:SetTooltip("Toggles your loadout on or off, without clearing the list.")
+            enable:SetTall(options:GetWide() * 0.125)
+            enable:SetWrap(true)
+            enable.Button.Toggle = function(self)
+                self:SetValue( !self:GetChecked() )
+                RefreshLoadout()
+            end
+        else
+            enable = GenerateLabel(options, "Loadouts are disabled.")
+            enable:SetTextInset(0, 0)
         end
-    else
-        default = GenerateLabel(options, DefaultEnabled())
-        default:SetTextInset(0, 0)
-    end
-    default:SetFont("quickloadout_font_small")
+        enable:SetFont("quickloadout_font_small")
 
-    local enablecat = options:Add("DCheckBoxLabel")
-    enablecat:SetConVar("quickloadout_showcategory")
-    enablecat:SetText("Show categories")
-    enablecat:SetTooltip("Toggles whether your equipped weapons should or should not show their weapon category underneath them.")
-    enablecat:SetValue(showcat:GetBool())
-    enablecat:SetFont("quickloadout_font_small")
-    enablecat:SetWrap(true)
-    enablecat.Button.Toggle = function(self)
-        self:SetValue( !self:GetChecked() )
-        timer.Simple(0, CreateWeaponButtons)
-    end
 
-    local fontpanel = options:Add("EditablePanel")
-    fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
-    local fonttext, fontfield = GenerateLabel(fontpanel, "Font"), fontpanel:Add("DTextEntry")
-    fonttext:SetFontInternal("quickloadout_font_small")
-    fonttext:SetWrap(false)
-    fonttext:SetSize(fonttext:GetTextSize())
-    fonttext:SetTextInset(0, 0)
-    fonttext:DockMargin(0, 0, options:GetWide() * 0.025, options:GetWide() * 0.025)
-    fonttext:Dock(LEFT)
-    fontfield:SetConVar("quickloadout_ui_font")
-    fontfield:AllowInput(true)
-    fontfield:Dock(FILL)
+        local default
+        if override:GetInt() == -1 then
+            default = options:Add("DCheckBoxLabel")
+            default:SetConVar("quickloadout_default_client")
+            default:SetText("Give default loadout")
+            default:SetTooltip("Toggles default sandbox loadout on or off.")
+            default:SetTall(options:GetWide() * 0.125)
+            default:SetWrap(true)
+            default.Button.Toggle = function(self)
+                self:SetValue( !self:GetChecked() )
+                RefreshLoadout()
+            end
+        else
+            default = GenerateLabel(options, DefaultEnabled())
+            default:SetTextInset(0, 0)
+        end
+        default:SetFont("quickloadout_font_small")
 
-    local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
-    colortext:SetFontInternal("quickloadout_font_small")
-    colortext:SetTextInset(0, 0)
-    for k, v in ipairs(options:GetChildren()) do
-        v:DockMargin(options:GetWide() * 0.025, 0, 0, options:GetWide() * 0.025)
-    end
-    local bgcolor, buttoncolor = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
-    Derma_Install_Convar_Functions(bgcolor)
-    bgsheet:SetFontInternal("quickloadout_font_small")
-    bgsheet:SetTall(math.max(options:GetWide() * 0.8, 240))
-    bgsheet:DockMargin(0, 0, 0, options:GetWide() * 0.025)
-    bgsheet:AddSheet("Background", bgcolor, "icon16/script_palette.png")
-    bgsheet:AddSheet("Buttons", buttoncolor, "icon16/style_edit.png")
-    bgcolor:SetAlphaBar(false)
-    bgcolor:SetConVar("quickloadout_ui_color_bg")
-    bgcolor:SetColor(ColorAlpha(col_bg, 128))
-    bgcolor.Think = function(self)
-        col_bg = ColorAlpha(self:GetColor(), 64)
-        self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
-    end
-    Derma_Install_Convar_Functions(buttoncolor)
-    buttoncolor:SetAlphaBar(false)
-    buttoncolor:SetConVar("quickloadout_ui_color_button")
-    buttoncolor:SetColor(ColorAlpha(col_hl, 128))
-    buttoncolor.Think = function(self)
-        col_hl = ColorAlpha(self:GetColor(), 128)
-        self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
-    end
-    local fontx, fonty = fonttext:GetTextSize()
-    fontpanel:SetSize(options:GetWide(), fonty)
-    colortext:SetSize(options:GetWide(), fonty)
+        local enablecat = options:Add("DCheckBoxLabel")
+        enablecat:SetConVar("quickloadout_showcategory")
+        enablecat:SetText("Show categories")
+        enablecat:SetTooltip("Toggles whether your equipped weapons should or should not show their weapon category underneath them.")
+        enablecat:SetValue(showcat:GetBool())
+        enablecat:SetFont("quickloadout_font_small")
+        enablecat:SetWrap(true)
+        enablecat.Button.Toggle = function(self)
+            self:SetValue( !self:GetChecked() )
+            timer.Simple(0, CreateWeaponButtons)
+        end
 
+        local fontpanel = options:Add("EditablePanel")
+        fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
+        local fonttext, fontfield = GenerateLabel(fontpanel, "Font"), fontpanel:Add("DTextEntry")
+        fonttext:SetFontInternal("quickloadout_font_small")
+        fonttext:SizeToContentsX(options:GetWide() * 0.025)
+        -- fonttext:SizeToContentsY(options:GetWide() * 0.025)
+        fonttext:SetTextInset(0, 0)
+        fonttext:DockMargin(0, 0, options:GetWide() * 0.025, 0)
+        fonttext:Dock(LEFT)
+        fontfield:SetConVar("quickloadout_ui_font")
+        fontfield:AllowInput(true)
+        fontfield:Dock(FILL)
+        fontpanel:SetSize(fonttext:GetTextSize())
+
+        local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
+        colortext:SetFontInternal("quickloadout_font_small")
+        colortext:SetTextInset(0, 0)
+        colortext:SizeToContents()
+
+        for k, v in ipairs(options:GetChildren()) do
+            -- v:SizeToContents()
+            v:DockMargin(options:GetWide() * 0.025, options:GetWide() * 0.025, options:GetWide() * 0.025, 0)
+        end
+
+        local bgcolor, buttoncolor = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
+        Derma_Install_Convar_Functions(bgcolor)
+        bgsheet:SetFontInternal("quickloadout_font_small")
+        bgsheet:SetTall(math.max(options:GetWide() * 0.8, 240))
+        bgsheet:DockMargin(0, options:GetWide() * 0.025, 0, 0)
+        bgsheet:AddSheet("Background", bgcolor, "icon16/script_palette.png")
+        bgsheet:AddSheet("Buttons", buttoncolor, "icon16/style_edit.png")
+        bgcolor:SetAlphaBar(false)
+        bgcolor:SetConVar("quickloadout_ui_color_bg")
+        bgcolor:SetColor(ColorAlpha(col_bg, 128))
+        bgcolor.Think = function(self)
+            col_bg = ColorAlpha(self:GetColor(), 64)
+            self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
+        end
+        Derma_Install_Convar_Functions(buttoncolor)
+        buttoncolor:SetAlphaBar(false)
+        buttoncolor:SetConVar("quickloadout_ui_color_button")
+        buttoncolor:SetColor(ColorAlpha(col_hl, 128))
+        buttoncolor.Think = function(self)
+            col_hl = ColorAlpha(self:GetColor(), 128)
+            self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
+        end
+    end
+    CreateOptionsMenu()
     function QuickName(dev, name)
         if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         if list.Get("Weapon")[name] then
@@ -401,7 +405,7 @@ function QLOpenMenu()
             WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-        WepSelector(newwep, #ptable+1)
+        WepSelector(newwep, #ptable + 1)
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
@@ -493,7 +497,7 @@ if game.SinglePlayer() then
     net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
 else
     hook.Add("PlayerButtonDown", "QuickLoadoutBind", function(ply, key)
-        if input.IsKeyDown(input.GetKeyCode(keybind:GetString())) and !input.LookupBinding("quickloadout_menu") and IsFirstTimePredicted() then QLOpenMenu() end
+        if input.GetKeyCode(keybind:GetString()) != -1 and input.IsKeyDown(input.GetKeyCode(keybind:GetString())) and !input.LookupBinding("quickloadout_menu") and IsFirstTimePredicted() then QLOpenMenu() end
     end)
 end
 
@@ -528,8 +532,10 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         binder:CenterHorizontal()
         binder:SetText(string.upper(keybind:GetString() or "none"))
         binder.OnChange = function(self, key)
-            keybind:SetString(input.GetKeyName(key))
-            self:SetText(string.upper(input.GetKeyName(key) or "none"))
+            timer.Simple(0, function()
+                keybind:SetString(input.GetKeyName(key) or "")
+                self:SetText(string.upper(input.GetKeyName(key) or "none"))
+            end)
         end
     end)
 end)
