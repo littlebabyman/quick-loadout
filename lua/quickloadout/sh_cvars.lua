@@ -6,14 +6,13 @@ CreateConVar("quickloadout_switchtime", 15, {FCVAR_ARCHIVE + FCVAR_REPLICATED + 
 CreateConVar("quickloadout_switchtime_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Force grace period off on pressing primary attack.", 0, 1)
 
 if CLIENT then
-    CreateClientConVar("quickloadout_enable_client", 1, true, true, "Enable quick loadout sending.")
-    CreateClientConVar("quickloadout_default_client", 1, true, true, "Request default loadout upon sending it.")
+    CreateClientConVar("quickloadout_enable_client", 1, true, true, "Enable quick loadout sending.", 0, 1)
+    CreateClientConVar("quickloadout_default_client", 1, true, true, "Request default loadout upon sending it.", 0, 1)
     CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes.")
     CreateClientConVar("quickloadout_key", "n", true, false, "Quick loadout keybind.")
     CreateClientConVar("quickloadout_showcategory", 1, true, false, "Show weapon categories on equipped weapons.")
-    CreateClientConVar("quickloadout_ui_font", "Tahoma", true, false, "Large font used in the loadout menu.")
     CreateClientConVar("quickloadout_ui_fonts", "Tahoma", true, false, "Fonts used in the loadout menu.")
-    CreateClientConVar("quickloadout_ui_font_small", "Tahoma", true, false, "Small font used in the loadout menu.")
+    CreateClientConVar("quickloadout_ui_font_scale", 1, true, false, "Overall scale of the fonts.", 0.5, 2)
     CreateClientConVar("quickloadout_ui_color_bg", "0 128 0", true, false, "Base color used for loadout menu background.")
     CreateClientConVar("quickloadout_ui_color_button", "0 128 0", true, false, "Base color used for loadout menu buttons.")
 end

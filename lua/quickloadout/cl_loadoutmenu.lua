@@ -4,7 +4,7 @@ local ptable = {}
 table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
-local fontbig, fontsmall = GetConVar("quickloadout_ui_font"), GetConVar("quickloadout_ui_font_small")
+local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
 local lastgiven = 0
 local buttonclicked = nil
 
@@ -14,15 +14,17 @@ local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_switchtime")
 
 local function CreateFonts()
+    local fonttable = string.Split(fonts:GetString() or {}, ", ")
+    local scale = fontscale:GetFloat()
     surface.CreateFont("quickloadout_font_large", {
-        font = fontbig:GetString(),
+        font = fonttable[1],
         extended = true,
-        size = ScrH() * 0.04,
+        size = ScrH() * scale * 0.04,
     })
     surface.CreateFont("quickloadout_font_small", {
-        font = fontbig:GetString(),
+        font = fonttable[2] or fonttable[1],
         extended = true,
-        size = ScrH() * 0.03,
+        size = ScrH() * scale * 0.03,
     })
 end
 
@@ -49,8 +51,9 @@ local col_bg, col_col, col_but, col_hl = RefreshColors()
 
 cvars.AddChangeCallback("quickloadout_ui_color_bg" , function() col_bg, col_col, col_but, col_hl = RefreshColors() end)
 cvars.AddChangeCallback("quickloadout_ui_color_button", function() col_bg, col_col, col_but, col_hl = RefreshColors() end)
-cvars.AddChangeCallback("quickloadout_ui_font", function() timer.Simple(0, CreateFonts) end)
-cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
+cvars.AddChangeCallback("quickloadout_ui_fonts", function() timer.Simple(0, CreateFonts) end)
+-- cvars.AddChangeCallback("quickloadout_ui_font", function() timer.Simple(0, CreateFonts) end)
+-- cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
 local function GenerateCategory(frame, name)
@@ -95,17 +98,17 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
     button:SetText(text)
-    button:SizeToContentsY(surface.GetTextSize("."))
+    button:SizeToContentsY()
     button:SetTextColor(Color(255, 255, 255, 192))
+    button:DockMargin(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.01, 1))
     if ispanel(panel) then
-        button:SetContentAlignment(7)
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
             surface.SetDrawColor(col_but)
             if button:IsHovered() or button:GetToggle() then
                 surface.SetDrawColor(col_hl)
             end
-            surface.DrawRect(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), x - math.max(button:GetWide() * 0.02, 1), y - math.max(button:GetWide() * 0.01, 1))
+            surface.DrawRect(0 , 0, x, y)
         end
         button.OnCursorEntered = function(self)
             if self:GetToggle() then return end
@@ -271,20 +274,20 @@ function QLOpenMenu()
     end
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
+    local options = GenerateCategory(lcont)
+    options:SetVisible(false)
+    local optbut = GenerateLabel(lcont, "Options", collapse, image)
+    optbut:SetY(lcont:GetWide() * 0.05)
+    optbut.DoClickInternal = function(self)
+        options:SetVisible(!self:GetToggle())
+        weplist:SetVisible(self:GetToggle())
+        toptext:SetVisible(self:GetToggle())
+    end
     function CreateOptionsMenu()
-        local options = GenerateCategory(lcont)
-        options:SetVisible(false)
         options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
         options:SetY(lcont:GetWide() * 0.2)
         options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
 
-        local optbut = GenerateLabel(lcont, "Options", collapse, image)
-        optbut:SetY(lcont:GetWide() * 0.05)
-        optbut.DoClickInternal = function(self)
-            options:SetVisible(!self:GetToggle())
-            weplist:SetVisible(self:GetToggle())
-            toptext:SetVisible(self:GetToggle())
-        end
 
         local enable
         if enabled:GetBool() then
@@ -302,6 +305,7 @@ function QLOpenMenu()
             enable = GenerateLabel(options, "Loadouts are disabled.")
             enable:SetTextInset(0, 0)
         end
+        enable:SetTextColor(Color(255, 255, 255, 192))
         enable:SetFont("quickloadout_font_small")
 
 
@@ -321,6 +325,7 @@ function QLOpenMenu()
             default = GenerateLabel(options, DefaultEnabled())
             default:SetTextInset(0, 0)
         end
+        default:SetTextColor(Color(255, 255, 255, 192))
         default:SetFont("quickloadout_font_small")
 
         local enablecat = options:Add("DCheckBoxLabel")
@@ -330,6 +335,7 @@ function QLOpenMenu()
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
         enablecat:SetWrap(true)
+        enablecat:SetTextColor(Color(255, 255, 255, 192))
         enablecat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
             timer.Simple(0, CreateWeaponButtons)
@@ -337,16 +343,24 @@ function QLOpenMenu()
 
         local fontpanel = options:Add("EditablePanel")
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
-        local fonttext, fontfield = GenerateLabel(fontpanel, "Font"), fontpanel:Add("DTextEntry")
+        local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Font"), fontpanel:Add("DTextEntry") -- , options:Add("DNumSlider")
         fonttext:SetFontInternal("quickloadout_font_small")
-        fonttext:SizeToContentsX(options:GetWide() * 0.025)
-        -- fonttext:SizeToContentsY(options:GetWide() * 0.025)
+        fonttext:SizeToContentsX(options:GetWide() * 0.05)
+        fonttext:SizeToContentsY(options:GetWide() * 0.025)
         fonttext:SetTextInset(0, 0)
         fonttext:DockMargin(0, 0, options:GetWide() * 0.025, 0)
         fonttext:Dock(LEFT)
-        fontfield:SetConVar("quickloadout_ui_font")
+        fonttext:SetTextColor(Color(255, 255, 255, 192))
+        fontfield:SetFont("quickloadout_font_small")
+        fontfield:SetConVar("quickloadout_ui_fonts")
         fontfield:AllowInput(true)
         fontfield:Dock(FILL)
+        -- fontslider.Label:SetFontInternal("quickloadout_font_small")
+        -- fontslider.Label:SetText("Font scale")
+        -- fontslider.Label:SizeToContentsX(options:GetWide() * 0.05)
+        -- fontslider.Label:SizeToContentsY(options:GetWide() * 0.025)
+        -- fontslider:SetConVar("quickloadout_ui_font_scale")
+        -- fontslider:SetMinMax(fontscale:GetMin(), fontscale:GetMax())
         fontpanel:SetSize(fonttext:GetTextSize())
 
         local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
@@ -472,7 +486,6 @@ function QLOpenMenu()
         end
     end
 
-
     CreateWeaponButtons()
 end
 
@@ -516,8 +529,8 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         default:AddChoice("Disabled", 0)
         default:AddChoice("Enabled", 1)
         panel:ControlHelp("Enable gamemode's default loadout.")
-        panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 600, 0)
-        panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.")
+        panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 60, 0)
+        panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
         panel:NumSlider("Maximum weapon slots", "quickloadout_maxslots", 0, 32, 0)
         panel:ControlHelp("Amount of weapons you can have on spawn. Max 32, 0 is infinite.")
         panel:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
