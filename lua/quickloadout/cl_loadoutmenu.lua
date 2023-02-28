@@ -1,7 +1,17 @@
 AddCSLuaFile()
 local weaponlist = GetConVar("quickloadout_weapons")
 local ptable = {}
-table.CopyFromTo(string.Explode(", ", weaponlist:GetString()), ptable)
+
+if string.len(weaponlist:GetString()) > 0 then
+    table.Add(ptable, string.Explode(", ", weaponlist:GetString()))
+else print("it's empty!!! zero!!!") end
+
+if !file.Exists("quickloadout/client_loadouts.json", "DATA") then
+    file.CreateDir("quickloadout")
+    file.Write("quickloadout/client_loadouts.json", util.TableToJSON({["Loadout"] = ptable}))
+end
+
+print(file.Read("quickloadout/client_loadouts.json", "DATA"))
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
