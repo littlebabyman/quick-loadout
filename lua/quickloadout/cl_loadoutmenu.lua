@@ -171,7 +171,7 @@ function QLOpenMenu()
     local width, height = mainmenu:GetSize()
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
-        surface.DrawRect(0,0, (x - y) * 0.25, y)
+        surface.DrawTexturedRect(0,0, (x - y) * 0.25, y)
         surface.SetMaterial(Material("vgui/gradient-l"))
         surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
     end
