@@ -17,13 +17,6 @@ if game.SinglePlayer then
     end)
 end
 
-local hwep = "weaponholster"
-hook.Add("InitPostEntity", "QLHolsterCheck", function()
-    if ConVarExists("holsterweapon_weapon") and list.HasEntry("Weapon", GetConVar("holsterweapon_weapon"):GetString()) then
-        hwep = GetConVar("holsterweapon_weapon"):GetString() or "weaponholster"
-    end
-end)
-
 net.Receive("quickloadout", function(len, ply)
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
     else ply.quickloadout = net.ReadTable() end -- whaddya know this IS more reliable!
@@ -41,14 +34,15 @@ end)
 function QuickLoadout(ply)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
-    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then hook.Run("PlayerLoadout", ply) end
     for k, v in ipairs(ply.quickloadout) do
         if !maxslots:GetBool() or maxslots:GetInt() >= k then
             ply:Give(v)
         end
     end
-    if ConVarExists("holsterweapon_weapon") then
-        ply:Give(hwep)
+    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then
+        hook.Run("PlayerLoadout", ply)
+    elseif ConVarExists("holsterweapon_weapon") then
+        DoWeaponHolstering(ply)
     end
     -- print("Given weapons!")
     -- PrintTable(ply.quickloadout)
