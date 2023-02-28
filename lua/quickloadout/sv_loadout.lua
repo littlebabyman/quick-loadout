@@ -34,15 +34,15 @@ end)
 function QuickLoadout(ply)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
+    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then
+        hook.Run("PlayerLoadout", ply)
+    -- elseif ConVarExists("holsterweapon_weapon") then
+    --     DoWeaponHolstering(ply)
+    end
     for k, v in ipairs(ply.quickloadout) do
         if !maxslots:GetBool() or maxslots:GetInt() >= k then
             ply:Give(v)
         end
-    end
-    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then
-        hook.Run("PlayerLoadout", ply)
-    elseif ConVarExists("holsterweapon_weapon") then
-        DoWeaponHolstering(ply)
     end
     -- print("Given weapons!")
     -- PrintTable(ply.quickloadout)

@@ -80,18 +80,11 @@ local function TestImage(item, frame)
     else return "vgui/null" end
 end
 
-local function GenerateLabel(frame, name, class, panel)
+local function GenerateLabel(frame, class, index, panel)
     local button = frame:Add("DLabel")
-    function NameSetup()
-        if istable(name) then
-            return class or name
-        else
-            return name or class
-        end
-    end
-    local text = NameSetup() or "Uh oh! Broken!"
+    local text = class or "Uh oh! Broken!"
     surface.SetFont("quickloadout_font_large")
-    button:SetName(class)
+    button:SetName(index)
     button:SetMouseInputEnabled(true)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
     button:SetFontInternal("quickloadout_font_large")
@@ -109,6 +102,7 @@ local function GenerateLabel(frame, name, class, panel)
                 surface.SetDrawColor(col_hl)
             end
             surface.DrawRect(0 , 0, x, y)
+            -- return true
         end
         button.OnCursorEntered = function(self)
             if self:GetToggle() then return end
@@ -171,9 +165,10 @@ function QLOpenMenu()
     local width, height = mainmenu:GetSize()
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
-        surface.DrawTexturedRect(0,0, (x - y) * 0.25, y)
+        surface.DrawRect(0,0, (x - y) * 0.25, y)
         surface.SetMaterial(Material("vgui/gradient-l"))
         surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
+        return true
     end
     mainmenu:SetX(-width)
     mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
@@ -222,6 +217,7 @@ function QLOpenMenu()
     lcont.Paint = function(self, x, y)
         surface.SetDrawColor(col_col)
         surface.DrawRect(0,0, x, y)
+        return true
     end
     lcont:SetSize(height * 0.3, height)
     lcont:SetX((width - height) * 0.25)
@@ -415,11 +411,12 @@ function QLOpenMenu()
         weplist:Clear()
 
         for i, v in ipairs(ptable) do
-            local button = GenerateLabel(weplist, QuickName(i, v), v, image)
+            local button = GenerateLabel(weplist, QuickName(i, v), i, image)
             WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
         WepSelector(newwep, #ptable + 1)
+        PrintTable(weplist:GetChildren())
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
@@ -488,6 +485,10 @@ function QLOpenMenu()
 
     CreateWeaponButtons()
 end
+
+hook.Add("HUDShouldDraw", "QLHideWeaponSelector", function(name)
+    if open and name == "CHudWeaponSelection" then return false end
+end)
 
 hook.Add("InitPostEntity", "QuickLoadoutInit", function()
     GenerateWeaponTable()
