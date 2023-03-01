@@ -6,15 +6,20 @@ if string.len(weaponlist:GetString()) > 0 then
     table.Add(ptable, string.Explode(", ", weaponlist:GetString()))
 else print("it's empty!!! zero!!!") end
 
-if !file.Exists("quickloadout/client_loadouts.json", "DATA") then
+if file.Size("quickloadout/client_loadouts.json", "DATA") <= 0 then
     file.CreateDir("quickloadout")
-    file.Write("quickloadout/client_loadouts.json", util.TableToJSON({["Loadout"] = ptable}))
+    file.Write("quickloadout/client_loadouts.json", "{}")
+end
+
+if !istable(util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))) then
+    print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
+    file.Write(os.date("quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read("quickloadout/client_loadouts.json", "DATA"))
+    file.Write("quickloadout/client_loadouts.json", "{}")
 end
 
 local loadouts = util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))
-PrintTable(loadouts)
 
-print(file.Read("quickloadout/client_loadouts.json", "DATA"))
+-- print(file.Read("quickloadout/client_loadouts.json", "DATA"))
 
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
@@ -84,7 +89,7 @@ local function TestImage(item, frame)
     frame:SetSize(y * 0.4, y * 0.4)
     frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
     if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
-    elseif IsValid(weapons.Get(item)) and surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon) != "weapons/swep" then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
+    elseif IsValid(weapons.Get(item)) and weapons.Get(item).WepSelectIcon != surface.GetTextureID("weapons/swep") then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
     elseif file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then
         frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
         frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
@@ -146,6 +151,7 @@ local function GenerateEditableLabel(frame, name)
     surface.SetFont("quickloadout_font_large")
     button:SetName(name)
     button:SetMouseInputEnabled(true)
+    button:SetKeyboardInputEnabled(true)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
     button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(button:GetWide() * 0.05, 0)
@@ -266,7 +272,6 @@ function QLOpenMenu()
         print("Generating weapon table...")
         GenerateWeaponTable()
     end
-
     table.RemoveByValue(ptable, "")
     local lcont, rcont = mainmenu:Add("Panel"), mainmenu:Add("Panel")
     lcont:SetZPos(0)
@@ -294,13 +299,28 @@ function QLOpenMenu()
     image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
 
-    local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil, image)
-    toptext:Dock(TOP)
-    toptext.DoClickInternal = function(self)
+    local saveload = lcont:Add("Panel")
+    saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
+    saveload:Dock(TOP)
+    local sbut, lbut = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image)
+    sbut:Dock(LEFT)
+    sbut:SetWide(saveload:GetWide() * 0.5)
+    sbut.DoClickInternal = function(self)
         qllist:SetVisible(!self:GetToggle())
+        lbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        -- table.Merge(loadouts, {["Loadout"] = ptable})
+        CreateLoadoutButtons(true)
     end
+    lbut:Dock(RIGHT)
+    lbut:SetWide(saveload:GetWide() * 0.5)
+    lbut.DoClickInternal = function(self)
+        qllist:SetVisible(!self:GetToggle())
+        sbut:SetToggle(false)
+        weplist:SetVisible(self:GetToggle())
+        CreateLoadoutButtons(false)
+    end
+    local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots())
+    toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/null", "vgui/null")
@@ -334,6 +354,7 @@ function QLOpenMenu()
     optbut:SetY(lcont:GetWide() * 0.05)
     optbut.DoClickInternal = function(self)
         options:SetVisible(!self:GetToggle())
+        saveload:SetVisible(self:GetToggle())
         lscroller:SetVisible(self:GetToggle())
         toptext:SetVisible(self:GetToggle())
     end
@@ -464,18 +485,25 @@ function QLOpenMenu()
     function TheCats(cat)
         if cat == category1 then return category2 else return category3 end
     end
-
-    function CreateLoadoutButtons(tbl)
+    function CreateLoadoutButtons(saving)
         rcont:Hide()
         qllist:Clear()
-        PrintTable(tbl)
+        PrintTable(loadouts)
 
-        for k, v in SortedPairs(tbl) do
-            local button = GenerateEditableLabel(qllist, k, true)
-            LoadoutSelector(button, k, v)
+        if saving then
+            for k, v in SortedPairs(loadouts) do
+                local button = GenerateEditableLabel(qllist, v.name)
+                LoadoutSelector(button, k)
+            end
+            local newloadout = GenerateEditableLabel(qllist, "+ Save New")
+            LoadoutSelector(newloadout, #loadouts + 1)
+        else
+            for k, v in SortedPairs(loadouts) do
+                local button = GenerateLabel(qllist, v.name, "vgui/null", image)
+                LoadoutSelector(button, k)
+            end
+            if next(loadouts) == nil then GenerateLabel(qllist, "No loadouts saved.") end
         end
-        local newloadout = GenerateEditableLabel(qllist, "+ Save New", false)
-        LoadoutSelector(newloadout, #tbl + 1)
     end
 
     function CreateWeaponButtons(tbl) -- it's a lot better now i think :)
@@ -517,7 +545,6 @@ function QLOpenMenu()
                         cat:Clear()
                         CreateWeaponButtons(ptable)
                         RefreshLoadout()
-                        -- PrintTable(ptable)
                     end
                 end
             end
@@ -525,17 +552,36 @@ function QLOpenMenu()
         cat:Show()
     end
 
-    function LoadoutSelector(button, key, tbl)
-        button.DoClickInternal = function()
-            ptable = loadouts[key]
-            RefreshLoadout()
+    function LoadoutSelector(button, key)
+        -- print(button, key)
+        if button.ClassName == "DLabelEditable" then
+            button.DoClickInternal = function(self)
+                self:DoDoubleClick()
+                self._TextEdit:SetFontInternal("quickloadout_font_small")
+                if !loadouts[key] then
+                    self._TextEdit:SetText("")
+                end
+            end
+            button.OnLabelTextChanged = function(self, text)
+                table.insert(loadouts, key, {name = text, weps = ptable})
+                -- PrintTable({[key] = {name = text, weps = ptable}})
+                file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
+                CreateLoadoutButtons(true)
+            end
+            button.DoRightClick = function()
+                table.remove(loadouts, key)
+                file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
+                CreateLoadoutButtons(true)
+            end
+        else
+            print(key, "loaded!")
+            button.DoClickInternal = function()
+                print(key, "equipped!")
+                ptable = loadouts[key].weps
+                RefreshLoadout()
+                CloseMenu()
+            end
         end
-        button.OnLabelTextChanged = function(self, text)
-            if !loadouts[key] then table.Merge(loadouts, {[key+1] = ptable})
-            else loadouts[key] = ptable end
-            ptable = loadouts[key]
-            RefreshLoadout()
-        return text end
     end
 
     function WepSelector(button, index)
@@ -563,10 +609,8 @@ function QLOpenMenu()
             table.remove(ptable, index)
             CreateWeaponButtons(ptable)
             RefreshLoadout()
-            -- PrintTable(ptable)
         end
     end
-    CreateLoadoutButtons(loadouts)
     CreateWeaponButtons(ptable)
 end
 
