@@ -488,19 +488,21 @@ function QLOpenMenu()
     function CreateLoadoutButtons(saving)
         rcont:Hide()
         qllist:Clear()
-        PrintTable(loadouts)
+        -- PrintTable(loadouts)
 
         if saving then
-            for k, v in SortedPairs(loadouts) do
+            for i, v in ipairs(loadouts) do
+                print(i)
+                PrintTable(v)
                 local button = GenerateEditableLabel(qllist, v.name)
-                LoadoutSelector(button, k)
+                LoadoutSelector(button, i)
             end
             local newloadout = GenerateEditableLabel(qllist, "+ Save New")
             LoadoutSelector(newloadout, #loadouts + 1)
         else
-            for k, v in SortedPairs(loadouts) do
+            for i, v in ipairs(loadouts) do
                 local button = GenerateLabel(qllist, v.name, "vgui/null", image)
-                LoadoutSelector(button, k)
+                LoadoutSelector(button, i)
             end
             if next(loadouts) == nil then GenerateLabel(qllist, "No loadouts saved.") end
         end
@@ -566,6 +568,7 @@ function QLOpenMenu()
                 table.insert(loadouts, key, {name = text, weps = ptable})
                 -- PrintTable({[key] = {name = text, weps = ptable}})
                 file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
+                print("Saved loadouts!!")
                 CreateLoadoutButtons(true)
             end
             button.DoRightClick = function()
