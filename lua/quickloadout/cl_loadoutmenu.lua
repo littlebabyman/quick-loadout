@@ -11,7 +11,11 @@ if !file.Exists("quickloadout/client_loadouts.json", "DATA") then
     file.Write("quickloadout/client_loadouts.json", util.TableToJSON({["Loadout"] = ptable}))
 end
 
+local loadouts = util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))
+PrintTable(loadouts)
+
 print(file.Read("quickloadout/client_loadouts.json", "DATA"))
+
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
@@ -136,6 +140,43 @@ local function GenerateLabel(frame, name, class, panel)
     return button
 end
 
+local function GenerateEditableLabel(frame, name)
+    local button = frame:Add("DLabelEditable")
+    local text = name or "Uh oh! Broken!"
+    surface.SetFont("quickloadout_font_large")
+    button:SetName(name)
+    button:SetMouseInputEnabled(true)
+    button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
+    button:SetFontInternal("quickloadout_font_large")
+    button:SetTextInset(button:GetWide() * 0.05, 0)
+    button:SetWrap(true)
+    button:SetText(text)
+    button:SizeToContentsY()
+    button:SetTextColor(Color(255, 255, 255, 192))
+    button:DockMargin(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.01, 1), math.max(button:GetWide() * 0.005, 1))
+    -- if tangible then
+        button.Paint = function(self, x, y)
+            surface.SetDrawColor(col_but)
+            if button:IsHovered() or button:GetToggle() then
+                surface.SetDrawColor(col_hl)
+            end
+            surface.DrawRect(0 , 0, x, y)
+        end
+        button.OnCursorEntered = function(self)
+            if self:GetToggle() then return end
+            surface.PlaySound("garrysmod/ui_hover.wav")
+        end
+        button.OnToggled = function(self, state)
+            if state then
+                surface.PlaySound("garrysmod/ui_click.wav")
+            else
+                surface.PlaySound("garrysmod/ui_return.wav")
+            end
+        end
+    -- end
+    return button
+end
+
 local function NetworkLoadout()
     if CurTime() < lastgiven + 1 then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "You're sending loadouts too quick! Calm down.") return end
     lastgiven = CurTime()
@@ -171,9 +212,9 @@ end
 function QLOpenMenu()
     buttonclicked = nil
     if open then return else open = true end
-    local newloadout = false
+    local refresh = false
     function RefreshLoadout()
-        newloadout = true
+        refresh = true
     end
     local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
@@ -209,7 +250,7 @@ function QLOpenMenu()
         timer.Simple(0.25, function()
             open = false
             mainmenu:Remove()
-            if !newloadout then return end
+            if !refresh then return end
             weaponlist:SetString(table.concat(ptable, ", "))
             NetworkLoadout()
         end)
@@ -243,19 +284,23 @@ function QLOpenMenu()
     rcont:Hide()
     local lscroller, rscroller = lcont:Add("DScrollPanel"), rcont:Add("DScrollPanel")
     local lbar, rbar = lscroller:GetVBar(), rscroller:GetVBar()
-    local weplist = GenerateCategory(lscroller)
+    local qllist, weplist = GenerateCategory(lscroller), GenerateCategory(lscroller)
+    qllist:Hide()
     weplist:MakeDroppable("quickloadoutarrange", false)
-    local category1 = GenerateCategory(rscroller, "x Cancel")
-    local category2 = GenerateCategory(rscroller, "< Categories")
-    local category3 = GenerateCategory(rscroller, "< Subcategories")
+    local category1, category2, category3 = GenerateCategory(rscroller, "x Cancel"), GenerateCategory(rscroller, "< Categories"), GenerateCategory(rscroller, "< Subcategories")
     local image = mainmenu:Add("DImage")
     image:SetImage("vgui/null", "vgui/null")
     image:SetSize(height * 0.4, height * 0.4)
     image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
 
-    local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil)
+    local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots(), nil, image)
     toptext:Dock(TOP)
+    toptext.DoClickInternal = function(self)
+        qllist:SetVisible(!self:GetToggle())
+        weplist:SetVisible(self:GetToggle())
+        -- table.Merge(loadouts, {["Loadout"] = ptable})
+    end
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/null", "vgui/null")
@@ -284,13 +329,12 @@ function QLOpenMenu()
     end
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
-    local options = GenerateCategory(lcont)
+    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "Options", collapse, image)
     options:SetVisible(false)
-    local optbut = GenerateLabel(lcont, "Options", collapse, image)
     optbut:SetY(lcont:GetWide() * 0.05)
     optbut.DoClickInternal = function(self)
         options:SetVisible(!self:GetToggle())
-        weplist:SetVisible(self:GetToggle())
+        lscroller:SetVisible(self:GetToggle())
         toptext:SetVisible(self:GetToggle())
     end
     function CreateOptionsMenu()
@@ -348,7 +392,7 @@ function QLOpenMenu()
         enablecat:SetTextColor(Color(255, 255, 255, 192))
         enablecat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
-            timer.Simple(0, CreateWeaponButtons)
+            timer.Simple(0, function() CreateWeaponButtons(ptable) end)
         end
 
         local fontpanel = options:Add("EditablePanel")
@@ -406,7 +450,9 @@ function QLOpenMenu()
             self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
         end
     end
+
     CreateOptionsMenu()
+
     function QuickName(dev, name)
         if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         if list.Get("Weapon")[name] then
@@ -419,17 +465,29 @@ function QLOpenMenu()
         if cat == category1 then return category2 else return category3 end
     end
 
+    function CreateLoadoutButtons(tbl)
+        rcont:Hide()
+        qllist:Clear()
+        PrintTable(tbl)
 
-    function CreateWeaponButtons() -- it's a lot better now i think :)
+        for k, v in SortedPairs(tbl) do
+            local button = GenerateEditableLabel(qllist, k, true)
+            LoadoutSelector(button, k, v)
+        end
+        local newloadout = GenerateEditableLabel(qllist, "+ Save New", false)
+        LoadoutSelector(newloadout, #tbl + 1)
+    end
+
+    function CreateWeaponButtons(tbl) -- it's a lot better now i think :)
         rcont:Hide()
         weplist:Clear()
 
-        for i, v in ipairs(ptable) do
+        for i, v in ipairs(tbl) do
             local button = GenerateLabel(weplist, QuickName(i, v), v, image)
             WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-        WepSelector(newwep, #ptable + 1)
+        WepSelector(newwep, #tbl + 1)
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
@@ -457,7 +515,7 @@ function QLOpenMenu()
                         end
                         table.Merge(ptable, {[slot] = v})
                         cat:Clear()
-                        CreateWeaponButtons()
+                        CreateWeaponButtons(ptable)
                         RefreshLoadout()
                         -- PrintTable(ptable)
                     end
@@ -465,6 +523,19 @@ function QLOpenMenu()
             end
         end
         cat:Show()
+    end
+
+    function LoadoutSelector(button, key, tbl)
+        button.DoClickInternal = function()
+            ptable = loadouts[key]
+            RefreshLoadout()
+        end
+        button.OnLabelTextChanged = function(self, text)
+            if !loadouts[key] then table.Merge(loadouts, {[key+1] = ptable})
+            else loadouts[key] = ptable end
+            ptable = loadouts[key]
+            RefreshLoadout()
+        return text end
     end
 
     function WepSelector(button, index)
@@ -490,13 +561,13 @@ function QLOpenMenu()
             self:Toggle()
             if index > #ptable then return end
             table.remove(ptable, index)
-            CreateWeaponButtons()
+            CreateWeaponButtons(ptable)
             RefreshLoadout()
             -- PrintTable(ptable)
         end
     end
-
-    CreateWeaponButtons()
+    CreateLoadoutButtons(loadouts)
+    CreateWeaponButtons(ptable)
 end
 
 hook.Add("HUDShouldDraw", "QLHideWeaponSelector", function(name)
