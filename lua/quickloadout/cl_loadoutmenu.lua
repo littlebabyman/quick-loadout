@@ -8,17 +8,19 @@ else print("it's empty!!! zero!!!") end
 
 if file.Size("quickloadout/client_loadouts.json", "DATA") <= 0 then
     file.CreateDir("quickloadout")
-    file.Write("quickloadout/client_loadouts.json", "{}")
+    file.Write("quickloadout/client_loadouts.json", "[]")
 end
 
 if !istable(util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))) then
     print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
     file.Write(os.date("quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read("quickloadout/client_loadouts.json", "DATA"))
-    file.Write("quickloadout/client_loadouts.json", "{}")
+    file.Write("quickloadout/client_loadouts.json", "[]")
 end
 
-local loadouts = util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))
-
+local loadouts = {}
+local function LoadSavedLoadouts()
+    loadouts = util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))
+end
 -- print(file.Read("quickloadout/client_loadouts.json", "DATA"))
 
 local keybind = GetConVar("quickloadout_key")
@@ -160,26 +162,24 @@ local function GenerateEditableLabel(frame, name)
     button:SizeToContentsY()
     button:SetTextColor(Color(255, 255, 255, 192))
     button:DockMargin(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.01, 1), math.max(button:GetWide() * 0.005, 1))
-    -- if tangible then
-        button.Paint = function(self, x, y)
-            surface.SetDrawColor(col_but)
-            if button:IsHovered() or button:GetToggle() then
-                surface.SetDrawColor(col_hl)
-            end
-            surface.DrawRect(0 , 0, x, y)
+    button.Paint = function(self, x, y)
+        surface.SetDrawColor(col_but)
+        if button:IsHovered() or button:GetToggle() then
+            surface.SetDrawColor(col_hl)
         end
-        button.OnCursorEntered = function(self)
-            if self:GetToggle() then return end
-            surface.PlaySound("garrysmod/ui_hover.wav")
+        surface.DrawRect(0 , 0, x, y)
+    end
+    button.OnCursorEntered = function(self)
+        if self:GetToggle() then return end
+        surface.PlaySound("garrysmod/ui_hover.wav")
+    end
+    button.OnToggled = function(self, state)
+        if state then
+            surface.PlaySound("garrysmod/ui_click.wav")
+        else
+            surface.PlaySound("garrysmod/ui_return.wav")
         end
-        button.OnToggled = function(self, state)
-            if state then
-                surface.PlaySound("garrysmod/ui_click.wav")
-            else
-                surface.PlaySound("garrysmod/ui_return.wav")
-            end
-        end
-    -- end
+    end
     return button
 end
 
@@ -309,7 +309,7 @@ function QLOpenMenu()
         qllist:SetVisible(!self:GetToggle())
         lbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        CreateLoadoutButtons(true)
+        if !self:GetToggle() then CreateLoadoutButtons(true) end
     end
     lbut:Dock(RIGHT)
     lbut:SetWide(saveload:GetWide() * 0.5)
@@ -317,7 +317,7 @@ function QLOpenMenu()
         qllist:SetVisible(!self:GetToggle())
         sbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        CreateLoadoutButtons(false)
+        if !self:GetToggle() then CreateLoadoutButtons(false) end
     end
     local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots())
     toptext:Dock(TOP)
@@ -413,7 +413,7 @@ function QLOpenMenu()
         enablecat:SetTextColor(Color(255, 255, 255, 192))
         enablecat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
-            timer.Simple(0, function() CreateWeaponButtons(ptable) end)
+            timer.Simple(0, function() CreateWeaponButtons() end)
         end
 
         local fontpanel = options:Add("EditablePanel")
@@ -488,12 +488,10 @@ function QLOpenMenu()
     function CreateLoadoutButtons(saving)
         rcont:Hide()
         qllist:Clear()
-        -- PrintTable(loadouts)
+        LoadSavedLoadouts()
 
         if saving then
             for i, v in ipairs(loadouts) do
-                print(i)
-                PrintTable(v)
                 local button = GenerateEditableLabel(qllist, v.name)
                 LoadoutSelector(button, i)
             end
@@ -504,20 +502,20 @@ function QLOpenMenu()
                 local button = GenerateLabel(qllist, v.name, "vgui/null", image)
                 LoadoutSelector(button, i)
             end
-            if next(loadouts) == nil then GenerateLabel(qllist, "No loadouts saved.") end
+            if !next(loadouts) then GenerateLabel(qllist, "No loadouts saved.") end
         end
     end
 
-    function CreateWeaponButtons(tbl) -- it's a lot better now i think :)
+    function CreateWeaponButtons() -- it's a lot better now i think :)
         rcont:Hide()
         weplist:Clear()
 
-        for i, v in ipairs(tbl) do
+        for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(i, v), v, image)
             WepSelector(button, i)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-        WepSelector(newwep, #tbl + 1)
+        WepSelector(newwep, #ptable + 1)
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
@@ -545,7 +543,7 @@ function QLOpenMenu()
                         end
                         table.Merge(ptable, {[slot] = v})
                         cat:Clear()
-                        CreateWeaponButtons(ptable)
+                        CreateWeaponButtons()
                         RefreshLoadout()
                     end
                 end
@@ -565,24 +563,29 @@ function QLOpenMenu()
                 end
             end
             button.OnLabelTextChanged = function(self, text)
-                table.insert(loadouts, key, {name = text, weps = ptable})
-                -- PrintTable({[key] = {name = text, weps = ptable}})
+                qllist:Clear()
+                table.Merge(loadouts, {[key] = {name = text, weps = ptable}})
                 file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
-                print("Saved loadouts!!")
                 CreateLoadoutButtons(true)
             end
-            button.DoRightClick = function()
+            button.DoRightClick = function(self)
                 table.remove(loadouts, key)
                 file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
                 CreateLoadoutButtons(true)
             end
         else
-            print(key, "loaded!")
-            button.DoClickInternal = function()
-                print(key, "equipped!")
+            button.DoClickInternal = function(self)
+                LocalPlayer():PrintMessage(HUD_PRINTCENTER, key .. " equipped!")
                 ptable = loadouts[key].weps
                 RefreshLoadout()
                 CloseMenu()
+            end
+            button.DoRightClick = function(self)
+                ptable = loadouts[key].weps
+                RefreshLoadout()
+                CreateWeaponButtons()
+                lbut:DoClickInternal()
+                lbut:Toggle()
             end
         end
     end
@@ -610,11 +613,11 @@ function QLOpenMenu()
             self:Toggle()
             if index > #ptable then return end
             table.remove(ptable, index)
-            CreateWeaponButtons(ptable)
+            CreateWeaponButtons()
             RefreshLoadout()
         end
     end
-    CreateWeaponButtons(ptable)
+    CreateWeaponButtons()
 end
 
 hook.Add("HUDShouldDraw", "QLHideWeaponSelector", function(name)
