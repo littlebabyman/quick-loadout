@@ -577,7 +577,7 @@ function QLOpenMenu()
             end
         else
             button.DoClickInternal = function(self)
-                LocalPlayer():PrintMessage(HUD_PRINTCENTER, key .. " equipped!")
+                LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " equipped!")
                 ptable = loadouts[key].weps
                 RefreshLoadout()
                 CloseMenu()
