@@ -119,9 +119,9 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
     button:SetText(text)
-    button:SizeToContentsY()
+    button:SetAutoStretchVertical(true)
     button:SetTextColor(Color(255, 255, 255, 192))
-    button:DockMargin(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.01, 1), math.max(button:GetWide() * 0.005, 1))
+    button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     if ispanel(panel) then
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
@@ -161,7 +161,7 @@ local function GenerateEditableLabel(frame, name)
     button:SetText(text)
     button:SizeToContentsY()
     button:SetTextColor(Color(255, 255, 255, 192))
-    button:DockMargin(math.max(button:GetWide() * 0.01, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.01, 1), math.max(button:GetWide() * 0.005, 1))
+    button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button.Paint = function(self, x, y)
         surface.SetDrawColor(col_but)
         if button:IsHovered() or button:GetToggle() then
@@ -281,9 +281,9 @@ function QLOpenMenu()
     end
     lcont:SetSize(height * 0.3, height)
     lcont:SetX((width - height) * 0.25)
-    lcont:DockPadding(0, lcont:GetTall() * 0.1, 0, lcont:GetTall() * 0.1)
+    lcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont:CopyBase(lcont)
-    rcont:DockPadding(0, lcont:GetTall() * 0.1, 0, lcont:GetTall() * 0.1)
+    rcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont.Paint = lcont.Paint
     rcont:SetX(lcont:GetPos() + lcont:GetWide() * 1.1)
     rcont:Hide()
@@ -302,34 +302,33 @@ function QLOpenMenu()
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
     saveload:Dock(TOP)
-    local sbut, lbut = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image)
+    local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
     sbut:Dock(LEFT)
     sbut:SetWide(saveload:GetWide() * 0.5)
     sbut.DoClickInternal = function(self)
         qllist:SetVisible(!self:GetToggle())
         lbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        if !self:GetToggle() then CreateLoadoutButtons(true) end
+        if !self:GetToggle() then CreateLoadoutButtons(true) else toptext:SetText("Loadout" .. GetMaxSlots()) end
     end
-    lbut:Dock(RIGHT)
+    lbut:Dock(FILL)
     lbut:SetWide(saveload:GetWide() * 0.5)
     lbut.DoClickInternal = function(self)
         qllist:SetVisible(!self:GetToggle())
         sbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        if !self:GetToggle() then CreateLoadoutButtons(false) end
+        if !self:GetToggle() then CreateLoadoutButtons(false) else toptext:SetText("Loadout" .. GetMaxSlots()) end
     end
-    local toptext = GenerateLabel(lcont, "Loadout" .. GetMaxSlots())
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
         image:SetImage("vgui/null", "vgui/null")
     end
     lscroller:SetZPos(1)
-    lscroller:DockMargin(0, math.max(lscroller:GetParent():GetWide() * 0.005, 1), 0, math.max(lscroller:GetParent():GetWide() * 0.005, 1))
+    lscroller:DockMargin(0, math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1))
     lscroller:Dock(FILL)
     rscroller:CopyBase(lscroller)
-    rscroller:DockMargin(0, math.max(rscroller:GetParent():GetWide() * 0.005, 1), 0, math.max(rscroller:GetParent():GetWide() * 0.005, 1))
+    rscroller:DockMargin(0, math.max(rscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(rscroller:GetParent():GetWide() * 0.005, 1))
     lbar:SetHideButtons(true)
     rbar:SetHideButtons(true)
     lbar:SetWide(lcont:GetWide() * 0.05)
@@ -491,6 +490,7 @@ function QLOpenMenu()
         LoadSavedLoadouts()
 
         if saving then
+            toptext:SetText("LMB save\nRMB delete")
             for i, v in ipairs(loadouts) do
                 local button = GenerateEditableLabel(qllist, v.name)
                 LoadoutSelector(button, i)
@@ -498,6 +498,7 @@ function QLOpenMenu()
             local newloadout = GenerateEditableLabel(qllist, "+ Save New")
             LoadoutSelector(newloadout, #loadouts + 1)
         else
+            toptext:SetText("LMB load\nRMB edit")
             for i, v in ipairs(loadouts) do
                 local button = GenerateLabel(qllist, v.name, "vgui/null", image)
                 LoadoutSelector(button, i)
@@ -507,6 +508,7 @@ function QLOpenMenu()
     end
 
     function CreateWeaponButtons() -- it's a lot better now i think :)
+        toptext:SetText("Loadout" .. GetMaxSlots())
         rcont:Hide()
         weplist:Clear()
 
