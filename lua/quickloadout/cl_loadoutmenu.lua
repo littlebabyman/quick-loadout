@@ -484,6 +484,7 @@ function QLOpenMenu()
         rcont:Hide()
         qllist:Clear()
         LoadSavedLoadouts()
+        toptext:SetFont("quickloadout_font_small")
 
         if saving then
             toptext:SetText("LMB save\nRMB delete")
@@ -494,7 +495,7 @@ function QLOpenMenu()
             local newloadout = GenerateEditableLabel(qllist, "+ Save New")
             LoadoutSelector(newloadout, #loadouts + 1)
         else
-            toptext:SetText("LMB load\nRMB edit")
+            toptext:SetText("LMB load & close\nRMB load & edit")
             for i, v in ipairs(loadouts) do
                 local button = GenerateLabel(qllist, v.name, "vgui/null", image)
                 LoadoutSelector(button, i)
@@ -504,6 +505,7 @@ function QLOpenMenu()
     end
 
     function CreateWeaponButtons() -- it's a lot better now i think :)
+        toptext:SetFont("quickloadout_font_large")
         toptext:SetText("Loadout" .. GetMaxSlots())
         rcont:Hide()
         weplist:Clear()
@@ -565,11 +567,18 @@ function QLOpenMenu()
     function LoadoutSelector(button, key)
         -- print(button, key)
         if button.ClassName == "DLabelEditable" then
+            local confirm = false
             button.DoClickInternal = function(self)
                 surface.PlaySound("garrysmod/ui_click.wav")
-                self:DoDoubleClick()
-                if !loadouts[key] then
-                    self._TextEdit:SetText("")
+                if confirm then
+                    table.remove(loadouts, key)
+                    file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
+                    CreateLoadoutButtons(true)
+                else
+                    self:DoDoubleClick()
+                    if !loadouts[key] then
+                        self._TextEdit:SetText("")
+                    end
                 end
             end
             button.OnLabelTextChanged = function(self, text)
@@ -581,9 +590,14 @@ function QLOpenMenu()
             end
             button.DoRightClick = function(self)
                 surface.PlaySound("garrysmod/ui_return.wav")
-                table.remove(loadouts, key)
-                file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
-                CreateLoadoutButtons(true)
+                if confirm then
+                    CreateLoadoutButtons(true)
+                else
+                    confirm = true
+                    button:SetFont("quickloadout_font_small")
+                    button:SetText("LMB to confirm\nRMB to cancel")
+                    button:SizeToContentsY()
+                end
             end
         else
             button.DoClickInternal = function(self)
