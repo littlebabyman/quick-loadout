@@ -193,7 +193,7 @@ local open = false
 
 local function GenerateWeaponTable()
     for k, v in SortedPairs(list.Get( "Weapon" )) do
-        if v.Spawnable and (!v.AdminOnly or LocalPlayer():IsSuperAdmin()) then
+        if v.Spawnable then
             local reftable = weapons.Get(k)
             if !wtable[v.Category] then
                 wtable[v.Category] = {}
@@ -217,6 +217,7 @@ function QLOpenMenu()
     function RefreshLoadout()
         refresh = true
     end
+    local count = 1
     local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
@@ -473,7 +474,7 @@ function QLOpenMenu()
         if list.Get("Weapon")[name] then
             if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
             else return list.Get("Weapon")[name].PrintName or name end
-        else return "Weapon N/A!\n" .. name end
+        else return name end
     end
 
     function TheCats(cat)
@@ -506,13 +507,14 @@ function QLOpenMenu()
         toptext:SetText("Loadout" .. GetMaxSlots())
         rcont:Hide()
         weplist:Clear()
+        count = maxslots:GetInt()
 
         for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(i, v), v, image)
-            WepSelector(button, i)
+            WepSelector(button, i, v)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
-        WepSelector(newwep, #ptable + 1)
+        WepSelector(newwep, #ptable + 1, nil)
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
@@ -530,11 +532,22 @@ function QLOpenMenu()
             if !(table.HasValue(ptable, v) and !ptable[slot]) then
                 local button = GenerateLabel(cat, i, v, image)
                 button.DoRightClick = cancel.DoClickInternal
-                button.DoClickInternal = function()
-                    if istable(v) then
+                if istable(v) then
+                    button.DoClickInternal = function()
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
                         cat:Hide()
-                    else
+                    end
+                else
+                    if list.Get("Weapon")[v].AdminOnly and !LocalPlayer():IsAdmin() then
+                        button.Paint = function(self, x, y)
+                            surface.SetDrawColor(col_col)
+                            if button:IsHovered() then
+                                surface.SetDrawColor(col_but)
+                            end
+                            surface.DrawRect(0 , 0, x, y)
+                        end
+                    end
+                    button.DoClickInternal = function()
                         if table.HasValue(ptable, v) and ptable[slot] then
                             table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
                         end
@@ -589,8 +602,8 @@ function QLOpenMenu()
         end
     end
 
-    function WepSelector(button, index)
-        if index > maxslots:GetInt() then
+    function WepSelector(button, index, class)
+        if index > count or class and (!list.Get("Weapon")[class] or (list.Get("Weapon")[class].AdminOnly and !LocalPlayer():IsAdmin())) then
             button.Paint = function(self, x, y)
                 surface.SetDrawColor(col_col)
                 if button:IsHovered() or button:GetToggle() then
@@ -598,6 +611,7 @@ function QLOpenMenu()
                 end
                 surface.DrawRect(0 , 0, x, y)
             end
+            count = count + 1
         end
         button.DoClickInternal = function()
             rcont:Show()
@@ -674,8 +688,8 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         panel:ControlHelp("Enable gamemode's default loadout.")
         panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 60, 0)
         panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
-        panel:NumSlider("Maximum weapon slots", "quickloadout_maxslots", 0, 32, 0)
-        panel:ControlHelp("Amount of weapons you can have on spawn. Max 32, 0 is infinite.")
+        panel:NumSlider("Max weapon slots", "quickloadout_maxslots", 0, 32, 0)
+        panel:ControlHelp("Amount of weapons players can have on spawn. Max 32, 0 is infinite.")
         panel:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
         panel:ControlHelp("Whether pressing the attack button disables grace period.")
         panel:Help("Client settings")
