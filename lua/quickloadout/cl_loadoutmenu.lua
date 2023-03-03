@@ -1,6 +1,7 @@
 AddCSLuaFile()
 local weaponlist = GetConVar("quickloadout_weapons")
 local ptable = {}
+local loadouts = {}
 
 if string.len(weaponlist:GetString()) > 0 then
     table.Add(ptable, string.Explode(", ", weaponlist:GetString()))
@@ -17,7 +18,6 @@ if !istable(util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DAT
     file.Write("quickloadout/client_loadouts.json", "[]")
 end
 
-local loadouts = {}
 local function LoadSavedLoadouts()
     loadouts = util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))
 end
@@ -593,6 +593,15 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index)
+        if index > maxslots:GetInt() then
+            button.Paint = function(self, x, y)
+                surface.SetDrawColor(col_col)
+                if button:IsHovered() or button:GetToggle() then
+                    surface.SetDrawColor(col_but)
+                end
+                surface.DrawRect(0 , 0, x, y)
+            end
+        end
         button.DoClickInternal = function()
             rcont:Show()
             rscroller:GetVBar():SetScroll(0)
