@@ -38,12 +38,12 @@ local function CreateFonts()
     local fonttable = string.Split(fonts:GetString() or {}, ", ")
     local scale = fontscale:GetFloat()
     surface.CreateFont("quickloadout_font_large", {
-        font = fonttable[1],
+        font = fonttable[1] or "Bahnschrift Regular",
         extended = true,
         size = ScrH() * scale * 0.04,
     })
     surface.CreateFont("quickloadout_font_small", {
-        font = fonttable[2] or fonttable[1],
+        font = fonttable[2] or fonttable[1] or "Bahnschrift",
         extended = true,
         size = ScrH() * scale * 0.03,
     })
@@ -114,6 +114,7 @@ local function GenerateLabel(frame, name, class, panel)
     surface.SetFont("quickloadout_font_large")
     button:SetName(class)
     button:SetMouseInputEnabled(true)
+    button:SetMinimumSize(nil, frame:GetWide() * 0.125)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
     button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(button:GetWide() * 0.05, 0)
@@ -122,6 +123,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetAutoStretchVertical(true)
     button:SetTextColor(Color(255, 255, 255, 192))
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
+    button:SetContentAlignment(4)
     if ispanel(panel) then
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
@@ -301,23 +303,24 @@ function QLOpenMenu()
 
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
+    saveload:SizeToContentsY()
     saveload:Dock(TOP)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
+    sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
-    sbut:SetWide(saveload:GetWide() * 0.5)
     sbut.DoClickInternal = function(self)
         qllist:SetVisible(!self:GetToggle())
         lbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        if !self:GetToggle() then CreateLoadoutButtons(true) else toptext:SetText("Loadout" .. GetMaxSlots()) end
+        if !self:GetToggle() then CreateLoadoutButtons(true) else CreateWeaponButtons() end
     end
-    lbut:Dock(FILL)
-    lbut:SetWide(saveload:GetWide() * 0.5)
+    lbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
+    lbut:Dock(RIGHT)
     lbut.DoClickInternal = function(self)
         qllist:SetVisible(!self:GetToggle())
         sbut:SetToggle(false)
         weplist:SetVisible(self:GetToggle())
-        if !self:GetToggle() then CreateLoadoutButtons(false) else toptext:SetText("Loadout" .. GetMaxSlots()) end
+        if !self:GetToggle() then CreateLoadoutButtons(false) else CreateWeaponButtons() end
     end
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
