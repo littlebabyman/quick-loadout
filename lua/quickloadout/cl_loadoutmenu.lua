@@ -38,12 +38,12 @@ local function CreateFonts()
     local fonttable = string.Split(fonts:GetString() or {}, ", ")
     local scale = fontscale:GetFloat()
     surface.CreateFont("quickloadout_font_large", {
-        font = fonttable[1] or "Bahnschrift Regular",
+        font = fonttable[1],
         extended = true,
         size = ScrH() * scale * 0.04,
     })
     surface.CreateFont("quickloadout_font_small", {
-        font = fonttable[2] or fonttable[1] or "Bahnschrift",
+        font = fonttable[2] or fonttable[1],
         extended = true,
         size = ScrH() * scale * 0.03,
     })
