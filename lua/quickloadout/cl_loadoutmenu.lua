@@ -116,7 +116,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetMouseInputEnabled(true)
     button:SetMinimumSize(nil, frame:GetWide() * 0.125)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
-    button:SetFontInternal("quickloadout_font_large")
+    button:SetFont("quickloadout_font_large")
     button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
     button:SetText(text)
@@ -157,7 +157,7 @@ local function GenerateEditableLabel(frame, name)
     button:SetMouseInputEnabled(true)
     button:SetKeyboardInputEnabled(true)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
-    button:SetFontInternal("quickloadout_font_large")
+    button:SetFont("quickloadout_font_large")
     button:SetTextInset(button:GetWide() * 0.05, 0)
     button:SetWrap(true)
     button:SetText(text)
@@ -174,13 +174,6 @@ local function GenerateEditableLabel(frame, name)
     button.OnCursorEntered = function(self)
         if self:GetToggle() then return end
         surface.PlaySound("garrysmod/ui_hover.wav")
-    end
-    button.OnToggled = function(self, state)
-        if state then
-            surface.PlaySound("garrysmod/ui_click.wav")
-        else
-            surface.PlaySound("garrysmod/ui_return.wav")
-        end
     end
     return button
 end
@@ -421,7 +414,7 @@ function QLOpenMenu()
         local fontpanel = options:Add("EditablePanel")
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
         local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Font"), fontpanel:Add("DTextEntry") -- , options:Add("DNumSlider")
-        fonttext:SetFontInternal("quickloadout_font_small")
+        fonttext:SetFont("quickloadout_font_small")
         fonttext:SizeToContentsX(options:GetWide() * 0.05)
         fonttext:SizeToContentsY(options:GetWide() * 0.025)
         fonttext:SetTextInset(0, 0)
@@ -441,7 +434,7 @@ function QLOpenMenu()
         fontpanel:SetSize(fonttext:GetTextSize())
 
         local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
-        colortext:SetFontInternal("quickloadout_font_small")
+        colortext:SetFont("quickloadout_font_small")
         colortext:SetTextInset(0, 0)
         colortext:SizeToContents()
 
@@ -452,7 +445,6 @@ function QLOpenMenu()
 
         local bgcolor, buttoncolor = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
         Derma_Install_Convar_Functions(bgcolor)
-        bgsheet:SetFontInternal("quickloadout_font_small")
         bgsheet:SetTall(math.max(options:GetWide() * 0.8, 240))
         bgsheet:DockMargin(0, options:GetWide() * 0.025, 0, 0)
         bgsheet:AddSheet("Background", bgcolor, "icon16/script_palette.png")
@@ -561,8 +553,8 @@ function QLOpenMenu()
         -- print(button, key)
         if button.ClassName == "DLabelEditable" then
             button.DoClickInternal = function(self)
+                surface.PlaySound("garrysmod/ui_click.wav")
                 self:DoDoubleClick()
-                self._TextEdit:SetFontInternal("quickloadout_font_small")
                 if !loadouts[key] then
                     self._TextEdit:SetText("")
                 end
@@ -574,6 +566,7 @@ function QLOpenMenu()
                 CreateLoadoutButtons(true)
             end
             button.DoRightClick = function(self)
+                surface.PlaySound("garrysmod/ui_return.wav")
                 table.remove(loadouts, key)
                 file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
                 CreateLoadoutButtons(true)
