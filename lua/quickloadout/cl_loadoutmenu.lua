@@ -540,7 +540,7 @@ function QLOpenMenu()
                         cat:Hide()
                     end
                 else
-                    if list.Get("Weapon")[v].AdminOnly and !LocalPlayer():IsAdmin() then
+                    if !list.Get("Weapon")[v].Spawnable or list.Get("Weapon")[v].AdminOnly and !LocalPlayer():IsAdmin() then
                         button.Paint = function(self, x, y)
                             surface.SetDrawColor(col_col)
                             if button:IsHovered() then
@@ -617,7 +617,7 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index, class)
-        if index > count or class and (!list.Get("Weapon")[class] or (list.Get("Weapon")[class].AdminOnly and !LocalPlayer():IsAdmin())) then
+        if index > count or class and (!list.Get("Weapon")[class] or !list.Get("Weapon")[class].Spawnable or (list.Get("Weapon")[class].AdminOnly and !LocalPlayer():IsAdmin())) then
             button.Paint = function(self, x, y)
                 surface.SetDrawColor(col_col)
                 if button:IsHovered() or button:GetToggle() then

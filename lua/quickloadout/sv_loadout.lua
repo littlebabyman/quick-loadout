@@ -38,7 +38,7 @@ function QuickLoadout(ply)
     --     DoWeaponHolstering(ply)
     end
     for k, v in ipairs(ply.quickloadout) do
-        if !list.Get("Weapon")[v] or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then count = count + 1
+        if !list.Get("Weapon")[v] or !list.Get("Weapon")[v].Spawnable or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then count = count + 1
         elseif !maxslots:GetBool() or count >= k then
             ply:Give(v)
         end
