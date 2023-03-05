@@ -257,10 +257,10 @@ function QLOpenMenu()
         timer.Simple(0.25, function()
             open = false
             mainmenu:Remove()
-            if !refresh then return end
-            weaponlist:SetString(table.concat(ptable, ", "))
-            NetworkLoadout()
         end)
+        if !refresh then return end
+        weaponlist:SetString(table.concat(ptable, ", "))
+        NetworkLoadout()
     end
 
     function mainmenu:OnKeyCodePressed(key)
