@@ -33,7 +33,6 @@ end)
 
 function QuickLoadout(ply)
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or false and 0
-    print(count)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     for k, v in ipairs(ply.quickloadout) do
         if count and count < k then break end
