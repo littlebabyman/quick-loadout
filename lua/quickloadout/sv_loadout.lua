@@ -5,7 +5,9 @@ local time = GetConVar("quickloadout_switchtime")
 local timestop = GetConVar("quickloadout_switchtime_override")
 
 util.AddNetworkString("quickloadout")
-if game.SinglePlayer then
+util.AddNetworkString("qlnotification")
+
+if game.SinglePlayer() then
     local keybind = KEY_N
     util.AddNetworkString("QLSPHack")
     net.Receive("QLSPHack", function() keybind = net.ReadInt(9) end)
@@ -25,34 +27,34 @@ net.Receive("quickloadout", function(len, ply)
         net.Send(ply)
         return
     end
-    timer.Simple(0, function() QuickLoadout(ply) end)
+    ply:StripWeapons()
+    timer.Simple(0, function() hook.Run("PlayerLoadout", ply) end)
 end)
 
 function QuickLoadout(ply)
     local count = maxslots:GetInt()
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
-    ply:StripWeapons()
-    if default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout) then
-        hook.Run("PlayerLoadout", ply)
-    -- elseif ConVarExists("holsterweapon_weapon") then
-    --     DoWeaponHolstering(ply)
-    end
     for k, v in ipairs(ply.quickloadout) do
+        if maxslots:GetBool() and count < k or (!game.SinglePlayer() and k + (count - maxslots:GetInt()) > 32) then break end
         if !list.Get("Weapon")[v] or !list.Get("Weapon")[v].Spawnable or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then count = count + 1
-        elseif !maxslots:GetBool() or count >= k then
-            ply:Give(v)
-        end
+        else ply:Give(v) end
     end
-    -- print("Given weapons!")
-    -- PrintTable(ply.quickloadout)
+    if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout)) then
+        return true
+    end
 end
 
 hook.Add("PlayerInitialSpawn", "QuickLoadoutInitTable", function(ply) ply.quickloadout = {} end)
 
+hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)
+
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)
     ply.qlspawntime = CurTime()
-    timer.Simple(0, function() QuickLoadout(ply) end)
 end)
+
+-- hook.Add("PostPlayerDeath", "QuickLoadoutDeath", function(ply)
+
+-- end)
 
 hook.Add("KeyPress", "QuickLoadoutCancel", function(ply, key)
     if !timestop:GetBool() then return end

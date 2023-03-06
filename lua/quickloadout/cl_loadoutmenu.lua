@@ -91,7 +91,6 @@ local function TestImage(item, frame)
     frame:SetSize(y * 0.4, y * 0.4)
     frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
     if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
-    elseif IsValid(weapons.Get(item)) and weapons.Get(item).WepSelectIcon != surface.GetTextureID("weapons/swep") then return surface.GetTextureNameByID(weapons.Get(item).WepSelectIcon)
     elseif file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then
         frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
         frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
@@ -222,7 +221,7 @@ function QLOpenMenu()
     function RefreshLoadout()
         refresh = true
     end
-    local count = 1
+    local count = 0
     local mainmenu = vgui.Create("EditablePanel")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
@@ -245,9 +244,9 @@ function QLOpenMenu()
             return "Default loadout is off."
         end
     end
-
+    
     function GetMaxSlots()
-        if maxslots:GetBool() then return " (Max " .. maxslots:GetInt() .. ")" else return "" end
+        return maxslots:GetBool() and " (Max " .. maxslots:GetInt() .. ")" or !game.SinglePlayer() and " (Max 32)" or ""
     end
 
     function CloseMenu()
@@ -519,7 +518,7 @@ function QLOpenMenu()
         toptext:SetText("Loadout" .. GetMaxSlots())
         rcont:Hide()
         weplist:Clear()
-        count = maxslots:GetInt()
+        count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
 
         for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(i, v), v, image)
@@ -623,7 +622,7 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index, class)
-        if index > count or class and (!list.Get("Weapon")[class] or !list.Get("Weapon")[class].Spawnable or (list.Get("Weapon")[class].AdminOnly and !LocalPlayer():IsAdmin())) then
+        if (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!list.Get("Weapon")[class] or !list.Get("Weapon")[class].Spawnable or (list.Get("Weapon")[class].AdminOnly and !LocalPlayer():IsAdmin())) then
             button.Paint = function(self, x, y)
                 surface.SetDrawColor(col_col)
                 if button:IsHovered() or button:GetToggle() then
