@@ -32,10 +32,10 @@ net.Receive("quickloadout", function(len, ply)
 end)
 
 function QuickLoadout(ply)
-    local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or false and 0
+    local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     for k, v in ipairs(ply.quickloadout) do
-        if count and count < k then break end
+        if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
         if !list.Get("Weapon")[v] or !list.Get("Weapon")[v].Spawnable or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then count = count + 1
         else ply:Give(v) end
     end
