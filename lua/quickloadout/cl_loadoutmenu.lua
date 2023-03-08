@@ -202,16 +202,17 @@ local function GenerateWeaponTable()
             if !wtable[v.Category] then
                 wtable[v.Category] = {}
             end
-            if reftable and reftable.SubCategory then
-                if !wtable[v.Category][reftable.SubCategory] then
-                    wtable[v.Category][reftable.SubCategory] = {}
+            if reftable and (reftable.SubCategory or reftable.SubCatType) then
+                if !wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] then
+                    wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] = {}
                 end
-                table.Merge(wtable[v.Category][reftable.SubCategory], {[v.PrintName or v.ClassName] = v.ClassName})
+                table.Merge(wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)], {[v.PrintName or v.ClassName] = v.ClassName})
             else
                 table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
             end
         end
     end
+    PrintTable(wtable)
 end
 
 function QLOpenMenu()
