@@ -212,7 +212,6 @@ local function GenerateWeaponTable()
             end
         end
     end
-    PrintTable(wtable)
 end
 
 function QLOpenMenu()
