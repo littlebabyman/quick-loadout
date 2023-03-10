@@ -479,11 +479,12 @@ function QLOpenMenu()
     CreateOptionsMenu()
 
     function QuickName(dev, name)
-        if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
-        if list.Get("Weapon")[name] then
-            if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
-            else return list.Get("Weapon")[name].PrintName or name end
-        else return name end
+        return showcat:GetBool() and list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or list.Get("Weapon")[name].PrintName or name
+        -- if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
+        -- if list.Get("Weapon")[name] then
+        --     if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
+        --     else return list.Get("Weapon")[name].PrintName or name end
+        -- else return name end
     end
 
     function TheCats(cat)
