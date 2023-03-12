@@ -33,6 +33,7 @@ local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_switchtime")
+local clips = GetConVar("quickloadout_spawnclips")
 
 local function CreateFonts()
     local fonttable = string.Split(fonts:GetString() or {}, ", ")
@@ -479,7 +480,7 @@ function QLOpenMenu()
     CreateOptionsMenu()
 
     function QuickName(dev, name)
-        return showcat:GetBool() and list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or list.Get("Weapon")[name].PrintName or name
+        return list.Get("Weapon")[name] and (showcat:GetBool() and list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or list.Get("Weapon")[name].PrintName) or name
         -- if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         -- if list.Get("Weapon")[name] then
         --     if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
@@ -706,6 +707,8 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         default:AddChoice("Disabled", 0)
         default:AddChoice("Enabled", 1)
         panel:ControlHelp("Enable gamemode's default loadout.")
+        panel:NumSlider("Clips per weapon", "quickloadout_spawnclips", 0, 100, 0)
+        panel:ControlHelp("How many clips worth of ammo each weapon is given.\nCurrently nonfunctional on HL2/HL:S weapons.")
         panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 60, 0)
         panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
         panel:NumSlider("Max weapon slots", "quickloadout_maxslots", 0, 32, 0)

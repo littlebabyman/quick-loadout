@@ -1,8 +1,9 @@
 AddCSLuaFile()
 CreateConVar("quickloadout_enable", 1, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Enable Quick Loadout.", 0, 1)
 CreateConVar("quickloadout_default", -1, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Enable default loadout.", -1, 1)
-CreateConVar("quickloadout_maxslots", 10, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Max weapon slots in a loadout.", 0, 32)
-CreateConVar("quickloadout_switchtime", 15, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Grace period length to switch loadout after spawn.", 0)
+CreateConVar("quickloadout_maxslots", 10, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Max weapon slots in a loadout.", 0, 32)
+CreateConVar("quickloadout_switchtime", 15, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Grace period length to switch loadout after spawn.", 0)
+CreateConVar("quickloadout_spawnclips", 5, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Amount of clips worth of ammo a weapon gets upon applying a loadout.", 0)
 CreateConVar("quickloadout_switchtime_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Force grace period off on pressing primary attack.", 0, 1)
 
 if CLIENT then
