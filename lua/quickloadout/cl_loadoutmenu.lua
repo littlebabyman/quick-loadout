@@ -198,7 +198,6 @@ local open = false
 
 local function GenerateWeaponTable()
     for k, v in SortedPairs(list.Get( "Weapon" )) do
-        print(k, v)
         if v.Spawnable then
             local reftable = weapons.Get(k)
             if !wtable[v.Category] then
