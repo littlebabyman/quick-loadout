@@ -54,12 +54,12 @@ function QuickLoadout(ply)
     end
 end
 
-hook.Add("PlayerInitialSpawn", "QuickLoadoutInitTable", function(ply) ply.quickloadout = {} end)
+-- hook.Add("PlayerInitialSpawn", "QuickLoadoutInitTable", function(ply) ply.quickloadout = {} end)
 
 hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)
 
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)
-    ply.qlspawntime = CurTime()
+    ply.qlspawntime = CurTime() or 0
 end)
 
 -- hook.Add("PostPlayerDeath", "QuickLoadoutDeath", function(ply)

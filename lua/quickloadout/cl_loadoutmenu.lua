@@ -27,7 +27,6 @@ local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
 local lastgiven = 0
-local buttonclicked = nil
 
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
@@ -216,7 +215,7 @@ local function GenerateWeaponTable()
 end
 
 function QLOpenMenu()
-    buttonclicked = nil
+    local buttonclicked = nil
     if open then return else open = true end
     local refresh = false
     function RefreshLoadout()
