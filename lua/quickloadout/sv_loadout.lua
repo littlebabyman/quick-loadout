@@ -21,6 +21,7 @@ if game.SinglePlayer() then
 end
 
 net.Receive("quickloadout", function(len, ply)
+    if !ply.quickloadout then ply.qlspawntime = CurTime() + 1 end
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
     else ply.quickloadout = net.ReadTable() end -- whaddya know this IS more reliable!
     if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
