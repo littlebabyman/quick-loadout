@@ -549,6 +549,7 @@ function QLOpenMenu()
             WepSelector(button, i, v)
             button:SetIsToggle(false)
             button.DoClickInternal = function() end
+            button.DoRightClick = button.DoClickInternal
         end
         category1:Show()
     end
