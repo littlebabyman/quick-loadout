@@ -12,6 +12,11 @@ if file.Size("quickloadout/client_loadouts.json", "DATA") <= 0 then
     file.Write("quickloadout/client_loadouts.json", "[]")
 end
 
+-- if file.Size("quickloadout/client_autosave.json", "DATA") <= 0 then
+--     file.CreateDir("quickloadout")
+--     file.Write("quickloadout/client_autosave.json", "[]")
+-- end
+
 if !istable(util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))) then
     print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
     file.Write(os.date("quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read("quickloadout/client_loadouts.json", "DATA"))
@@ -231,6 +236,7 @@ function QLOpenMenu()
         surface.DrawRect(0,0, (x - y) * 0.25, y)
         surface.SetMaterial(Material("vgui/gradient-l"))
         surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
+        draw.NoTexture()
     end
     mainmenu:SetX(-width)
     mainmenu:MoveTo(0, 0, 0.25, 0, 0.8)
@@ -478,8 +484,9 @@ function QLOpenMenu()
 
     CreateOptionsMenu()
 
-    function QuickName(dev, name)
-        return list.Get("Weapon")[name] and (showcat:GetBool() and list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or list.Get("Weapon")[name].PrintName) or name
+    function QuickName(name)
+        local ref = list.Get("Weapon")[name]
+        return ref and (showcat:GetBool() and ref.PrintName .. "\n(" .. ref.Category .. ")" or ref.PrintName) or name
         -- if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         -- if list.Get("Weapon")[name] then
         --     if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
@@ -491,7 +498,10 @@ function QLOpenMenu()
         if cat == category1 then return category2 else return category3 end
     end
     function CreateLoadoutButtons(saving)
-        rcont:Hide()
+        rcont:Show()
+        category1:Hide()
+        category2:Hide()
+        category3:Hide()
         qllist:Clear()
         LoadSavedLoadouts()
         toptext:SetFont("quickloadout_font_small")
@@ -522,11 +532,25 @@ function QLOpenMenu()
         count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
 
         for i, v in ipairs(ptable) do
-            local button = GenerateLabel(weplist, QuickName(i, v), v, image)
+            local button = GenerateLabel(weplist, QuickName(v), v, image)
             WepSelector(button, i, v)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
         WepSelector(newwep, #ptable + 1, nil)
+    end
+
+    function CreatePreviewButtons(key)
+        category1:Clear()
+        count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
+
+        if !loadouts[key] then return end
+        for i, v in ipairs(loadouts[key].weps) do
+            local button = GenerateLabel(category1, QuickName(v), v, image)
+            WepSelector(button, i, v)
+            button:SetIsToggle(false)
+            button.DoClickInternal = function() end
+        end
+        category1:Show()
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
@@ -619,6 +643,11 @@ function QLOpenMenu()
                 lbut:DoClickInternal()
                 lbut:Toggle()
             end
+        end
+        button.OnCursorEntered = function(self)
+            CreatePreviewButtons(key)
+            if self:GetToggle() then return end
+            surface.PlaySound("garrysmod/ui_hover.wav")
         end
     end
 
