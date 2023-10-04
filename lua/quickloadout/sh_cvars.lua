@@ -9,7 +9,7 @@ CreateConVar("quickloadout_switchtime_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLI
 if CLIENT then
     CreateClientConVar("quickloadout_enable_client", 1, true, true, "Enable quick loadout sending.", 0, 1)
     CreateClientConVar("quickloadout_default_client", 1, true, true, "Request default loadout upon sending it.", 0, 1)
-    CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes.")
+    CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes. Nonfunctional, only exists to bring 'old' autosaved loadout to new system.")
     CreateClientConVar("quickloadout_key", "n", true, false, "Quick loadout keybind.")
     CreateClientConVar("quickloadout_showcategory", 1, true, false, "Show weapon categories on equipped weapons.")
     CreateClientConVar("quickloadout_ui_fonts", "Bahnschrift", true, false, "Fonts used in the loadout menu.")

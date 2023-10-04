@@ -3,19 +3,21 @@ local weaponlist = GetConVar("quickloadout_weapons")
 local ptable = {}
 local loadouts = {}
 
-if string.len(weaponlist:GetString()) > 0 then
-    table.Add(ptable, string.Explode(", ", weaponlist:GetString()))
-else print("it's empty!!! zero!!!") end
+if !file.Exists("quickloadout", "DATA") then
+    file.CreateDir("quickloadout")
+end
 
 if file.Size("quickloadout/client_loadouts.json", "DATA") <= 0 then
-    file.CreateDir("quickloadout")
     file.Write("quickloadout/client_loadouts.json", "[]")
 end
 
--- if file.Size("quickloadout/client_autosave.json", "DATA") <= 0 then
---     file.CreateDir("quickloadout")
---     file.Write("quickloadout/client_autosave.json", "[]")
--- end
+if file.Size("quickloadout/autosave.json", "DATA") <= 0 then
+    file.Write("quickloadout/autosave.json", util.TableToJSON(string.Explode(", ", weaponlist:GetString())))
+end
+
+if file.Exists("quickloadout/autosave.json", "DATA") then
+    ptable = util.JSONToTable(file.Read("quickloadout/autosave.json", "DATA"))
+end
 
 if !istable(util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))) then
     print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
@@ -264,7 +266,7 @@ function QLOpenMenu()
             mainmenu:Remove()
         end)
         if !refresh then return end
-        weaponlist:SetString(table.concat(ptable, ", "))
+        file.Write("quickloadout/autosave.json", util.TableToJSON(ptable))
         NetworkLoadout()
     end
 
@@ -412,7 +414,7 @@ function QLOpenMenu()
 
         local enablecat = options:Add("DCheckBoxLabel")
         enablecat:SetConVar("quickloadout_showcategory")
-        enablecat:SetText("Show categories")
+        enablecat:SetText("Loadout categories")
         enablecat:SetTooltip("Toggles whether your equipped weapons should or should not show their weapon category underneath them.")
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
