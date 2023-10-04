@@ -486,7 +486,7 @@ function QLOpenMenu()
 
     function QuickName(name)
         local ref = list.Get("Weapon")[name]
-        return ref and (showcat:GetBool() and ref.PrintName .. "\n(" .. ref.Category .. ")" or ref.PrintName) or name
+        return ref and (showcat:GetBool() and ref.PrintName .. " (" .. string.gsub(ref.Category, "[^%u%d]", "") .. ")" or ref.PrintName) or name
         -- if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
         -- if list.Get("Weapon")[name] then
         --     if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
