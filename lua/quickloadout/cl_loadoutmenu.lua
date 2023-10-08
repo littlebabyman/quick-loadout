@@ -133,10 +133,8 @@ local function GenerateLabel(frame, name, class, panel)
     if ispanel(panel) then
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
-            surface.SetDrawColor(col_but)
-            if button:IsHovered() or button:GetToggle() then
-                surface.SetDrawColor(col_hl)
-            end
+            local active = button:IsHovered() or button:GetToggle()
+            surface.SetDrawColor(active and col_hl or col_but)
             surface.DrawRect(0 , 0, x, y)
         end
         button.OnCursorEntered = function(self)
@@ -176,10 +174,8 @@ local function GenerateEditableLabel(frame, name)
         button:DoDoubleClick()
     end
     button.Paint = function(self, x, y)
-        surface.SetDrawColor(col_but)
-        if button:IsHovered() or button:GetToggle() then
-            surface.SetDrawColor(col_hl)
-        end
+        local active = button:IsHovered() or button:GetToggle()
+        surface.SetDrawColor(active and col_hl or col_but)
         surface.DrawRect(0 , 0, x, y)
     end
     button.OnCursorEntered = function(self)
@@ -201,9 +197,11 @@ net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTE
 
 local wtable = {}
 local open = false
+local rtable = {}
 
 local function GenerateWeaponTable()
-    for k, v in SortedPairs(list.Get( "Weapon" )) do
+    rtable = list.Get("Weapon")
+    for k, v in SortedPairs(rtable) do
         if v.Spawnable then
             local reftable = weapons.Get(k)
             if !wtable[v.Category] then
@@ -487,18 +485,14 @@ function QLOpenMenu()
     CreateOptionsMenu()
 
     function QuickName(name)
-        local ref = list.Get("Weapon")[name]
-        return ref and (showcat:GetBool() and ref.PrintName .. " (" .. string.gsub(ref.Category, string.len(ref.Category) > 6 and "[%l- ]" or "", "") .. ")" or ref.PrintName) or name
-        -- if LocalPlayer():IsSuperAdmin() and GetConVar("developer"):GetBool() then return dev .. " " .. name end
-        -- if list.Get("Weapon")[name] then
-        --     if showcat:GetBool() then return list.Get("Weapon")[name].PrintName .. "\n(" .. list.Get("Weapon")[name].Category .. ")" or name
-        --     else return list.Get("Weapon")[name].PrintName or name end
-        -- else return name end
+        local ref, show = rtable[name], showcat:GetBool()
+        return ref and (ref.PrintName .. (show and " (" .. string.gsub(ref.Category, "[%l -()[%]]+", "") .. ")" or "")) or name
     end
 
     function TheCats(cat)
         if cat == category1 then return category2 else return category3 end
     end
+
     function CreateLoadoutButtons(saving)
         rcont:Show()
         category1:Hide()
@@ -577,12 +571,10 @@ function QLOpenMenu()
                         cat:Hide()
                     end
                 else
-                    if !list.Get("Weapon")[v].Spawnable or list.Get("Weapon")[v].AdminOnly and !LocalPlayer():IsAdmin() then
+                    if !rtable[v].Spawnable or rtable[v].AdminOnly and !LocalPlayer():IsAdmin() then
                         button.Paint = function(self, x, y)
-                            surface.SetDrawColor(col_col)
-                            if button:IsHovered() then
-                                surface.SetDrawColor(col_but)
-                            end
+                            local active = button:IsHovered()
+                            surface.SetDrawColor(active and col_but or col_col)
                             surface.DrawRect(0 , 0, x, y)
                         end
                     end
@@ -655,12 +647,10 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index, class)
-        if (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!list.Get("Weapon")[class] or !list.Get("Weapon")[class].Spawnable or (list.Get("Weapon")[class].AdminOnly and !LocalPlayer():IsAdmin())) then
+        local ref, active = rtable[class], button:IsHovered() or button:GetToggle()
+        if (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!ref or !ref.Spawnable or (ref.AdminOnly and !LocalPlayer():IsAdmin())) then
             button.Paint = function(self, x, y)
-                surface.SetDrawColor(col_col)
-                if button:IsHovered() or button:GetToggle() then
-                    surface.SetDrawColor(col_but)
-                end
+                surface.SetDrawColor(active and col_but or col_col)
                 surface.DrawRect(0 , 0, x, y)
             end
             count = count + 1
