@@ -46,8 +46,8 @@ function QuickLoadout(ply)
             ply:Give(wep)
             timer.Simple(0, function()
                 if wget then
-                    ply:GiveAmmo(math.max(wget.Primary.ClipSize > 0 and wget.Primary.ClipSize or wget.Primary.DefaultClip, 0) * clips:GetInt(), wget.Primary.Ammo, true)
-                    ply:GiveAmmo(math.max(wget.Secondary.ClipSize > 0 and wget.Secondary.ClipSize or wget.Secondary.DefaultClip, 0) * clips:GetInt(), wget.Secondary.Ammo, true)
+                    ply:GiveAmmo(math.max(wget.Primary.ClipSize, 0) * clips:GetInt(), wget.Primary.Ammo, true)
+                    ply:GiveAmmo(math.max(wget.Secondary.ClipSize, 0) * clips:GetInt(), wget.Secondary.Ammo, true)
                 end
             end)
         end
