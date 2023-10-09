@@ -1,5 +1,6 @@
 AddCSLuaFile()
 local weaponlist = GetConVar("quickloadout_weapons")
+local dir, gm = "quickloadout/", engine.ActiveGamemode() .. "/"
 local ptable = {}
 local loadouts = {}
 
@@ -7,28 +8,40 @@ if !file.Exists("quickloadout", "DATA") then
     file.CreateDir("quickloadout")
 end
 
-if file.Size("quickloadout/client_loadouts.json", "DATA") <= 0 then
-    file.Write("quickloadout/client_loadouts.json", "[]")
+if file.Size(dir .. "client_loadouts.json", "DATA") <= 0 then
+    file.Write(dir .. "client_loadouts.json", "[]")
 end
 
-if file.Size("quickloadout/autosave.json", "DATA") <= 0 then
-    file.Write("quickloadout/autosave.json", util.TableToJSON(string.Explode(", ", weaponlist:GetString())))
+if file.Size(dir .. "autosave.json", "DATA") <= 0 then
+    file.Write(dir .. "autosave.json", util.TableToJSON(string.Explode(", ", weaponlist:GetString())))
 end
 
-if file.Exists("quickloadout/autosave.json", "DATA") then
-    ptable = util.JSONToTable(file.Read("quickloadout/autosave.json", "DATA"))
+if !file.Exists(dir .. engine.ActiveGamemode(), "DATA") then
+    file.CreateDir(dir .. engine.ActiveGamemode())
 end
 
-if !istable(util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))) then
-    print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
-    file.Write(os.date("quickloadout/client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read("quickloadout/client_loadouts.json", "DATA"))
-    file.Write("quickloadout/client_loadouts.json", "[]")
+if file.Size(dir .. gm .. "client_loadouts.json", "DATA") <= 0 then
+    file.Write(dir .. gm .. "client_loadouts.json", file.Exists(dir .. "client_loadouts.json", "DATA") and file.Read(dir .. "client_loadouts.json", "DATA") or "[]")
+end
+
+if file.Size(dir .. gm .. "autosave.json", "DATA") <= 0 then
+    file.Write(dir .. gm .. "autosave.json", file.Exists(dir .. "autosave.json", "DATA") and file.Read(dir .. "autosave.json", "DATA") or "[]")
+end
+
+if file.Exists(dir .. "autosave.json", "DATA") then
+    ptable = util.JSONToTable(file.Read(dir .. "autosave.json", "DATA"))
+end
+
+if file.Exists(dir .. gm .. "client_loadouts.json", "DATA") and !istable(util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))) then
+    print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/" .. dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
+    file.Write(os.date(dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read(dir .. gm .. "client_loadouts.json", "DATA"))
+    file.Write(dir .. gm .. "client_loadouts.json", "[]")
 end
 
 local function LoadSavedLoadouts()
-    loadouts = util.JSONToTable(file.Read("quickloadout/client_loadouts.json", "DATA"))
+    loadouts = util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))
 end
--- print(file.Read("quickloadout/client_loadouts.json", "DATA"))
+-- print(file.Read(dir .. "client_loadouts.json", "DATA"))
 
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
@@ -265,7 +278,7 @@ function QLOpenMenu()
             mainmenu:Remove()
         end)
         if !refresh then return end
-        file.Write("quickloadout/autosave.json", util.TableToJSON(ptable))
+        file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
         NetworkLoadout()
     end
 
@@ -602,7 +615,7 @@ function QLOpenMenu()
             button.DoClick = function(self)
                 if confirm then
                     table.remove(loadouts, key)
-                    file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
+                    file.Write(dir .. gm .. "client_loadouts.json", util.TableToJSON(loadouts))
                     CreateLoadoutButtons(true)
                 elseif !loadouts[key] then
                     self._TextEdit:SetText("")
@@ -611,7 +624,7 @@ function QLOpenMenu()
             button.OnLabelTextChanged = function(self, text)
                 qllist:Clear()
                 table.Merge(loadouts, {[key] = {name = text, weps = ptable}})
-                file.Write("quickloadout/client_loadouts.json", util.TableToJSON(loadouts))
+                file.Write(dir .. gm .. "client_loadouts.json", util.TableToJSON(loadouts))
                 sbut:DoClickInternal()
                 sbut:DoClick()
             end
