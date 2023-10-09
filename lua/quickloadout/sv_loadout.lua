@@ -37,15 +37,17 @@ end)
 function QuickLoadout(ply)
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
-    for k, v in ipairs(ply.quickloadout) do
+    local wtable = list.Get("Weapon")
+    for k, wep in ipairs(ply.quickloadout) do
         if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
-        if !list.Get("Weapon")[v] or !list.Get("Weapon")[v].Spawnable or (list.Get("Weapon")[v].AdminOnly and !ply:IsAdmin()) then count = count + 1
+        if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
         else
-            ply:Give(v)
+            local wget = weapons.Get(wep)
+            ply:Give(wep)
             timer.Simple(0, function()
-                if weapons.Get(v) then
-                    ply:GiveAmmo(weapons.Get(v).Primary.ClipSize * clips:GetInt(), weapons.Get(v).Primary.Ammo, true)
-                    ply:GiveAmmo(weapons.Get(v).Secondary.ClipSize * clips:GetInt(), weapons.Get(v).Secondary.Ammo, true)
+                if wget then
+                    ply:GiveAmmo(math.max(wget.Primary.ClipSize > 0 and wget.Primary.ClipSize or wget.Primary.DefaultClip, 0) * clips:GetInt(), wget.Primary.Ammo, true)
+                    ply:GiveAmmo(math.max(wget.Secondary.ClipSize > 0 and wget.Secondary.ClipSize or wget.Secondary.DefaultClip, 0) * clips:GetInt(), wget.Secondary.Ammo, true)
                 end
             end)
         end
