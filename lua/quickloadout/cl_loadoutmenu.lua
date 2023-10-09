@@ -8,16 +8,16 @@ if !file.Exists("quickloadout", "DATA") then
     file.CreateDir("quickloadout")
 end
 
+if !file.Exists(dir .. engine.ActiveGamemode(), "DATA") then
+    file.CreateDir(dir .. engine.ActiveGamemode())
+end
+
 if file.Size(dir .. "client_loadouts.json", "DATA") <= 0 then
     file.Write(dir .. "client_loadouts.json", "[]")
 end
 
 if file.Size(dir .. "autosave.json", "DATA") <= 0 then
     file.Write(dir .. "autosave.json", util.TableToJSON(string.Explode(", ", weaponlist:GetString())))
-end
-
-if !file.Exists(dir .. engine.ActiveGamemode(), "DATA") then
-    file.CreateDir(dir .. engine.ActiveGamemode())
 end
 
 if file.Size(dir .. gm .. "client_loadouts.json", "DATA") <= 0 then
@@ -28,8 +28,8 @@ if file.Size(dir .. gm .. "autosave.json", "DATA") <= 0 then
     file.Write(dir .. gm .. "autosave.json", file.Exists(dir .. "autosave.json", "DATA") and file.Read(dir .. "autosave.json", "DATA") or "[]")
 end
 
-if file.Exists(dir .. "autosave.json", "DATA") then
-    ptable = util.JSONToTable(file.Read(dir .. "autosave.json", "DATA"))
+if file.Exists(dir .. gm .. "autosave.json", "DATA") then
+    ptable = util.JSONToTable(file.Read(dir .. gm .. "autosave.json", "DATA"))
 end
 
 if file.Exists(dir .. gm .. "client_loadouts.json", "DATA") and !istable(util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))) then
