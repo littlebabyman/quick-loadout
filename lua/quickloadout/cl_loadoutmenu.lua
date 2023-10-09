@@ -204,6 +204,7 @@ local function GenerateWeaponTable()
     for k, v in SortedPairs(rtable) do
         if v.Spawnable then
             local reftable = weapons.Get(k)
+            if reftable != nil then for s, i in SortedPairs(reftable) do if i == true then rtable[k][s] = i end end end
             if !wtable[v.Category] then
                 wtable[v.Category] = {}
             end
@@ -485,8 +486,9 @@ function QLOpenMenu()
     CreateOptionsMenu()
 
     function QuickName(name)
-        local ref, show = rtable[name], showcat:GetBool()
-        return ref and (ref.PrintName .. (show and " (" .. string.gsub(ref.Category, "[%l -()[%]]+", "") .. ")" or "")) or name
+        local ref, match, show = rtable[name], "^[%u%d%p]+%s", showcat:GetBool()
+        local bc = ref and tostring(ref.Category:match(match)):Trim()
+        return ref and (ref.PrintName .. (show and " (" .. (ref.Category:len() > 6 and (!ref[bc] and ref.Category:match(match) or ref.Category:gsub(bc, "")) or ref.Category):gsub("%b()", ""):gsub("[^%w.:]", "") .. ")" or ""):gsub(ref.Category:len() > 6 and "[%l]" or "", "")) or name
     end
 
     function TheCats(cat)
