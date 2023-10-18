@@ -501,7 +501,7 @@ function QLOpenMenu()
     function QuickName(name)
         local ref, match, show = rtable[name], "^[%u%d%p]+%s", showcat:GetBool()
         local bc = ref and tostring(ref.Category:match(match)):Trim()
-        local short = (ref.Category:len() > 6 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub("^" .. bc .. ".", "") or ref.Category:match(match)) or ref.Category):gsub("%b()", ""):gsub("%s[oO][fF]%s", "O"):gsub("%s[tT][hH][eE]%s", "T"):gsub("[^%w.:]", "")
+        local short = (ref.Category:len() > 6 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match(match)) or ref.Category):gsub("%b()", ""):gsub("%s[oO][fF]%s", "O"):gsub("%s[tT][hH][eE]%s", "T"):gsub("[^%w.:]", "")
         return ref and (language.GetPhrase(ref.PrintName) .. (show and " (" .. short:gsub(short:len() > 8 and "[%l]" or "", "") .. ")" or "")) or name
     end
 
