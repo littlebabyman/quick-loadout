@@ -509,7 +509,6 @@ function QLOpenMenu()
         local ref, match, show = rtable[name], "^[%w%d%p]+", showcat:GetBool()
         local bc = ref and tostring(ref.Category:match(match)):Trim()
         local short = bc and (ref.Category:len() > 7 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match("^[%u%d%p]+%s")) or ref.Category):gsub("%b()", ""):Trim()
-        print(short)
         return ref and (language.GetPhrase(ref.PrintName) .. (show and " (" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. ")" or "")) or name
     end
 
