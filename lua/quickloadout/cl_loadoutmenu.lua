@@ -105,9 +105,11 @@ local function GenerateCategory(frame, name)
     return category
 end
 
+local wepimg = Material("vgui/null")
+
 local function TestImage(item, frame)
-    local image, x, y = frame:GetImage(), frame:GetParent():GetSize()
-    if !item or istable(item) then return image end
+    local x, y = frame:GetParent():GetSize()
+    if !item or istable(item) then return "vgui/null" end
     frame:SetSize(y * 0.4, y * 0.4)
     frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
     if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
@@ -116,18 +118,14 @@ local function TestImage(item, frame)
         frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
         return "vgui/hud/" .. item .. ".vmt"
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
-    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
+    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png" 
     else return "vgui/null" end
 end
 
 local function GenerateLabel(frame, name, class, panel)
     local button = frame:Add("DLabel")
     function NameSetup()
-        if istable(name) then
-            return class or name
-        else
-            return name or class
-        end
+        return !istable(name) and name or class
     end
     local text = NameSetup() or "Uh oh! Broken!"
     surface.SetFont("quickloadout_font_large")
@@ -153,7 +151,7 @@ local function GenerateLabel(frame, name, class, panel)
         button.OnCursorEntered = function(self)
             if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
-            panel:SetImage(TestImage(class, panel), "vgui/null")
+            wepimg = Material(TestImage(class, panel))
         end
         button.OnToggled = function(self, state)
             if state then
@@ -233,6 +231,8 @@ local function GenerateWeaponTable()
     end
 end
 
+local mat = Material("vgui/gradient-l")
+
 function QLOpenMenu()
     local buttonclicked = nil
     if open then return else open = true end
@@ -242,13 +242,14 @@ function QLOpenMenu()
     end
     local count = 0
     local mainmenu = vgui.Create("EditablePanel")
+    wepimg = Material("vgui/null")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
     local width, height = mainmenu:GetSize()
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
         surface.DrawRect(0,0, (x - y) * 0.25, y)
-        surface.SetMaterial(Material("vgui/gradient-l"))
+        surface.SetMaterial(mat)
         surface.DrawTexturedRect((x - y) * 0.25, 0, math.min(y * 1.5, x), y)
         draw.NoTexture()
     end
@@ -258,13 +259,9 @@ function QLOpenMenu()
     mainmenu:MakePopup()
 
     function DefaultEnabled()
-        if override:GetBool() then
-            return "Default loadout is on."
-        else
-            return "Default loadout is off."
-        end
+        return override:GetBool() and "Default loadout is on." or "Default loadout is off."
     end
-    
+
     function GetMaxSlots()
         return maxslots:GetBool() and " (Max " .. maxslots:GetInt() .. ")" or !game.SinglePlayer() and " (Max 32)" or ""
     end
@@ -273,13 +270,17 @@ function QLOpenMenu()
         mainmenu:SetKeyboardInputEnabled(false)
         mainmenu:SetMouseInputEnabled(false)
         mainmenu:MoveTo(-width, 0, 0.25, 0, 1.5)
+        mainmenu:SizeTo(0, height, 0.25, 0, 1.5)
         timer.Simple(0.25, function()
             open = false
             mainmenu:Remove()
         end)
         if !refresh then return end
         file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
-        NetworkLoadout()
+        timer.Simple(0.2, function()
+            mainmenu.Paint = nil
+            NetworkLoadout()
+        end)
     end
 
     function mainmenu:OnKeyCodePressed(key)
@@ -301,7 +302,7 @@ function QLOpenMenu()
     end
     lcont:SetSize(height * 0.3, height)
     lcont:SetX((width - height) * 0.25)
-    lcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
+    lcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetWide() * 0.05, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont:CopyBase(lcont)
     rcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont.Paint = lcont.Paint
@@ -313,12 +314,21 @@ function QLOpenMenu()
     qllist:Hide()
     weplist:MakeDroppable("quickloadoutarrange", false)
     local category1, category2, category3 = GenerateCategory(rscroller, "x Cancel"), GenerateCategory(rscroller, "< Categories"), GenerateCategory(rscroller, "< Subcategories")
-    local image = mainmenu:Add("DImage")
-    image:SetImage("vgui/null", "vgui/null")
+    local image = mainmenu:Add("Panel")
+    image.Paint = function(self, x, y)
+        surface.SetDrawColor(255, 255, 255)
+        surface.SetMaterial(wepimg)
+        surface.DrawTexturedRect(0,0, x, y)
+        draw.NoTexture()
+    end
     image:SetSize(height * 0.4, height * 0.4)
     image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
 
+    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "Options", collapse, image)
+    options:SetVisible(false)
+    optbut:Dock(TOP)
+    optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
     saveload:SizeToContentsY()
@@ -343,7 +353,13 @@ function QLOpenMenu()
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
-        image:SetImage("vgui/null", "vgui/null")
+        wepimg = Material("vgui/null")
+    end
+    optbut.DoClickInternal = function(self)
+        options:SetVisible(!self:GetToggle())
+        saveload:SetVisible(self:GetToggle())
+        lscroller:SetVisible(self:GetToggle())
+        toptext:SetVisible(self:GetToggle())
     end
     lscroller:SetZPos(1)
     lscroller:DockMargin(0, math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1))
@@ -369,15 +385,6 @@ function QLOpenMenu()
     end
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
-    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "Options", collapse, image)
-    options:SetVisible(false)
-    optbut:SetY(lcont:GetWide() * 0.05)
-    optbut.DoClickInternal = function(self)
-        options:SetVisible(!self:GetToggle())
-        saveload:SetVisible(self:GetToggle())
-        lscroller:SetVisible(self:GetToggle())
-        toptext:SetVisible(self:GetToggle())
-    end
     function CreateOptionsMenu()
         options:Clear()
         options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
@@ -501,7 +508,7 @@ function QLOpenMenu()
     function QuickName(name)
         local ref, match, show = rtable[name], "^[%u%d%p]+%s", showcat:GetBool()
         local bc = ref and tostring(ref.Category:match(match)):Trim()
-        local short = (ref.Category:len() > 6 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match(match)) or ref.Category):gsub("%b()", ""):gsub("%s[oO][fF]%s", "O"):gsub("%s[tT][hH][eE]%s", "T"):gsub("[^%w.:]", "")
+        local short = bc and (ref.Category:len() > 6 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match(match)) or ref.Category):gsub("%b()", ""):gsub("%s[oO][fF]%s", "O"):gsub("%s[tT][hH][eE]%s", "T"):gsub("[^%w.:]", "")
         return ref and (language.GetPhrase(ref.PrintName) .. (show and " (" .. short:gsub(short:len() > 8 and "[%l]" or "", "") .. ")" or "")) or name
     end
 
@@ -574,7 +581,7 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            image:SetImage(TestImage(ptable[slot], image), "vgui/null")
+            wepimg = Material(TestImage(ptable[slot], image))
             if cat == category1 then cont:GetParent():Hide() buttonclicked = nil end
         end
         for i, v in SortedPairs(tbl) do
