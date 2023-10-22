@@ -31,7 +31,7 @@ net.Receive("quickloadout", function(len, ply)
     end
     ply:StripWeapons()
     ply:StripAmmo()
-    timer.Simple(0, function() hook.Run("PlayerLoadout", ply) end)
+    hook.Run("PlayerLoadout", ply)
 end)
 
 function QuickLoadout(ply)
