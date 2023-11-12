@@ -234,6 +234,8 @@ end
 local mat = Material("vgui/gradient-l")
 
 function QLOpenMenu()
+    local tmp = {}
+    table.CopyFromTo(ptable, tmp)
     local buttonclicked = nil
     if open then return else open = true end
     local refresh = false
@@ -377,12 +379,31 @@ function QLOpenMenu()
     end
     rbar.btnGrip.Paint = lbar.btnGrip.Paint
 
-    local closer = GenerateLabel(lcont, "Close", nil, image)
+    local closer = lcont:Add("Panel")
+    closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
+    closer:SizeToContentsY()
     closer:Dock(BOTTOM)
-    closer.DoClickInternal = function(self)
+    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Close", nil, image)
+    ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
+    ccancel:Dock(LEFT)
+    ccancel.DoClickInternal = function(self)
+        ptable = tmp
+        refresh = false
         self:SetToggle(true)
         CloseMenu()
     end
+    csave:SetWide(math.ceil(closer:GetWide() * 0.485))
+    csave:Dock(RIGHT)
+    csave.DoClickInternal = function(self)
+        self:SetToggle(true)
+        CloseMenu()
+    end
+    -- local closer = GenerateLabel(lcont, "Close", nil, image)
+    -- closer:Dock(BOTTOM)
+    -- closer.DoClickInternal = function(self)
+    --     self:SetToggle(true)
+    --     CloseMenu()
+    -- end
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
     function CreateOptionsMenu()
