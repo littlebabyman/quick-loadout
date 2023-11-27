@@ -99,9 +99,14 @@ hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, Cr
 
 local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
-    if name then category:SetName(name) end
+    if name then category.Name = name end
     category:SetZPos(2)
     category:SetSize(frame:GetParent():GetSize())
+    category:Dock(FILL)
+    category.Show = function(self)
+        self:SetVisible(true)
+        if frame:GetName() == "DScrollPanel" then frame:GetVBar():SetScroll(0) timer.Simple(0, function() if !IsValid(frame) then return end frame:Rebuild() end) end
+    end
     return category
 end
 
@@ -118,7 +123,7 @@ local function TestImage(item, frame)
         frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
         return "vgui/hud/" .. item .. ".vmt"
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
-    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png" 
+    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
     else return "vgui/null" end
 end
 
@@ -314,7 +319,7 @@ function QLOpenMenu()
     local lbar, rbar = lscroller:GetVBar(), rscroller:GetVBar()
     local qllist, weplist = GenerateCategory(lscroller), GenerateCategory(lscroller)
     qllist:Hide()
-    weplist:MakeDroppable("quickloadoutarrange", false)
+    -- weplist:MakeDroppable("quickloadoutarrange", false)
     local category1, category2, category3 = GenerateCategory(rscroller, "x Cancel"), GenerateCategory(rscroller, "< Categories"), GenerateCategory(rscroller, "< Subcategories")
     local image = mainmenu:Add("Panel")
     image.Paint = function(self, x, y)
@@ -328,7 +333,7 @@ function QLOpenMenu()
     -- image:SetKeepAspect(true)
 
     local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "Options", collapse, image)
-    options:SetVisible(false)
+    options:Hide()
     optbut:Dock(TOP)
     optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local saveload = lcont:Add("Panel")
@@ -339,18 +344,18 @@ function QLOpenMenu()
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
     sbut.DoClickInternal = function(self)
-        qllist:SetVisible(!self:GetToggle())
+        -- qllist:SetVisible(!self:GetToggle())
         lbut:SetToggle(false)
-        weplist:SetVisible(self:GetToggle())
-        if !self:GetToggle() then CreateLoadoutButtons(true) else CreateWeaponButtons() end
+        -- weplist:SetVisible(self:GetToggle())
+        if !self:GetToggle() then CreateLoadoutButtons(true) qllist:Show() weplist:Hide() else CreateWeaponButtons() qllist:Hide() weplist:Show() end
     end
     lbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     lbut:Dock(RIGHT)
     lbut.DoClickInternal = function(self)
-        qllist:SetVisible(!self:GetToggle())
+        -- qllist:SetVisible(!self:GetToggle())
         sbut:SetToggle(false)
-        weplist:SetVisible(self:GetToggle())
-        if !self:GetToggle() then CreateLoadoutButtons(false) else CreateWeaponButtons() end
+        -- weplist:SetVisible(self:GetToggle())
+        if !self:GetToggle() then CreateLoadoutButtons(false) qllist:Show() weplist:Hide() else CreateWeaponButtons() qllist:Hide() weplist:Show() end
     end
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
@@ -364,10 +369,10 @@ function QLOpenMenu()
         toptext:SetVisible(self:GetToggle())
     end
     lscroller:SetZPos(1)
-    lscroller:DockMargin(0, math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1))
+    lscroller:DockMargin(0, math.max(lscroller:GetParent():GetWide() * 0.005, 1), 0, math.max(lscroller:GetParent():GetWide() * 0.005, 1))
     lscroller:Dock(FILL)
     rscroller:CopyBase(lscroller)
-    rscroller:DockMargin(0, math.max(rscroller:GetParent():GetWide() * 0.005, 1), math.max(lscroller:GetParent():GetWide() * 0.005, 1), math.max(rscroller:GetParent():GetWide() * 0.005, 1))
+    rscroller:DockMargin(0, math.max(rscroller:GetParent():GetWide() * 0.005, 1), 0, math.max(rscroller:GetParent():GetWide() * 0.005, 1))
     lbar:SetHideButtons(true)
     rbar:SetHideButtons(true)
     lbar:SetWide(lcont:GetWide() * 0.05)
@@ -375,7 +380,7 @@ function QLOpenMenu()
     lbar.Paint = nil
     rbar.Paint = nil
     lbar.btnGrip.Paint = function(self, x, y)
-        draw.RoundedBox(x, x * 0.25, x * 0.5, x * 0.5, y - x, Color(255, 255, 255, 128))
+        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, Color(255, 255, 255, 128))
     end
     rbar.btnGrip.Paint = lbar.btnGrip.Paint
 
@@ -583,27 +588,38 @@ function QLOpenMenu()
         category1:Clear()
         count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
 
-        if !loadouts[key] then return end
-        for i, v in ipairs(loadouts[key].weps) do
-            local button = GenerateLabel(category1, QuickName(v), v, image)
-            WepSelector(button, i, v)
-            button:SetIsToggle(false)
-            button.DoClickInternal = function() end
-            button.DoRightClick = button.DoClickInternal
+        if loadouts[key] then
+            for i, v in ipairs(loadouts[key].weps) do
+                local button = GenerateLabel(category1, QuickName(v), v, image)
+                WepSelector(button, i, v)
+                button:SetIsToggle(false)
+                button.DoClickInternal = nil
+                button.DoRightClick = button.DoClickInternal
+            end
+        else
+            for i, v in ipairs(ptable) do
+                local button = GenerateLabel(category1, QuickName(v), v, image)
+                WepSelector(button, i, v)
+                button:SetIsToggle(false)
+                button.DoClickInternal = nil
+                button.DoRightClick = button.DoClickInternal
+            end
         end
+        -- category1:InvalidateLayout(true)
+        -- print(category1:GetWide(), category1:GetTall())
         category1:Show()
     end
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
         cat:Clear()
-        local cancel = GenerateLabel(cat, cat:GetName(), collapse, image)
+        local cancel = GenerateLabel(cat, cat.Name, collapse, image)
         cancel.DoClickInternal = function(self)
             cat:Hide()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
             wepimg = Material(TestImage(ptable[slot], image))
-            if cat == category1 then cont:GetParent():Hide() buttonclicked = nil end
+            if cat == category1 then buttonclicked = nil end
         end
         for i, v in SortedPairs(tbl) do
             if !(table.HasValue(ptable, v) and !ptable[slot]) then
@@ -699,10 +715,19 @@ function QLOpenMenu()
                 surface.DrawRect(0 , 0, x, y)
             end
             count = count + 1
+        else
+            local catimage = Material(ref and list.Get("ContentCategoryIcons")[ref.Category] or "vgui/null")
+            button.Paint = function(self, x, y)
+                local active, h = button:IsHovered() or button:GetToggle(), x * 0.1
+                surface.SetDrawColor(active and col_hl or col_but)
+                surface.DrawRect(0 , 0, x, y)
+                surface.SetDrawColor(255, 255, 255, 100)
+                surface.SetMaterial(catimage)
+                surface.DrawTexturedRect(x-h * 1.2, y - h * 1.15, h, h)
+            end
         end
         button.DoClickInternal = function()
             rcont:Show()
-            rscroller:GetVBar():SetScroll(0)
             category1:Hide()
             category2:Hide()
             category3:Hide()
@@ -754,7 +779,7 @@ if game.SinglePlayer() then
     net.Receive("QLSPHack", function() if !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end end)
 else
     hook.Add("PlayerButtonDown", "QuickLoadoutBind", function(ply, key)
-        if input.GetKeyCode(keybind:GetString()) != -1 and input.IsKeyDown(input.GetKeyCode(keybind:GetString())) and !input.LookupBinding("quickloadout_menu") and IsFirstTimePredicted() then QLOpenMenu() end
+        if input.GetKeyCode(keybind:GetString()) != -1 and input.IsKeyDown(input.GetKeyCode(keybind:GetString())) and !input.LookupBinding("quickloadout_menu") then QLOpenMenu() end
     end)
 end
 
