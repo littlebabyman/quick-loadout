@@ -159,11 +159,7 @@ local function GenerateLabel(frame, name, class, panel)
             wepimg = Material(TestImage(class, panel))
         end
         button.OnToggled = function(self, state)
-            if state then
-                surface.PlaySound("garrysmod/ui_click.wav")
-            else
-                surface.PlaySound("garrysmod/ui_return.wav")
-            end
+            surface.PlaySound(state and "garrysmod/ui_click.wav" or "garrysmod/ui_return.wav")
         end
     end
     return button
@@ -467,6 +463,8 @@ function QLOpenMenu()
         enablecat:SetTextColor(Color(255, 255, 255, 192))
         enablecat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
+            sbut:SetToggle(false)
+            lbut:SetToggle(false)
             timer.Simple(0, function() CreateWeaponButtons() end)
         end
 
@@ -582,8 +580,8 @@ function QLOpenMenu()
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
         WepSelector(newwep, #ptable + 1, nil)
-        if sbut:GetToggle() then sbut:Toggle()
-        elseif lbut:GetToggle() then lbut:Toggle() end
+        -- if sbut:GetToggle() then sbut:Toggle()
+        -- elseif lbut:GetToggle() then lbut:Toggle() end
         qllist:Hide()
         weplist:Show()
     end
