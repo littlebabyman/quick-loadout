@@ -241,7 +241,7 @@ function QLOpenMenu()
     if open then return else open = true end
     local refresh = false
     function RefreshLoadout(pnl)
-        if IsValid(pnl) then pnl:Show() end
+        if IsValid(pnl) then for k,v in ipairs(pnl:GetChildren()) do v:SetVisible(true) end end
         refresh = true
     end
     local count = 0
@@ -385,21 +385,21 @@ function QLOpenMenu()
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
     closer:SizeToContentsY()
     closer:Dock(BOTTOM)
-    local ccancel, csave = GenerateLabel(closer, "Discard", nil, image), GenerateLabel(closer, "Close", nil, image)
+    local ccancel, csave = GenerateLabel(closer, "Close", nil, image), GenerateLabel(closer, "Equip", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
-    ccancel:Dock(LEFT)
-    ccancel:Hide()
+    ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
-        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes discarded.")
+        if csave:IsVisible() then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes discarded.") end
         ptable = tmp
         refresh = false
         self:SetToggle(true)
         CloseMenu()
     end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
-    csave:Dock(FILL)
+    csave:Dock(RIGHT)
+    csave:Hide()
     csave.DoClickInternal = function(self)
-        if ccancel:IsVisible() then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes saved.") end
+        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes saved.")
         self:SetToggle(true)
         CloseMenu()
     end
@@ -651,7 +651,7 @@ function QLOpenMenu()
                         table.Merge(ptable, {[slot] = v})
                         cat:Clear()
                         CreateWeaponButtons()
-                        RefreshLoadout(ccancel)
+                        RefreshLoadout(closer)
                     end
                 end
             end
@@ -700,7 +700,7 @@ function QLOpenMenu()
             button.DoRightClick = function(self)
                 LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " equipped!")
                 ptable = loadouts[key].weps
-                RefreshLoadout(ccancel)
+                RefreshLoadout(closer)
                 CreateWeaponButtons()
                 lbut:DoClickInternal()
                 lbut:Toggle()
@@ -755,7 +755,7 @@ function QLOpenMenu()
             if index > #ptable then return end
             table.remove(ptable, index)
             CreateWeaponButtons()
-            RefreshLoadout(ccancel)
+            RefreshLoadout(closer)
         end
     end
     CreateWeaponButtons()
