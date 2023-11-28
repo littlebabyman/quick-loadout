@@ -240,7 +240,8 @@ function QLOpenMenu()
     local buttonclicked = nil
     if open then return else open = true end
     local refresh = false
-    function RefreshLoadout()
+    function RefreshLoadout(pnl)
+        if IsValid(pnl) then pnl:Show() end
         refresh = true
     end
     local count = 0
@@ -384,18 +385,21 @@ function QLOpenMenu()
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
     closer:SizeToContentsY()
     closer:Dock(BOTTOM)
-    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Close", nil, image)
+    local ccancel, csave = GenerateLabel(closer, "Discard", nil, image), GenerateLabel(closer, "Close", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(LEFT)
+    ccancel:Hide()
     ccancel.DoClickInternal = function(self)
+        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes discarded.")
         ptable = tmp
         refresh = false
         self:SetToggle(true)
         CloseMenu()
     end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
-    csave:Dock(RIGHT)
+    csave:Dock(FILL)
     csave.DoClickInternal = function(self)
+        if ccancel:IsVisible() then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes saved.") end
         self:SetToggle(true)
         CloseMenu()
     end
@@ -647,7 +651,7 @@ function QLOpenMenu()
                         table.Merge(ptable, {[slot] = v})
                         cat:Clear()
                         CreateWeaponButtons()
-                        RefreshLoadout()
+                        RefreshLoadout(ccancel)
                     end
                 end
             end
@@ -696,7 +700,7 @@ function QLOpenMenu()
             button.DoRightClick = function(self)
                 LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " equipped!")
                 ptable = loadouts[key].weps
-                RefreshLoadout()
+                RefreshLoadout(ccancel)
                 CreateWeaponButtons()
                 lbut:DoClickInternal()
                 lbut:Toggle()
@@ -751,7 +755,7 @@ function QLOpenMenu()
             if index > #ptable then return end
             table.remove(ptable, index)
             CreateWeaponButtons()
-            RefreshLoadout()
+            RefreshLoadout(ccancel)
         end
     end
     CreateWeaponButtons()
