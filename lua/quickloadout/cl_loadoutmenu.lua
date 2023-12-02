@@ -288,7 +288,8 @@ function QLOpenMenu()
     end
 
     function mainmenu:OnKeyCodePressed(key)
-        if input.GetKeyCode(keybind:GetString()) != -1 and input.IsKeyDown(input.GetKeyCode(keybind:GetString())) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
+        print(input.GetKeyCode(keybind:GetString()), key)
+        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
             CloseMenu()
         end
     end
