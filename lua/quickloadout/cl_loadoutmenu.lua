@@ -200,8 +200,9 @@ end
 local function NetworkLoadout()
     if CurTime() < lastgiven + 1 then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "You're sending loadouts too quick! Calm down.") return end
     lastgiven = CurTime()
+    local weps = util.Compress(util.TableToJSON(ptable))
     net.Start("quickloadout")
-    net.WriteTable(ptable)
+    net.WriteData(weps)
     net.SendToServer()
 end
 
