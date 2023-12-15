@@ -52,7 +52,7 @@ function QuickLoadout(ply)
             end)
         end
     end
-    if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply.quickloadout)) then
+    if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply:GetWeapons())) then
         return true
     end
 end
