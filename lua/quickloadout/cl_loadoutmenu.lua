@@ -110,21 +110,25 @@ local function GenerateCategory(frame, name)
     return category
 end
 
+local wtable = {}
+local open = false
+local rtable = {}
 local wepimg = Material("vgui/null")
 
-local function TestImage(item, frame)
-    local x, y = frame:GetParent():GetSize()
-    if !item or istable(item) then return "vgui/null" end
-    frame:SetSize(y * 0.4, y * 0.4)
-    frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
+local function TestImage(item)
+    -- local x, y = frame:GetParent():GetSize()
+    if !item then return "vgui/null" end
+    -- frame:SetSize(y * 0.4, y * 0.4)
+    -- frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
     if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
     elseif file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then
-        frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
-        frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
-        return "vgui/hud/" .. item .. ".vmt"
-    elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item .. ".vmt"
+        -- frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
+        -- frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
+        return "vgui/hud/" .. item
     elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
-    else return "vgui/null" end
+    elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item
+    -- else return "vgui/null"
+    end
 end
 
 local function GenerateLabel(frame, name, class, panel)
@@ -134,7 +138,7 @@ local function GenerateLabel(frame, name, class, panel)
     end
     local text = NameSetup() or "Uh oh! Broken!"
     surface.SetFont("quickloadout_font_large")
-    button:SetName(class)
+    button.Name = class
     button:SetMouseInputEnabled(true)
     button:SetMinimumSize(nil, frame:GetWide() * 0.125)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
@@ -147,6 +151,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button:SetContentAlignment(4)
     if ispanel(panel) then
+        local width, height = ScrW(), ScrH()
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
             local active = button:IsHovered() or button:GetToggle()
@@ -156,7 +161,11 @@ local function GenerateLabel(frame, name, class, panel)
         button.OnCursorEntered = function(self)
             if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
-            wepimg = Material(TestImage(class, panel))
+            if class and !istable(class) then
+                wepimg = Material(rtable[class] and rtable[class].Icon or "vgui/null")
+                local ratio = wepimg:Width() / wepimg:Height()
+                panel.ImageRatio = ratio - 1
+            end
         end
         button.OnToggled = function(self, state)
             surface.PlaySound(state and "garrysmod/ui_click.wav" or "garrysmod/ui_return.wav")
@@ -208,10 +217,6 @@ end
 
 net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
 
-local wtable = {}
-local open = false
-local rtable = {}
-
 local function GenerateWeaponTable()
     rtable = list.Get("Weapon")
     for k, v in SortedPairs(rtable) do
@@ -221,6 +226,10 @@ local function GenerateWeaponTable()
             if !wtable[v.Category] then
                 wtable[v.Category] = {}
             end
+            local mat = (list.Get("ContentCategoryIcons")[v.Category]) or "vgui/null"
+            if file.Exists("materials/vgui/hud/" .. v.ClassName .. ".vmt", "GAME") then mat = "vgui/hud/" .. v.ClassName
+            elseif file.Exists("materials/entities/" .. v.ClassName .. ".png", "GAME") then mat = "entities/" .. v.ClassName .. ".png" end
+            v.Icon = TestImage(k) or mat
             if reftable and (reftable.SubCategory or reftable.SubCatType) then
                 if !wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] then
                     wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] = {}
@@ -320,10 +329,11 @@ function QLOpenMenu()
     -- weplist:MakeDroppable("quickloadoutarrange", false)
     local category1, category2, category3 = GenerateCategory(rscroller, "x Cancel"), GenerateCategory(rscroller, "< Categories"), GenerateCategory(rscroller, "< Subcategories")
     local image = mainmenu:Add("Panel")
+    image.ImageRatio = 0
     image.Paint = function(self, x, y)
         surface.SetDrawColor(255, 255, 255)
         surface.SetMaterial(wepimg)
-        surface.DrawTexturedRect(0,0, x, y)
+        surface.DrawTexturedRect(0+(y*math.min(self.ImageRatio, 0)*0.25),0+(y*math.max(self.ImageRatio, 0)*0.25), x-(y*math.min(self.ImageRatio, 0)*0.5), y-(y*math.max(self.ImageRatio, 0)*0.5))
         draw.NoTexture()
     end
     image:SetSize(height * 0.4, height * 0.4)
@@ -625,8 +635,10 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            wepimg = Material(TestImage(ptable[slot], image))
-            if cat == category1 then buttonclicked = nil end
+            wepimg = Material(TestImage(ptable[slot]) or "vgui/null")
+            local ratio = wepimg:Width() / wepimg:Height()
+            image.ImageRatio = ratio - 1
+            if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
         for i, v in SortedPairs(tbl) do
             if !(table.HasValue(ptable, v) and !ptable[slot]) then
@@ -724,14 +736,20 @@ function QLOpenMenu()
             end
             count = count + 1
         else
-            local catimage = Material(ref and list.Get("ContentCategoryIcons")[ref.Category] or "vgui/null")
+            local wepimage = Material(ref and ref.Icon or "vgui/null")
+            local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
+            local ratio = w / h
             button.Paint = function(self, x, y)
-                local active, h = button:IsHovered() or button:GetToggle(), x * 0.1
+                local active = button:IsHovered() or button:GetToggle()
                 surface.SetDrawColor(active and col_hl or col_but)
                 surface.DrawRect(0 , 0, x, y)
-                surface.SetDrawColor(255, 255, 255, 100)
-                surface.SetMaterial(catimage)
-                surface.DrawTexturedRect(x-h * 1.2, y - h * 1.15, h, h)
+                surface.SetDrawColor(255, 255, 255, 190)
+                surface.SetMaterial(wepimage)
+                surface.DrawTexturedRect(x - offset * ratio - offset * .15, y - offset * 1.15, offset * ratio, offset)
+                -- if !ref or !wepimage then return end
+                -- surface.SetDrawColor(255, 255, 255, 150)
+                -- surface.SetMaterial(wepimage)
+                -- surface.DrawTexturedRect(x-h * 1.2, y - h * 1.15, h, h)
             end
         end
         button.DoClickInternal = function()
