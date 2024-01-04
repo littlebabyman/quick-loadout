@@ -735,7 +735,6 @@ function QLOpenMenu()
             end
             count = count + 1
         else
-            print(ref and ref.Icon)
             local catimage = Material(ref and ref.Icon or "vgui/null")
             local wepimage = Material(ref and ref.Image or "vgui/null")
             local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
