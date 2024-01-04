@@ -634,7 +634,7 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            wepimg = Material(rtable[ptable[slot]].Image or "vgui/null")
+            wepimg = Material(ptable[slot] and rtable[ptable[slot]].Image or "vgui/null")
             local ratio = wepimg:Width() / wepimg:Height()
             image.ImageRatio = ratio - 1
             if cat == category1 then buttonclicked = nil rcont:Hide() end
@@ -735,16 +735,23 @@ function QLOpenMenu()
             end
             count = count + 1
         else
-            local wepimage = Material(ref and (ref.Image or ref.Icon) or "vgui/null")
+            print(ref and ref.Icon)
+            local catimage = Material(ref and ref.Icon or "vgui/null")
+            local wepimage = Material(ref and ref.Image or "vgui/null")
             local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
             local ratio = w / h
+            local scale = ScreenScale(8)
             button.Paint = function(self, x, y)
                 local active = button:IsHovered() or button:GetToggle()
                 surface.SetDrawColor(active and col_hl or col_but)
                 surface.DrawRect(0 , 0, x, y)
-                surface.SetDrawColor(255, 255, 255, 190)
+                if !ref then return end
+                surface.SetDrawColor(255, 255, 255, 150)
                 surface.SetMaterial(wepimage)
-                surface.DrawTexturedRect(x - offset * ratio - offset * .15, y - offset * 1.15, offset * ratio, offset)
+                surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
+                surface.SetDrawColor(255, 255, 255, 255)
+                surface.SetMaterial(catimage)
+                surface.DrawTexturedRect(x - offset * 0.15 - scale, y - offset * 0.15 - scale, scale, scale)
                 -- if !ref or !wepimage then return end
                 -- surface.SetDrawColor(255, 255, 255, 150)
                 -- surface.SetMaterial(wepimage)
