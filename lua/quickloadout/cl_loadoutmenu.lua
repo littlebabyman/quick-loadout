@@ -748,7 +748,7 @@ function QLOpenMenu()
                 surface.SetDrawColor(255, 255, 255, 150)
                 surface.SetMaterial(wepimage)
                 surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
-                surface.SetDrawColor(255, 255, 255, 255)
+                surface.SetDrawColor(255, 255, 255, 200)
                 surface.SetMaterial(catimage)
                 surface.DrawTexturedRect(x - offset * 0.15 - scale, y - offset * 0.15 - scale, scale, scale)
                 -- if !ref or !wepimage then return end
