@@ -162,7 +162,7 @@ local function GenerateLabel(frame, name, class, panel)
             if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
             if class and !istable(class) then
-                wepimg = Material(rtable[class] and rtable[class].Icon or "vgui/null")
+                wepimg = Material(rtable[class] and rtable[class].Image or "vgui/null")
                 local ratio = wepimg:Width() / wepimg:Height()
                 panel.ImageRatio = ratio - 1
             end
@@ -227,9 +227,8 @@ local function GenerateWeaponTable()
                 wtable[v.Category] = {}
             end
             local mat = (list.Get("ContentCategoryIcons")[v.Category]) or "vgui/null"
-            if file.Exists("materials/vgui/hud/" .. v.ClassName .. ".vmt", "GAME") then mat = "vgui/hud/" .. v.ClassName
-            elseif file.Exists("materials/entities/" .. v.ClassName .. ".png", "GAME") then mat = "entities/" .. v.ClassName .. ".png" end
-            v.Icon = TestImage(k) or mat
+            v.Icon = mat
+            v.Image = TestImage(k)
             if reftable and (reftable.SubCategory or reftable.SubCatType) then
                 if !wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] then
                     wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] = {}
@@ -635,7 +634,7 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            wepimg = Material(TestImage(ptable[slot]) or "vgui/null")
+            wepimg = Material(rtable[ptable[slot]].Image or "vgui/null")
             local ratio = wepimg:Width() / wepimg:Height()
             image.ImageRatio = ratio - 1
             if cat == category1 then buttonclicked = nil rcont:Hide() end
@@ -736,7 +735,7 @@ function QLOpenMenu()
             end
             count = count + 1
         else
-            local wepimage = Material(ref and ref.Icon or "vgui/null")
+            local wepimage = Material(ref and (ref.Image or ref.Icon) or "vgui/null")
             local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
             local ratio = w / h
             button.Paint = function(self, x, y)
