@@ -115,16 +115,10 @@ local open = false
 local rtable = {}
 local wepimg = Material("vgui/null")
 
-local function TestImage(item)
-    -- local x, y = frame:GetParent():GetSize()
+local function TestImage(item, hud)
     if !item then return "vgui/null" end
-    -- frame:SetSize(y * 0.4, y * 0.4)
-    -- frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.05)
-    if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
-    elseif file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then
-        -- frame:SetSize(ScrH() * 0.4, ScrH() * 0.2)
-        -- frame:SetPos((x - y) * 0.25 + y * 0.7, y * 0.15)
-        return "vgui/hud/" .. item
+    -- if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
+    if hud and file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then return "vgui/hud/" .. item
     elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item
     -- else return "vgui/null"
@@ -149,7 +143,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetAutoStretchVertical(true)
     button:SetTextColor(Color(255, 255, 255, 192))
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
-    button:SetContentAlignment(4)
+    button:SetContentAlignment(7)
     if ispanel(panel) then
         local width, height = ScrW(), ScrH()
         button:SetIsToggle(true)
@@ -162,7 +156,7 @@ local function GenerateLabel(frame, name, class, panel)
             if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
             if class and !istable(class) then
-                wepimg = Material(rtable[class] and rtable[class].Image or "vgui/null")
+                wepimg = Material(rtable[class] and (rtable[class].HudImage or rtable[class].Image) or "vgui/null")
                 local ratio = wepimg:Width() / wepimg:Height()
                 panel.ImageRatio = ratio - 1
             end
@@ -228,6 +222,7 @@ local function GenerateWeaponTable()
             end
             local mat = (list.Get("ContentCategoryIcons")[v.Category]) or "vgui/null"
             v.Icon = mat
+            v.HudImage = TestImage(k, true)
             v.Image = TestImage(k)
             if reftable and (reftable.SubCategory or reftable.SubCatType) then
                 if !wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] then
@@ -634,7 +629,7 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            wepimg = Material(ptable[slot] and rtable[ptable[slot]].Image or "vgui/null")
+            wepimg = Material(ptable[slot] and (rtable[ptable[slot]].HudImage or rtable[ptable[slot]].Image) or "vgui/null")
             local ratio = wepimg:Width() / wepimg:Height()
             image.ImageRatio = ratio - 1
             if cat == category1 then buttonclicked = nil rcont:Hide() end
@@ -726,6 +721,7 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index, class)
+        print(button:GetTextSize())
         local ref, active = rtable[class], button:IsHovered() or button:GetToggle()
         if (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!ref or !ref.Spawnable or (ref.AdminOnly and !LocalPlayer():IsAdmin())) then
             button:SetWrap(false)
@@ -745,7 +741,7 @@ function QLOpenMenu()
                 surface.SetDrawColor(active and col_hl or col_but)
                 surface.DrawRect(0 , 0, x, y)
                 if !ref then return end
-                surface.SetDrawColor(255, 255, 255, 150)
+                surface.SetDrawColor(255, 255, 255, 200)
                 surface.SetMaterial(wepimage)
                 surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
                 surface.SetDrawColor(255, 255, 255, 200)
