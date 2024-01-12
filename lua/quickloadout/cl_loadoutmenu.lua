@@ -4,11 +4,20 @@ local dir, gm = "quickloadout/", engine.ActiveGamemode() .. "/"
 local ptable = {}
 local loadouts = {}
 
-if !file.Exists("quickloadout", "DATA") then
+local function fileExists( path, dir )
+    local f = file.Open( path, "r", dir )
+    if f then
+        f:Close()
+        return true
+    end
+    return false
+end
+
+if !fileExists("quickloadout", "DATA") then
     file.CreateDir("quickloadout")
 end
 
-if !file.Exists(dir .. engine.ActiveGamemode(), "DATA") then
+if !fileExists(dir .. engine.ActiveGamemode(), "DATA") then
     file.CreateDir(dir .. engine.ActiveGamemode())
 end
 
@@ -21,18 +30,18 @@ if file.Size(dir .. "autosave.json", "DATA") <= 0 then
 end
 
 if file.Size(dir .. gm .. "client_loadouts.json", "DATA") <= 0 then
-    file.Write(dir .. gm .. "client_loadouts.json", file.Exists(dir .. "client_loadouts.json", "DATA") and file.Read(dir .. "client_loadouts.json", "DATA") or "[]")
+    file.Write(dir .. gm .. "client_loadouts.json", fileExists(dir .. "client_loadouts.json", "DATA") and file.Read(dir .. "client_loadouts.json", "DATA") or "[]")
 end
 
 if file.Size(dir .. gm .. "autosave.json", "DATA") <= 0 then
-    file.Write(dir .. gm .. "autosave.json", file.Exists(dir .. "autosave.json", "DATA") and file.Read(dir .. "autosave.json", "DATA") or "[]")
+    file.Write(dir .. gm .. "autosave.json", fileExists(dir .. "autosave.json", "DATA") and file.Read(dir .. "autosave.json", "DATA") or "[]")
 end
 
-if file.Exists(dir .. gm .. "autosave.json", "DATA") then
+if fileExists(dir .. gm .. "autosave.json", "DATA") then
     ptable = util.JSONToTable(file.Read(dir .. gm .. "autosave.json", "DATA"))
 end
 
-if file.Exists(dir .. gm .. "client_loadouts.json", "DATA") and !istable(util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))) then
+if fileExists(dir .. gm .. "client_loadouts.json", "DATA") and !istable(util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))) then
     print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/" .. dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
     file.Write(os.date(dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read(dir .. gm .. "client_loadouts.json", "DATA"))
     file.Write(dir .. gm .. "client_loadouts.json", "[]")
@@ -118,9 +127,9 @@ local wepimg = Material("vgui/null")
 local function TestImage(item, hud)
     if !item then return "vgui/null" end
     -- if file.Exists("materials/" .. item .. ".vmt", "GAME") then return item
-    if hud and file.Exists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then return "vgui/hud/" .. item
-    elseif file.Exists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
-    elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item
+    if hud and fileExists("materials/vgui/hud/" .. item .. ".vmt", "GAME") then return "vgui/hud/" .. item
+    elseif fileExists("materials/entities/" .. item .. ".png", "GAME") then return "entities/" .. item .. ".png"
+    elseif fileExists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item
     -- else return "vgui/null"
     end
 end
