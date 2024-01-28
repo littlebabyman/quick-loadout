@@ -62,6 +62,7 @@ local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_switchtime")
 local clips = GetConVar("quickloadout_spawnclips")
+local fontsize
 
 local function CreateFonts()
     local fonttable = string.Split(fonts:GetString() or {}, ", ")
@@ -74,8 +75,11 @@ local function CreateFonts()
     surface.CreateFont("quickloadout_font_small", {
         font = fonttable[2] or fonttable[1],
         extended = true,
-        size = ScrH() * scale * 0.03,
+        size = ScrH() * scale * 0.02,
     })
+    cam.Start2D()
+    fontsize = draw.GetFontHeight("quickloadout_font_small")
+    cam.End2D()
 end
 
 local function RefreshColors()
@@ -143,16 +147,17 @@ local function GenerateLabel(frame, name, class, panel)
     surface.SetFont("quickloadout_font_large")
     button.Name = class
     button:SetMouseInputEnabled(true)
-    button:SetMinimumSize(nil, frame:GetWide() * 0.125)
+    button:SetMinimumSize(nil, frame:GetWide() * 0.075)
     button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
     button:SetFont("quickloadout_font_large")
     button:SetTextInset(frame:GetWide() * 0.025, 0)
     button:SetWrap(true)
     button:SetText(text)
-    button:SetAutoStretchVertical(true)
+    -- button:SetAutoStretchVertical(true)
     button:SetTextColor(Color(255, 255, 255, 192))
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button:SetContentAlignment(7)
+    button:SizeToContentsY(button:GetWide() * 0.015)
     if ispanel(panel) then
         local width, height = ScrW(), ScrH()
         button:SetIsToggle(true)
@@ -165,7 +170,7 @@ local function GenerateLabel(frame, name, class, panel)
             if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
             if class and !istable(class) then
-                wepimg = Material(rtable[class] and (rtable[class].HudImage or rtable[class].Image) or "vgui/null")
+                wepimg = Material(rtable[class] and (rtable[class].HudImage or rtable[class].Image) or "vgui/null", "smooth")
                 local ratio = wepimg:Width() / wepimg:Height()
                 panel.ImageRatio = ratio - 1
             end
@@ -189,7 +194,7 @@ local function GenerateEditableLabel(frame, name)
     button:SetTextInset(frame:GetWide() * 0.025, 0)
     button:SetWrap(true)
     if name then button:SetText(text) end
-    button:SizeToContentsY()
+    button:SizeToContentsY(button:GetWide() * 0.015)
     button:SetTextColor(Color(255, 255, 255, 192))
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button.DoClickInternal = function(self)
@@ -218,28 +223,36 @@ local function NetworkLoadout()
     net.SendToServer()
 end
 
-net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change on next spawn.") end)
+net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.") end)
 
 local function GenerateWeaponTable()
     rtable = list.Get("Weapon")
-    for k, v in SortedPairs(rtable) do
-        if v.Spawnable then
-            local reftable = weapons.Get(k)
-            if reftable != nil then for s, i in SortedPairs(reftable) do if s == "Base" then rtable[k][s] = i end end end
-            if !wtable[v.Category] then
-                wtable[v.Category] = {}
+    local reftable
+    for class, wep in pairs(rtable) do
+        reftable = {}
+        if wep.Spawnable then
+            reftable = weapons.Get(class)
+            if reftable then wep.Base = reftable.Base end
+            if !wtable[wep.Category] then
+                wtable[wep.Category] = {}
             end
-            local mat = (list.Get("ContentCategoryIcons")[v.Category]) or "vgui/null"
-            v.Icon = mat
-            v.HudImage = TestImage(k, true)
-            v.Image = TestImage(k)
-            if reftable and (reftable.SubCategory or reftable.SubCatType) then
-                if !wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] then
-                    wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)] = {}
-                end
-                table.Merge(wtable[v.Category][reftable.SubCategory or string.sub(reftable.SubCatType, 2)], {[v.PrintName or v.ClassName] = v.ClassName})
+            local mat = (list.Get("ContentCategoryIcons")[wep.Category])
+            wep.Icon = mat
+            wep.HudImage = TestImage(class, true)
+            wep.Image = TestImage(class) -- or (fileExists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
+            if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
+                wtable[wep.Category][wep.PrintName or wep.ClassName] = wep.ClassName
             else
-                table.Merge(wtable[v.Category], {[v.PrintName or v.ClassName] = v.ClassName})
+                local cat = reftable.SubCategory or reftable.SubCatType
+                if (cat) then
+                    cat = string.gsub(cat, "^%d(%a)", "%1")
+                    wep.SubCategory = cat
+                    if !wtable[wep.Category][cat] then
+                        wtable[wep.Category][cat] = {}
+                    end
+                    wtable[wep.Category][cat][wep.PrintName or wep.ClassName] = wep.ClassName
+                end
+                if reftable.SubCatTier then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
             end
         end
     end
@@ -349,8 +362,6 @@ function QLOpenMenu()
     optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
-    saveload:SizeToContentsY()
-    saveload:Dock(TOP)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
@@ -368,6 +379,8 @@ function QLOpenMenu()
         -- weplist:SetVisible(self:GetToggle())
         if !self:GetToggle() then CreateLoadoutButtons(false) qllist:Show() weplist:Hide() else CreateWeaponButtons() qllist:Hide() weplist:Show() end
     end
+    saveload:SizeToContentsY()
+    saveload:Dock(TOP)
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
@@ -397,9 +410,7 @@ function QLOpenMenu()
 
     local closer = lcont:Add("Panel")
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
-    closer:SizeToContentsY()
-    closer:Dock(BOTTOM)
-    local ccancel, csave = GenerateLabel(closer, "Close", nil, image), GenerateLabel(closer, "Equip", nil, image)
+    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Equip", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
@@ -417,6 +428,8 @@ function QLOpenMenu()
         self:SetToggle(true)
         CloseMenu()
     end
+    closer:SizeToContentsY()
+    closer:Dock(BOTTOM)
     -- local closer = GenerateLabel(lcont, "Close", nil, image)
     -- closer:Dock(BOTTOM)
     -- closer.DoClickInternal = function(self)
@@ -473,7 +486,7 @@ function QLOpenMenu()
 
         local enablecat = options:Add("DCheckBoxLabel")
         enablecat:SetConVar("quickloadout_showcategory")
-        enablecat:SetText("Loadout categories")
+        enablecat:SetText("Weapon categories")
         enablecat:SetTooltip("Toggles whether your equipped weapons should or should not show their weapon category underneath them.")
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
@@ -515,7 +528,6 @@ function QLOpenMenu()
         local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
         colortext:SetFont("quickloadout_font_small")
         colortext:SetTextInset(0, 0)
-        colortext:SizeToContents()
 
         for k, v in ipairs(options:GetChildren()) do
             -- v:SizeToContents()
@@ -543,15 +555,21 @@ function QLOpenMenu()
             col_hl = ColorAlpha(self:GetColor(), 128)
             self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
         end
+        colortext:SizeToContents()
     end
 
     CreateOptionsMenu()
 
     function QuickName(name)
-        local ref, match, show = rtable[name], "^[%w%d%p]+", showcat:GetBool()
+        local ref = rtable[name]
+        return ref and language.GetPhrase(ref.PrintName) or name
+    end
+
+    function ShortenCategory(wep)
+        local ref, match, show = rtable[wep], "^[%w%d%p]+", showcat:GetBool()
         local bc = ref and tostring(ref.Category:match(match)):Trim()
         local short = bc and (ref.Category:len() > 7 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match("^[%u%d%p]+%s")) or ref.Category):gsub("%b()", ""):Trim()
-        return ref and (language.GetPhrase(ref.PrintName) .. (show and " (" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. ")" or "")) or name
+        return ref and (show and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
     end
 
     function TheCats(cat)
@@ -638,37 +656,56 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            wepimg = Material(ptable[slot] and (rtable[ptable[slot]].HudImage or rtable[ptable[slot]].Image) or "vgui/null")
+            wepimg = Material(ptable[slot] and (rtable[ptable[slot]].HudImage or rtable[ptable[slot]].Image) or "vgui/null", "smooth")
             local ratio = wepimg:Width() / wepimg:Height()
             image.ImageRatio = ratio - 1
             if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
-        for i, v in SortedPairs(tbl) do
+        for key, v in SortedPairs(tbl) do
             if !(table.HasValue(ptable, v) and !ptable[slot]) then
-                local button = GenerateLabel(cat, i, v, image)
+                local button = GenerateLabel(cat, key, v, image)
                 button.DoRightClick = cancel.DoClickInternal
+                local offset = button:GetWide() * 0.1
                 if istable(v) then
+                    button:SizeToContentsY(fontsize)
+                    local wepcount, catcount = 0, 0
+                    local numbers = ""
+                    for sub, tab in pairs(v) do
+                        if istable(tab) then
+                            PrintTable(v)
+                            catcount = catcount + 1
+                            wepcount = wepcount + table.Count(tab)
+                        else print(sub)
+                            wepcount = wepcount + 1
+                        end
+                    end
+                    numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
+                    -- PrintTable(tbl)
+                    button.PaintOld = button.Paint
+                    button.Paint = function(self, x, y)
+                        self:PaintOld(x, y)
+                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, Color(255, 255, 255, 192), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+                    end
                     button.DoClickInternal = function()
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
                         cat:Hide()
                     end
-                else
-                    if !rtable[v].Spawnable or rtable[v].AdminOnly and !LocalPlayer():IsAdmin() then
-                        button.Paint = function(self, x, y)
-                            local active = button:IsHovered()
-                            surface.SetDrawColor(active and col_but or col_col)
-                            surface.DrawRect(0 , 0, x, y)
-                        end
+                continue end
+                if !rtable[v].Spawnable or rtable[v].AdminOnly and !LocalPlayer():IsAdmin() then
+                    button.Paint = function(self, x, y)
+                        local active = button:IsHovered()
+                        surface.SetDrawColor(active and col_but or col_col)
+                        surface.DrawRect(0 , 0, x, y)
                     end
-                    button.DoClickInternal = function()
-                        if table.HasValue(ptable, v) and ptable[slot] then
-                            table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
-                        end
-                        table.Merge(ptable, {[slot] = v})
-                        cat:Clear()
-                        CreateWeaponButtons()
-                        RefreshLoadout(closer)
+                end
+                button.DoClickInternal = function()
+                    if table.HasValue(ptable, v) and ptable[slot] then
+                        table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
                     end
+                    table.Merge(ptable, {[slot] = v})
+                    cat:Clear()
+                    CreateWeaponButtons()
+                    RefreshLoadout(closer)
                 end
             end
         end
@@ -730,37 +767,47 @@ function QLOpenMenu()
     end
 
     function WepSelector(button, index, class)
-        print(button:GetTextSize())
+        -- print(button:GetTextSize())
         local ref, active = rtable[class], button:IsHovered() or button:GetToggle()
-        if (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!ref or !ref.Spawnable or (ref.AdminOnly and !LocalPlayer():IsAdmin())) then
-            button:SetWrap(false)
-            button.Paint = function(self, x, y)
-                surface.SetDrawColor(active and col_but or col_col)
-                surface.DrawRect(0 , 0, x, y)
-            end
-            count = count + 1
+        local unusable = (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!ref or !ref.Spawnable or (ref.AdminOnly and !LocalPlayer():IsAdmin()))
+        -- button:SetWrap(false)
+        -- button.Paint = function(self, x, y)
+        --     surface.SetDrawColor(active and col_but or col_col)
+        --     surface.DrawRect(0 , 0, x, y)
+        -- end
+        if unusable then count = count + 1 end
+    
+        local catimage = Material(ref and ref.Icon or "vgui/null", "smooth")
+        local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
+        local cattext, weptext
+        local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
+        local ratio = w / h
+        local scale = math.max(ScreenScale(8), 16)
+        if ref then
+            cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
+            button:SizeToContentsY(fontsize)
         else
-            local catimage = Material(ref and ref.Icon or "vgui/null")
-            local wepimage = Material(ref and ref.Image or "vgui/null")
-            local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
-            local ratio = w / h
-            local scale = ScreenScale(8)
-            button.Paint = function(self, x, y)
-                local active = button:IsHovered() or button:GetToggle()
-                surface.SetDrawColor(active and col_hl or col_but)
-                surface.DrawRect(0 , 0, x, y)
-                if !ref then return end
-                surface.SetDrawColor(255, 255, 255, 200)
+            if unusable then button:SetFont("quickloadout_font_small") end
+            button:SetWrap(false)
+            button:SizeToContentsY(button:GetWide() * 0.015)
+        end
+        button.Paint = function(self, x, y)
+            local active = button:IsHovered() or button:GetToggle()
+            surface.SetDrawColor(unusable and (active and col_but or col_col) or (active and col_hl or col_but))
+            surface.DrawRect(0 , 0, x, y)
+            if !ref then return end
+            surface.SetDrawColor(255, 255, 255, 192)
+            if ref.Image then
                 surface.SetMaterial(wepimage)
                 surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
-                surface.SetDrawColor(255, 255, 255, 200)
+            end
+            if ref.Icon then
                 surface.SetMaterial(catimage)
                 surface.DrawTexturedRect(x - offset * 0.15 - scale, y - offset * 0.15 - scale, scale, scale)
-                -- if !ref or !wepimage then return end
-                -- surface.SetDrawColor(255, 255, 255, 150)
-                -- surface.SetMaterial(wepimage)
-                -- surface.DrawTexturedRect(x-h * 1.2, y - h * 1.15, h, h)
             end
+            draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and scale + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM)
+            if !ref.SubCategory then return end
+            draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
         end
         button.DoClickInternal = function()
             rcont:Show()
