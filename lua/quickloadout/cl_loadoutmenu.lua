@@ -793,6 +793,7 @@ function QLOpenMenu()
         local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
         local ratio = w / h
         local scale = math.max(ScreenScale(8), 16)
+        button:SetText(button:GetText())
         if ref then
             cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
             button:SizeToContentsY(fontsize)
