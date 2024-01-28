@@ -588,7 +588,7 @@ function QLOpenMenu()
         toptext:SetFont("quickloadout_font_small")
 
         if saving then
-            toptext:SetText("LMB save\nRMB delete")
+            toptext:SetText("LMB save loadout\nRMB delete loadout")
             for i, v in ipairs(loadouts) do
                 local button = GenerateEditableLabel(qllist, v.name)
                 LoadoutSelector(button, i)
@@ -596,7 +596,7 @@ function QLOpenMenu()
             local newloadout = GenerateEditableLabel(qllist, "+ Save New")
             LoadoutSelector(newloadout, #loadouts + 1)
         else
-            toptext:SetText("LMB load & close\nRMB load & edit")
+            toptext:SetText("LMB equip loadout\nRMB edit loadout")
             for i, v in ipairs(loadouts) do
                 local button = GenerateLabel(qllist, v.name, "vgui/null", image)
                 LoadoutSelector(button, i)
@@ -733,24 +733,27 @@ function QLOpenMenu()
                     CreateLoadoutButtons(true)
                 elseif !loadouts[key] then
                     self._TextEdit:SetText("")
+                    self._TextEdit:SetPlaceholderText("New Loadout " .. key)
                 end
             end
             button.OnLabelTextChanged = function(self, text)
                 qllist:Clear()
+                if string.len(text) < 1 then text = "New Loadout " .. key end
                 table.Merge(loadouts, {[key] = {name = text, weps = ptable}})
                 file.Write(dir .. gm .. "client_loadouts.json", util.TableToJSON(loadouts))
                 sbut:DoClickInternal()
                 sbut:DoClick()
             end
             button.DoRightClick = function(self)
+                if !loadouts[key] then return end
                 surface.PlaySound("garrysmod/ui_return.wav")
                 if confirm then
                     CreateLoadoutButtons(true)
                 else
                     confirm = true
                     button:SetFont("quickloadout_font_small")
-                    button:SetText("LMB to confirm\nRMB to cancel")
-                    button:SizeToContentsY()
+                    button:SetText("LMB to confirm deletion\nRMB to cancel")
+                    -- button:SizeToContentsY(fontsize)
                 end
             end
         else
