@@ -84,7 +84,7 @@ local function CreateFonts()
 end
 
 local function RefreshColors()
-    local cvar_bg, cvar_but = string.ToColor(GetConVar("quickloadout_ui_color_bg"):GetString() .. " 69"), string.ToColor(GetConVar("quickloadout_ui_color_button"):GetString() .. " 69")
+    local cvar_bg, cvar_but = string.ToColor(GetConVar("quickloadout_ui_color_bg"):GetString() .. " 255"), string.ToColor(GetConVar("quickloadout_ui_color_button"):GetString() .. " 255")
     function LessenBG(color)
         local temptbl = {r = 0, g = 0, b = 0, a = 0}
         for k, v in SortedPairs(color) do
@@ -97,7 +97,7 @@ local function RefreshColors()
            table.Merge(temptbl, {[k] = math.floor(v * 0.75)})
         end
     return Color(temptbl.r, temptbl.g, temptbl.b) end
-    local a, b, c, d = ColorAlpha(cvar_bg, 64) or Color(0,128,0,64), IsColor(LessenBG(cvar_bg)) and ColorAlpha(LessenBG(cvar_bg), 128) or Color(0,16,0,128), ColorAlpha(LessenButton(cvar_but), 128) or Color(0,96,0,128), ColorAlpha(cvar_but, 128) or Color(0,128,0,128)
+    local a, b, c, d = ColorAlpha(cvar_bg, 224) or Color(0,128,0,224), IsColor(LessenBG(cvar_bg)) and ColorAlpha(LessenBG(cvar_bg), 128) or Color(0,16,0,128), ColorAlpha(LessenButton(cvar_but), 128) or Color(0,96,0,128), ColorAlpha(cvar_but, 128) or Color(0,128,0,128)
     return a, b, c, d
 end
 
@@ -544,9 +544,9 @@ function QLOpenMenu()
         bgsheet:AddSheet("Buttons", buttoncolor, "icon16/style_edit.png")
         bgcolor:SetAlphaBar(false)
         bgcolor:SetConVar("quickloadout_ui_color_bg")
-        bgcolor:SetColor(ColorAlpha(col_bg, 128))
+        bgcolor:SetColor(ColorAlpha(col_bg, 224))
         bgcolor.Think = function(self)
-            col_bg = ColorAlpha(self:GetColor(), 64)
+            col_bg = ColorAlpha(self:GetColor(), 224)
             self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
         end
         Derma_Install_Convar_Functions(buttoncolor)

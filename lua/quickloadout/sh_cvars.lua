@@ -14,6 +14,6 @@ if CLIENT then
     CreateClientConVar("quickloadout_showcategory", 1, true, false, "Show weapon categories on equipped weapons.")
     CreateClientConVar("quickloadout_ui_fonts", "Bahnschrift", true, false, "Fonts used in the loadout menu.")
     CreateClientConVar("quickloadout_ui_font_scale", 1, true, false, "Overall scale of the fonts.", 0.5, 2)
-    CreateClientConVar("quickloadout_ui_color_bg", "0 128 0", true, false, "Base color used for loadout menu background.")
-    CreateClientConVar("quickloadout_ui_color_button", "0 128 0", true, false, "Base color used for loadout menu buttons.")
+    CreateClientConVar("quickloadout_ui_color_bg", "0 0 0", true, false, "Base color used for loadout menu background.")
+    CreateClientConVar("quickloadout_ui_color_button", "96 128 192", true, false, "Base color used for loadout menu buttons.")
 end
