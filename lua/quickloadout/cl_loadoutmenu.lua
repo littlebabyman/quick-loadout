@@ -63,6 +63,7 @@ local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_switchtime")
 local clips = GetConVar("quickloadout_spawnclips")
 local fontsize
+local color_default = Color(255, 255, 255, 192)
 
 local function CreateFonts()
     local fonttable = string.Split(fonts:GetString() or {}, ", ")
@@ -154,7 +155,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetWrap(true)
     button:SetText(text)
     -- button:SetAutoStretchVertical(true)
-    button:SetTextColor(Color(255, 255, 255, 192))
+    button:SetTextColor(color_default)
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button:SetContentAlignment(7)
     button:SizeToContentsY(button:GetWide() * 0.015)
@@ -195,8 +196,9 @@ local function GenerateEditableLabel(frame, name)
     button:SetWrap(true)
     if name then button:SetText(text) end
     button:SizeToContentsY(button:GetWide() * 0.015)
-    button:SetTextColor(Color(255, 255, 255, 192))
+    button:SetTextColor(color_default)
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
+    button:SetContentAlignment(7)
     button.DoClickInternal = function(self)
         if self:GetToggle() then return end
         surface.PlaySound("garrysmod/ui_click.wav")
@@ -461,7 +463,7 @@ function QLOpenMenu()
             enable = GenerateLabel(options, "Loadouts are disabled.")
             enable:SetTextInset(0, 0)
         end
-        enable:SetTextColor(Color(255, 255, 255, 192))
+        enable:SetTextColor(color_default)
         enable:SetFont("quickloadout_font_small")
 
 
@@ -481,7 +483,7 @@ function QLOpenMenu()
             default = GenerateLabel(options, DefaultEnabled())
             default:SetTextInset(0, 0)
         end
-        default:SetTextColor(Color(255, 255, 255, 192))
+        default:SetTextColor(color_default)
         default:SetFont("quickloadout_font_small")
 
         local enablecat = options:Add("DCheckBoxLabel")
@@ -491,7 +493,7 @@ function QLOpenMenu()
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
         enablecat:SetWrap(true)
-        enablecat:SetTextColor(Color(255, 255, 255, 192))
+        enablecat:SetTextColor(color_default)
         enablecat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
             sbut:SetToggle(false)
@@ -508,7 +510,7 @@ function QLOpenMenu()
         fonttext:SetTextInset(0, 0)
         fonttext:DockMargin(0, 0, options:GetWide() * 0.025, 0)
         fonttext:Dock(LEFT)
-        fonttext:SetTextColor(Color(255, 255, 255, 192))
+        fonttext:SetTextColor(color_default)
         Derma_Install_Convar_Functions(fontfield)
         fontfield:SetFont("quickloadout_font_small")
         fontfield:SetConVar("quickloadout_ui_fonts")
@@ -684,7 +686,7 @@ function QLOpenMenu()
                     button.PaintOld = button.Paint
                     button.Paint = function(self, x, y)
                         self:PaintOld(x, y)
-                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, Color(255, 255, 255, 192), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
                     end
                     button.DoClickInternal = function()
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
@@ -714,6 +716,14 @@ function QLOpenMenu()
 
     function LoadoutSelector(button, key)
         -- print(button, key)
+        local wepcount = (loadouts[key] and #loadouts[key].weps or #ptable) .. " weapons"
+        local offset = button:GetWide() * 0.1
+        button:SizeToContentsY(fontsize)
+        button.PaintOld = button.Paint
+        button.Paint = function(self, x, y)
+            self:PaintOld(x, y)
+            draw.SimpleText(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+        end
         if button.ClassName == "DLabelEditable" then
             local confirm = false
             button.DoClick = function(self)
