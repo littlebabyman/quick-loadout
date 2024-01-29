@@ -668,8 +668,8 @@ function QLOpenMenu()
                 local button = GenerateLabel(cat, key, v, image)
                 button.DoRightClick = cancel.DoClickInternal
                 local offset = button:GetWide() * 0.1
+                button:SizeToContentsY(fontsize)
                 if istable(v) then
-                    button:SizeToContentsY(fontsize)
                     local wepcount, catcount = 0, 0
                     local numbers = ""
                     for sub, tab in pairs(v) do
@@ -693,11 +693,23 @@ function QLOpenMenu()
                         cat:Hide()
                     end
                 continue end
-                if !rtable[v].Spawnable or rtable[v].AdminOnly and !LocalPlayer():IsAdmin() then
-                    button.Paint = function(self, x, y)
-                        local active = button:IsHovered()
-                        surface.SetDrawColor(active and col_but or col_col)
-                        surface.DrawRect(0 , 0, x, y)
+                local ref = rtable[v]
+                local usable = ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin()
+                local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
+                local ratio = wepimage:Width() / wepimage:Height()
+                local cattext, weptext = ShortenCategory(v), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
+                button.Paint = function(self, x, y)
+                    local active = button:IsHovered()
+                    surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_but or col_col))
+                    surface.DrawRect(0 , 0, x, y)
+                    surface.SetDrawColor(255, 255, 255, 192)
+                    if ref.Image then
+                        surface.SetMaterial(wepimage)
+                        surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
+                    end
+                    draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM)
+                    if weptext then
+                        draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
                     end
                 end
                 button.DoClickInternal = function()
@@ -798,7 +810,7 @@ function QLOpenMenu()
         local scale = math.max(ScreenScale(8), 16)
         button:SetText(button:GetText())
         if ref then
-            cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
+            cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
             button:SizeToContentsY(fontsize)
         else
             if unusable then button:SetFont("quickloadout_font_small") end
@@ -820,8 +832,9 @@ function QLOpenMenu()
                 surface.DrawTexturedRect(x - offset * 0.15 - scale, y - offset * 0.15 - scale, scale, scale)
             end
             draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and scale + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM)
-            if !ref.SubCategory then return end
-            draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+            if weptext then
+                draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+            end
         end
         button.DoClickInternal = function()
             rcont:Show()
