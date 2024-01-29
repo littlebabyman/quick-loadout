@@ -9,10 +9,11 @@ util.AddNetworkString("quickloadout")
 util.AddNetworkString("qlnotification")
 
 if game.SinglePlayer() then
-    local keybind = KEY_N
+    local keybind = -1
     util.AddNetworkString("QLSPHack")
     net.Receive("QLSPHack", function() keybind = net.ReadInt(9) end)
     hook.Add("PlayerButtonDown", "QuickLoadoutBind", function(ply, key)
+        if keybind <= 0 then return end
         if key == keybind and IsFirstTimePredicted() then
             net.Start("QLSPHack")
             net.Send(ply)

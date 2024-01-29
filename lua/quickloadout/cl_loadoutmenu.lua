@@ -911,7 +911,7 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         binder:DockMargin(60,10,60,10)
         binder:Dock(TOP)
         binder:CenterHorizontal()
-        binder:SetText(string.upper(keybind:GetString() or "none"))
+        binder:SetText(string.upper(keybind:GetString() != "" and keybind:GetString() or "none"))
         binder.OnChange = function(self, key)
             timer.Simple(0, function()
                 local t = input.GetKeyName(key)
@@ -921,3 +921,9 @@ hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
         end
     end)
 end)
+
+list.Set("DesktopWindows", "QuickLoadoutMenu", {
+    title = "Quick Loadout",
+    icon = "icon16/gun.png",
+    init = QLOpenMenu
+})
