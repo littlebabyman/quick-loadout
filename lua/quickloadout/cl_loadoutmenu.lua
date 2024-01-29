@@ -674,10 +674,9 @@ function QLOpenMenu()
                     local numbers = ""
                     for sub, tab in pairs(v) do
                         if istable(tab) then
-                            PrintTable(v)
                             catcount = catcount + 1
                             wepcount = wepcount + table.Count(tab)
-                        else print(sub)
+                        else
                             wepcount = wepcount + 1
                         end
                     end
