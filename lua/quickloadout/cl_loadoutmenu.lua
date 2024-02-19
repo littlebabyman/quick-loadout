@@ -241,7 +241,7 @@ local function GenerateWeaponTable()
             local mat = (list.Get("ContentCategoryIcons")[wep.Category])
             wep.Icon = mat
             wep.HudImage = reftable and (reftable.LoadoutImage or reftable.HudImage) or TestImage(class, true)
-            wep.Image = TestImage(class) -- or (fileExists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
+            wep.Image = reftable and (reftable.LoadoutImage or reftable.HudImage) or TestImage(class) -- or (fileExists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
                 wtable[wep.Category][wep.AbbrevName or wep.PrintName or wep.ClassName] = wep.ClassName
             else
@@ -274,10 +274,12 @@ function QLOpenMenu()
     end
     local count = 0
     local mainmenu = vgui.Create("EditablePanel")
+    local scale = ScreenScale(1)
     wepimg = Material("vgui/null")
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(ScrW(), ScrH())
     local width, height = mainmenu:GetSize()
+    local bgcolor = ColorAlpha(col_bg, 64)
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
         surface.DrawRect(0,0, (x - y) * 0.25, y)
@@ -536,24 +538,24 @@ function QLOpenMenu()
             v:DockMargin(options:GetWide() * 0.025, options:GetWide() * 0.025, options:GetWide() * 0.025, 0)
         end
 
-        local bgcolor, buttoncolor = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
-        Derma_Install_Convar_Functions(bgcolor)
+        local bgpalette, btpalette = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
+        Derma_Install_Convar_Functions(bgpalette)
         bgsheet:SetTall(math.max(options:GetWide() * 0.8, 240))
         bgsheet:DockMargin(0, options:GetWide() * 0.025, 0, 0)
-        bgsheet:AddSheet("Background", bgcolor, "icon16/script_palette.png")
-        bgsheet:AddSheet("Buttons", buttoncolor, "icon16/style_edit.png")
-        bgcolor:SetAlphaBar(false)
-        bgcolor:SetConVar("quickloadout_ui_color_bg")
-        bgcolor:SetColor(ColorAlpha(col_bg, 224))
-        bgcolor.Think = function(self)
+        bgsheet:AddSheet("Background", bgpalette, "icon16/script_palette.png")
+        bgsheet:AddSheet("Buttons", btpalette, "icon16/style_edit.png")
+        bgpalette:SetAlphaBar(false)
+        bgpalette:SetConVar("quickloadout_ui_color_bg")
+        bgpalette:SetColor(ColorAlpha(col_bg, 224))
+        bgpalette.Think = function(self)
             col_bg = ColorAlpha(self:GetColor(), 224)
             self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
         end
-        Derma_Install_Convar_Functions(buttoncolor)
-        buttoncolor:SetAlphaBar(false)
-        buttoncolor:SetConVar("quickloadout_ui_color_button")
-        buttoncolor:SetColor(ColorAlpha(col_hl, 128))
-        buttoncolor.Think = function(self)
+        Derma_Install_Convar_Functions(btpalette)
+        btpalette:SetAlphaBar(false)
+        btpalette:SetConVar("quickloadout_ui_color_button")
+        btpalette:SetColor(ColorAlpha(col_hl, 128))
+        btpalette.Think = function(self)
             col_hl = ColorAlpha(self:GetColor(), 128)
             self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
         end
@@ -685,7 +687,7 @@ function QLOpenMenu()
                     button.PaintOld = button.Paint
                     button.Paint = function(self, x, y)
                         self:PaintOld(x, y)
-                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+                        draw.SimpleTextOutlined(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                     button.DoClickInternal = function()
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
@@ -706,9 +708,9 @@ function QLOpenMenu()
                         surface.SetMaterial(wepimage)
                         surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
                     end
-                    draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM)
+                    draw.SimpleTextOutlined(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     if weptext then
-                        draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+                        draw.SimpleTextOutlined(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                 end
                 button.DoClickInternal = function()
@@ -733,7 +735,7 @@ function QLOpenMenu()
         button.PaintOld = button.Paint
         button.Paint = function(self, x, y)
             self:PaintOld(x, y)
-            draw.SimpleText(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+            draw.SimpleTextOutlined(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
         if button.ClassName == "DLabelEditable" then
             local confirm = false
@@ -806,7 +808,7 @@ function QLOpenMenu()
         local cattext, weptext
         local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
         local ratio = w / h
-        local scale = math.max(ScreenScale(8), 16)
+        local icon = math.max(scale * 8, 16)
         button:SetText(button:GetText())
         if ref then
             cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
@@ -828,11 +830,11 @@ function QLOpenMenu()
             end
             if ref.Icon then
                 surface.SetMaterial(catimage)
-                surface.DrawTexturedRect(x - offset * 0.15 - scale, y - offset * 0.15 - scale, scale, scale)
+                surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
             end
-            draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and scale + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM)
+            draw.SimpleTextOutlined(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
             if weptext then
-                draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+                draw.SimpleTextOutlined(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
             end
         end
         button.DoClickInternal = function()
