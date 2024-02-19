@@ -240,10 +240,10 @@ local function GenerateWeaponTable()
             end
             local mat = (list.Get("ContentCategoryIcons")[wep.Category])
             wep.Icon = mat
-            wep.HudImage = TestImage(class, true)
+            wep.HudImage = reftable and (reftable.LoadoutImage or reftable.HudImage) or TestImage(class, true)
             wep.Image = TestImage(class) -- or (fileExists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                wtable[wep.Category][wep.PrintName or wep.ClassName] = wep.ClassName
+                wtable[wep.Category][wep.AbbrevName or wep.PrintName or wep.ClassName] = wep.ClassName
             else
                 local cat = reftable.SubCategory or reftable.SubCatType
                 if (cat) then
@@ -252,7 +252,7 @@ local function GenerateWeaponTable()
                     if !wtable[wep.Category][cat] then
                         wtable[wep.Category][cat] = {}
                     end
-                    wtable[wep.Category][cat][wep.PrintName or wep.ClassName] = wep.ClassName
+                    wtable[wep.Category][cat][wep.AbbrevName or wep.PrintName or wep.ClassName] = wep.ClassName
                 end
                 if reftable.SubCatTier then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
             end
