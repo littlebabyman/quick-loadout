@@ -72,11 +72,13 @@ local function CreateFonts()
         font = fonttable[1],
         extended = true,
         size = ScrH() * scale * 0.04,
+        outline = true,
     })
     surface.CreateFont("quickloadout_font_small", {
         font = fonttable[2] or fonttable[1],
         extended = true,
         size = ScrH() * scale * 0.02,
+        outline = true,
     })
     cam.Start2D()
     fontsize = draw.GetFontHeight("quickloadout_font_small")
@@ -365,7 +367,7 @@ function QLOpenMenu()
     optbut:Dock(TOP)
     optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local saveload = lcont:Add("Panel")
-    saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.15)
+    saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
@@ -413,7 +415,7 @@ function QLOpenMenu()
     rbar.btnGrip.Paint = lbar.btnGrip.Paint
 
     local closer = lcont:Add("Panel")
-    closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.15)
+    closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Equip", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
@@ -687,7 +689,7 @@ function QLOpenMenu()
                     button.PaintOld = button.Paint
                     button.Paint = function(self, x, y)
                         self:PaintOld(x, y)
-                        draw.SimpleTextOutlined(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                     button.DoClickInternal = function()
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
@@ -708,9 +710,9 @@ function QLOpenMenu()
                         surface.SetMaterial(wepimage)
                         surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
                     end
-                    draw.SimpleTextOutlined(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                    draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     if weptext then
-                        draw.SimpleTextOutlined(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                        draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                 end
                 button.DoClickInternal = function()
@@ -735,7 +737,7 @@ function QLOpenMenu()
         button.PaintOld = button.Paint
         button.Paint = function(self, x, y)
             self:PaintOld(x, y)
-            draw.SimpleTextOutlined(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
         if button.ClassName == "DLabelEditable" then
             local confirm = false
@@ -832,9 +834,9 @@ function QLOpenMenu()
                 surface.SetMaterial(catimage)
                 surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
             end
-            draw.SimpleTextOutlined(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
             if weptext then
-                draw.SimpleTextOutlined(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
             end
         end
         button.DoClickInternal = function()
