@@ -247,7 +247,7 @@ local function GenerateWeaponTable()
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
                 wtable[wep.Category][wep.AbbrevName or wep.PrintName or wep.ClassName] = wep.ClassName
             else
-                local cat = reftable.SubCategory or reftable.SubCatType
+                local cat = reftable.SubCategory and string.gsub(reftable.SubCategory, "s$", "") or reftable.SubCatType
                 if (cat) then
                     cat = string.gsub(cat, "^%d(%a)", "%1")
                     wep.SubCategory = cat
