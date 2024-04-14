@@ -905,7 +905,7 @@ concommand.Add("quickloadout_menu", QLOpenMenu)
 -- cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
 -- cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
 
-hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
+hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
         local sv, cl = vgui.Create("DForm"), vgui.Create("DForm")
         panel:AddItem(sv)
