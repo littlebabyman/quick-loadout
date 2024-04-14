@@ -236,7 +236,12 @@ local function GenerateWeaponTable()
         reftable = {}
         if wep.Spawnable then
             reftable = weapons.Get(class)
-            if reftable then wep.Base = reftable.Base end
+            if reftable then
+                wep.Base = reftable.Base
+                -- wep.Stats = {
+                --     ["Damage"] = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
+                -- }
+            end
             if !wtable[wep.Category] then
                 wtable[wep.Category] = {}
             end
@@ -901,28 +906,31 @@ concommand.Add("quickloadout_menu", QLOpenMenu)
 -- cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
 
 hook.Add("PopulateToolMenu", "QuickLoadoutSettings", function()
-    spawnmenu.AddToolMenuOption("Options", "Loadout", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
-        panel:Help("Server settings")
-        panel:CheckBox("Enable quick loadouts", "quickloadout_enable")
-        panel:ControlHelp("Globally enables quick loadout on server.")
-        local default = panel:ComboBox("Default loadout", "quickloadout_default")
+    spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
+        local sv, cl = vgui.Create("DForm"), vgui.Create("DForm")
+        panel:AddItem(sv)
+        panel:AddItem(cl)
+        sv:SetName("Server")
+        sv:CheckBox("Enable quick loadouts", "quickloadout_enable")
+        sv:ControlHelp("Globally enables quick loadout on server.")
+        local default = sv:ComboBox("Give default loadout", "quickloadout_default")
         default:SetSortItems(false)
         default:AddChoice("User-defined", -1)
         default:AddChoice("Disabled", 0)
         default:AddChoice("Enabled", 1)
-        panel:ControlHelp("Enable gamemode's default loadout.")
-        panel:NumSlider("Clips per weapon", "quickloadout_spawnclips", 0, 100, 0)
-        panel:ControlHelp("How many clips worth of ammo each weapon is given.")
-        panel:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 60, 0)
-        panel:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
-        panel:NumSlider("Max weapon slots", "quickloadout_maxslots", 0, 32, 0)
-        panel:ControlHelp("Amount of weapons players can have on spawn. Max 32, 0 is infinite.")
-        panel:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
-        panel:ControlHelp("Whether pressing the attack button disables grace period.")
-        panel:Help("Client settings")
-        panel:Help("Loadout window bind")
+        sv:ControlHelp("Enable gamemode's default loadout.")
+        sv:NumSlider("Clips per weapon", "quickloadout_spawnclips", 0, 100, 0)
+        sv:ControlHelp("How many clips worth of ammo each weapon is given.")
+        sv:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 60, 0)
+        sv:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
+        sv:NumSlider("Max weapon slots", "quickloadout_maxslots", 0, 32, 0)
+        sv:ControlHelp("Amount of weapons players can have on spawn. Max 32, 0 is infinite.")
+        sv:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
+        sv:ControlHelp("Whether pressing the attack button disables grace period.")
+        cl:SetName("Client")
+        cl:Help("Loadout window bind")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
-        local binder = vgui.Create("DBinder", panel)
+        local binder = vgui.Create("DBinder", cl)
         -- binder:SetConVar("quickloadout_key")
         binder:DockMargin(60,10,60,10)
         binder:Dock(TOP)
