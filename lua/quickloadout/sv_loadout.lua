@@ -37,23 +37,27 @@ end)
 
 function QuickLoadout(ply)
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
-    if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
-    local wtable = list.Get("Weapon")
-    for k, wep in ipairs(ply.quickloadout) do
-        if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
-        if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
-        else
-            ply:Give(wep)
-            local wget = ply:GetWeapon(wep)
-            timer.Simple(0, function()
-                if wget and IsValid(wget) then
-                    ply:GiveAmmo(math.max(wget:GetMaxClip1(), 0) * clips:GetInt(), wget:GetPrimaryAmmoType(), true)
-                    ply:GiveAmmo(math.max(wget:GetMaxClip2(), 0) * clips:GetInt(), wget:GetSecondaryAmmoType(), true)
-                end
-            end)
+    if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or table.IsEmpty(ply.quickloadout) or !ply:Alive() then return end
+    timer.Simple(0, function()
+        local wtable = list.Get("Weapon")
+        for k, wep in ipairs(ply.quickloadout) do
+            if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
+            if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
+            else
+                ply:Give(wep)
+                local wget = ply:GetWeapon(wep)
+                timer.Simple(0, function()
+                    if wget and IsValid(wget) then
+                        ply:GiveAmmo(math.max(wget:GetMaxClip1(), 0) * clips:GetInt(), wget:GetPrimaryAmmoType(), true)
+                        ply:GiveAmmo(math.max(wget:GetMaxClip2(), 0) * clips:GetInt(), wget:GetSecondaryAmmoType(), true)
+                    end
+                end)
+            end
         end
-    end
-    if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1) or table.IsEmpty(ply:GetWeapons())) then
+        ply:SelectWeapon(ply.quickloadout[1])
+    end)
+    ply:SetActiveWeapon(NULL)
+    if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1)) then
         return true
     end
 end
@@ -62,7 +66,7 @@ end
 
 hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)
 
-hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply)
+hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply, trans)
     ply.qlspawntime = CurTime() or 0
 end)
 

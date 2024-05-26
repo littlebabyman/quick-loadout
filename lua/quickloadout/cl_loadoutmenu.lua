@@ -421,7 +421,7 @@ function QLOpenMenu()
 
     local closer = lcont:Add("Panel")
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
-    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Equip", nil, image)
+    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Apply", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
@@ -784,7 +784,7 @@ function QLOpenMenu()
                 CloseMenu()
             end
             button.DoRightClick = function(self)
-                LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " equipped!")
+                LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " loaded!")
                 ptable = loadouts[key].weps
                 RefreshLoadout(closer)
                 CreateWeaponButtons()
