@@ -250,7 +250,7 @@ local function GenerateWeaponTable()
             wep.HudImage = reftable and (reftable.LoadoutImage or reftable.HudImage) or TestImage(class, true)
             wep.Image = reftable and (reftable.LoadoutImage or reftable.HudImage) or TestImage(class) -- or (fileExists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                wtable[wep.Category][wep.AbbrevName or wep.PrintName or wep.ClassName] = wep.ClassName
+                wtable[wep.Category][wep.ClassName] = wep.AbbrevName or wep.PrintName or wep.ClassName
             else
                 local cat = reftable.SubCategory and string.gsub(reftable.SubCategory, "s$", "") or reftable.SubCatType
                 if (cat) then
@@ -259,7 +259,7 @@ local function GenerateWeaponTable()
                     if !wtable[wep.Category][cat] then
                         wtable[wep.Category][cat] = {}
                     end
-                    wtable[wep.Category][cat][wep.AbbrevName or wep.PrintName or wep.ClassName] = wep.ClassName
+                    wtable[wep.Category][cat][wep.ClassName] = wep.AbbrevName or wep.PrintName or wep.ClassName
                 end
                 if reftable.SubCatTier then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
             end
@@ -673,8 +673,8 @@ function QLOpenMenu()
             if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
         for key, v in SortedPairs(tbl) do
-            if !(table.HasValue(ptable, v) and !ptable[slot]) then
-                local button = GenerateLabel(cat, key, v, image)
+            if !(table.HasValue(ptable, key) and !ptable[slot]) then
+                local button = GenerateLabel(cat, v, key, image)
                 button.DoRightClick = cancel.DoClickInternal
                 local offset = button:GetWide() * 0.1
                 button:SizeToContentsY(fontsize)
@@ -701,11 +701,11 @@ function QLOpenMenu()
                         cat:Hide()
                     end
                 continue end
-                local ref = rtable[v]
+                local ref = rtable[key]
                 local usable = ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin()
                 local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
                 local ratio = wepimage:Width() / wepimage:Height()
-                local cattext, weptext = ShortenCategory(v), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
+                local cattext, weptext = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
                 button.Paint = function(self, x, y)
                     local active = button:IsHovered()
                     surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_but or col_col))
@@ -721,10 +721,10 @@ function QLOpenMenu()
                     end
                 end
                 button.DoClickInternal = function()
-                    if table.HasValue(ptable, v) and ptable[slot] then
-                        table.Merge(ptable, {[table.KeyFromValue(ptable, v)] = ptable[slot]})
+                    if table.HasValue(ptable, key) and ptable[slot] then
+                        table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]})
                     end
-                    table.Merge(ptable, {[slot] = v})
+                    table.Merge(ptable, {[slot] = key})
                     cat:Clear()
                     CreateWeaponButtons()
                     RefreshLoadout(closer)

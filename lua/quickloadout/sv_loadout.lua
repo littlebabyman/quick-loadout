@@ -35,7 +35,18 @@ net.Receive("quickloadout", function(len, ply)
     hook.Run("PlayerLoadout", ply)
 end)
 
-local exctab = {"weapon_crossbow", "weapon_rpg", "weapon_frag", "weapon_slam", "weapon_rpg_hl1", "weapon_satchel", "weapon_handgrenade", "weapon_snark", "weapon_tripmine", "weapon_hornetgun"}
+local exctab = {
+    ["weapon_crossbow"] = true,
+    ["weapon_rpg"] = true,
+    ["weapon_frag"] = true,
+    ["weapon_slam"] = true,
+    ["weapon_rpg_hl1"] = true,
+    ["weapon_satchel"] = true,
+    ["weapon_handgrenade"] = true,
+    ["weapon_snark"] = true,
+    ["weapon_tripmine"] = true,
+    ["weapon_hornetgun"] = true
+}
 
 function QuickLoadout(ply)
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
@@ -46,7 +57,7 @@ function QuickLoadout(ply)
             if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
             if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
             else
-                ply:Give(wep, table.HasValue(exctab, wep))
+                ply:Give(wep, exctab[wep])
                 local wget = ply:GetWeapon(wep)
                 timer.Simple(0, function()
                     if !(wget and IsValid(wget)) then return end
