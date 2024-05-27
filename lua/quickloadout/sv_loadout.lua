@@ -35,21 +35,28 @@ net.Receive("quickloadout", function(len, ply)
     hook.Run("PlayerLoadout", ply)
 end)
 
+local exctab = {"weapon_crossbow", "weapon_rpg", "weapon_frag", "weapon_slam", "weapon_rpg_hl1", "weapon_satchel", "weapon_handgrenade", "weapon_snark", "weapon_tripmine", "weapon_hornetgun"}
+
 function QuickLoadout(ply)
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or table.IsEmpty(ply.quickloadout) or !ply:Alive() then return end
     timer.Simple(0, function()
-        local wtable = list.Get("Weapon")
+        local wtable, ammomult = list.Get("Weapon"), clips:GetInt()
         for k, wep in ipairs(ply.quickloadout) do
             if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
             if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
             else
-                ply:Give(wep)
+                ply:Give(wep, table.HasValue(exctab, wep))
                 local wget = ply:GetWeapon(wep)
                 timer.Simple(0, function()
-                    if wget and IsValid(wget) then
-                        ply:GiveAmmo(math.max(wget:GetMaxClip1(), 0) * clips:GetInt(), wget:GetPrimaryAmmoType(), true)
-                        ply:GiveAmmo(math.max(wget:GetMaxClip2(), 0) * clips:GetInt(), wget:GetSecondaryAmmoType(), true)
+                    if !(wget and IsValid(wget)) then return end
+                    local ammo = wget:GetMaxClip1()
+                    if wget:GetPrimaryAmmoType() >= 1 and ammo != 0 then
+                        ply:GiveAmmo(math.max(ammo, 1) * ammomult, wget:GetPrimaryAmmoType(), true)
+                    end
+                    ammo = wget:GetMaxClip2()
+                    if wget:GetSecondaryAmmoType() >= 1 and ammo != 0 then
+                        ply:GiveAmmo(math.max(ammo, 1) * ammomult, wget:GetSecondaryAmmoType(), true)
                     end
                 end)
             end
