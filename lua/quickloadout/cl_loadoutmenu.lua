@@ -111,8 +111,10 @@ local function GenerateCategory(frame, name)
     category:SetSize(frame:GetParent():GetSize())
     category:Dock(FILL)
     category.Show = function(self)
+        if frame:GetName() == "DScrollPanel" then frame:GetVBar():SetScroll(0) end
+        self:InvalidateChildren(true)
+        frame:InvalidateLayout()
         self:SetVisible(true)
-        if frame:GetName() == "DScrollPanel" then frame:GetVBar():SetScroll(0) timer.Simple(0, function() if !IsValid(frame) then return end frame:InvalidateLayout() end) end
     end
     return category
 end
@@ -153,7 +155,6 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetContentAlignment(7)
     button:SizeToContentsY(button:GetWide() * 0.015)
     if ispanel(panel) then
-        local width, height = ScrW(), ScrH()
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
             local active = button:IsHovered() or button:GetToggle()
@@ -241,8 +242,9 @@ local function GenerateWeaponTable()
             wep.Icon = mat
             wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
             wep.Image = image and wep.HudImage or TestImage(class) -- or (file.Exists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
+            local printname = wep.AbbrevName or wep.PrintName or wep.ClassName
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                wtable[wep.Category][wep.ClassName] = wep.AbbrevName or wep.PrintName or wep.ClassName
+                wtable[wep.Category][wep.ClassName] = printname
             else
                 local cat = reftable.SubCategory and string.gsub(reftable.SubCategory, "s$", "") or reftable.SubCatType
                 if (cat) then
@@ -251,7 +253,7 @@ local function GenerateWeaponTable()
                     if !wtable[wep.Category][cat] then
                         wtable[wep.Category][cat] = {}
                     end
-                    wtable[wep.Category][cat][wep.ClassName] = wep.AbbrevName or wep.PrintName or wep.ClassName
+                    wtable[wep.Category][cat][wep.ClassName] = printname
                 end
                 if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
             end
@@ -793,7 +795,7 @@ function QLOpenMenu()
 
     function WepSelector(button, index, class)
         -- print(button:GetTextSize())
-        local ref, active = rtable[class], button:IsHovered() or button:GetToggle()
+        local ref = rtable[class]
         local unusable = (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!ref or !ref.Spawnable or (ref.AdminOnly and !LocalPlayer():IsAdmin()))
         -- button:SetWrap(false)
         -- button.Paint = function(self, x, y)
