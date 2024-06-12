@@ -386,6 +386,24 @@ function QLOpenMenu()
     end
     saveload:SizeToContentsY()
     saveload:Dock(TOP)
+    local mdl, mskin, mbg = GetConVar("cl_playermodel"), GetConVar("cl_playerskin"), GetConVar("cl_playerbodygroups")
+    local modelpanel = vgui.Create("SpawnIcon", toptext)
+    modelpanel:SetTooltip("Current model: "..mdl:GetString())
+    modelpanel.Fade = modelpanel.Think
+    modelpanel.Think = function(self)
+        self:Fade()
+        if mdl:GetString() != self:GetModelName() then self:SetModel(player_manager.TranslatePlayerModel(mdl:GetString())) end
+    end
+    modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), mskin:GetInt(), mbg:GetString())
+    modelpanel:SetSize(toptext:GetTall(), toptext:GetTall())
+    modelpanel:SetConsoleCommand("playermodel_selector")
+    modelpanel.OnDepressed = function(self)
+        mainmenu:MoveToBack()
+    end
+    -- modelpanel.PaintOver = function(x,y)
+
+    -- end
+    modelpanel:Dock(RIGHT)
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
