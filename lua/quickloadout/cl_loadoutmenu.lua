@@ -249,7 +249,8 @@ local function GenerateWeaponTable()
             wep.Icon = mat
             wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
             wep.Image = image and wep.HudImage or TestImage(class) -- or (file.Exists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
-            local printname = wep.AbbrevName or wep.PrintName or wep.ClassName
+            local printname = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
+            rtable[class].PrintName = printname
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
                 wtable[wep.Category][wep.ClassName] = printname
             else
