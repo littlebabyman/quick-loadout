@@ -1,5 +1,4 @@
 AddCSLuaFile()
-local weaponlist = GetConVar("quickloadout_weapons")
 local dir, gm = "quickloadout/", engine.ActiveGamemode() .. "/"
 local ptable = {}
 local loadouts = {}
@@ -10,14 +9,6 @@ end
 
 if !file.Exists(dir .. engine.ActiveGamemode(), "DATA") then
     file.CreateDir(dir .. engine.ActiveGamemode())
-end
-
-if file.Size(dir .. "client_loadouts.json", "DATA") <= 0 then
-    file.Write(dir .. "client_loadouts.json", "[]")
-end
-
-if file.Size(dir .. "autosave.json", "DATA") <= 0 then
-    file.Write(dir .. "autosave.json", util.TableToJSON(string.Explode(", ", weaponlist:GetString())))
 end
 
 if file.Size(dir .. gm .. "client_loadouts.json", "DATA") <= 0 then
@@ -390,7 +381,7 @@ function QLOpenMenu()
     image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
 
-    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "Options", collapse, image)
+    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, image)
     options:Hide()
     optbut:Dock(TOP)
     -- optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
