@@ -58,24 +58,24 @@ local fontsize
 local color_default = Color(255, 255, 255, 192)
 
 local function CreateFonts()
-    local fonttable = string.Split(fonts:GetString() or {}, ", ")
-    local scale = fontscale:GetFloat()
+    local fonttable = string.Split(fonts:GetString() or "", ",")
+    local scale = 1 --fontscale:GetFloat() didn't bother with setting up a refresher + current setup is not good for it
     surface.CreateFont("quickloadout_font_large", {
-        font = fonttable[1],
+        font = string.Trim(fonttable[1]),
         extended = true,
-        size = ScrH() * scale * 0.04,
+        size = ScreenScaleH(20) * scale,
         outline = true,
     })
     surface.CreateFont("quickloadout_font_medium", {
-        font = fonttable[1],
+        font = string.Trim(fonttable[1]),
         extended = true,
-        size = ScrH() * scale * 0.03,
+        size = ScreenScaleH(15) * scale,
         outline = true,
     })
     surface.CreateFont("quickloadout_font_small", {
-        font = fonttable[2] or fonttable[1],
+        font = string.Trim(fonttable[2] or fonttable[1]),
         extended = true,
-        size = ScrH() * scale * 0.02,
+        size = ScreenScaleH(10) * scale,
         outline = true,
     })
     cam.Start2D()
@@ -577,6 +577,10 @@ function QLOpenMenu()
         local fontpanel = options:Add("Panel")
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
         local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Font"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
+        local fonthelp = GenerateLabel(options, "Add \",\" for separate small font.")
+        fonthelp:SetFont("quickloadout_font_small")
+        fonthelp:SizeToContentsY(options:GetWide() * 0.025)
+        fonthelp:SetTextInset(0, 0)
         fonttext:SetFont("quickloadout_font_small")
         fonttext:SizeToContentsX(options:GetWide() * 0.05)
         fonttext:SizeToContentsY(options:GetWide() * 0.025)
@@ -599,6 +603,7 @@ function QLOpenMenu()
         -- fontslider:SetConVar("quickloadout_ui_font_scale")
         -- fontslider:SetMinMax(fontscale:GetMin(), fontscale:GetMax())
         fontpanel:SetSize(fonttext:GetTextSize())
+        fonthelp:Dock(TOP)
 
         local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
         colortext:SetFont("quickloadout_font_small")
