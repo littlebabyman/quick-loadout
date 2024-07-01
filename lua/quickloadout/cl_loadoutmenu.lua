@@ -275,18 +275,19 @@ function QLOpenMenu()
     end
     local count = 0
     local bg = vgui.Create("Panel")
+    bg:SetParent(GetHUDPanel())
     bg:SetSize(ScrW(), ScrH())
     bg:SetZPos(-2)
-    bg:NoClipping(false)
+    -- bg:NoClipping(true)
     bg.Paint = function(self, w, h)
         if !blur:GetBool() then return end
         local fract = math.Clamp( ( tt < SysTime() and SysTime() - tt or tt - SysTime() ) / 1, 0, 0.25 )
-        local x, y = self:LocalToScreen( 0, 0 )
+        -- local x, y = self:LocalToScreen( 0, 0 )
 		for i = 0.33, 2, 0.33 do
 			bmat:SetFloat( "$blur", fract * 5 * i )
 			bmat:Recompute()
 			if ( render ) then render.UpdateScreenEffectTexture() end
-			surface.DrawTexturedRect( x * -1, y * -1, w, h )
+			-- surface.DrawTexturedRect( x * -1, y * -1, w, h )
 		end
         surface.SetMaterial(bmat)
         surface.SetDrawColor(color_white)
