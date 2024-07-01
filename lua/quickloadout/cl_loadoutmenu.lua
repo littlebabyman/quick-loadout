@@ -58,7 +58,7 @@ local fontsize
 local color_default = Color(255, 255, 255, 192)
 
 local function CreateFonts()
-    local fonttable = string.Split(fonts:GetString() or "", ",")
+    local fonttable = string.Split(fonts:GetString():len() > 0 and fonts:GetString() or fonts:GetDefault(), ",")
     local scale = 1 --fontscale:GetFloat() didn't bother with setting up a refresher + current setup is not good for it
     surface.CreateFont("quickloadout_font_large", {
         font = string.Trim(fonttable[1]),
@@ -249,10 +249,9 @@ local function GenerateWeaponTable()
             wep.Icon = mat
             wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
             wep.Image = image and wep.HudImage or TestImage(class) -- or (file.Exists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
-            local printname = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
-            rtable[class].PrintName = printname
+            wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                wtable[wep.Category][wep.ClassName] = printname
+                wtable[wep.Category][wep.ClassName] = wep.PrintName
             else
                 local cat = reftable.SubCategory and string.gsub(reftable.SubCategory, "s$", "") or reftable.SubCatType
                 if (cat) then
@@ -261,7 +260,7 @@ local function GenerateWeaponTable()
                     if !wtable[wep.Category][cat] then
                         wtable[wep.Category][cat] = {}
                     end
-                    wtable[wep.Category][cat][wep.ClassName] = printname
+                    wtable[wep.Category][cat][wep.ClassName] = wep.PrintName
                 end
                 if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
             end
@@ -576,8 +575,8 @@ function QLOpenMenu()
         enableblur:SetTextColor(color_default)
 
         local fontpanel = options:Add("Panel")
-        fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.")
-        local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Font"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
+        fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
+        local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Fonts"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
         local fonthelp = GenerateLabel(options, "Add \",\" for separate small font.")
         fonthelp:SetFont("quickloadout_font_small")
         fonthelp:SizeToContentsY(options:GetWide() * 0.025)
@@ -775,7 +774,7 @@ function QLOpenMenu()
                 local usable = ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin()
                 local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
                 local ratio = wepimage:Width() / wepimage:Height()
-                local cattext, weptext = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
+                local cattext, weptext = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
                 button.Paint = function(self, x, y)
                     local active = button:IsHovered()
                     surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_but or col_col))
@@ -887,7 +886,7 @@ function QLOpenMenu()
         local icon = math.max(scale * 8, 16)
         button:SetText(button:GetText())
         if ref then
-            cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " Grade " or "") .. ref.SubCategory
+            cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
             button:SizeToContentsY(fontsize)
         else
             if unusable then button:SetFont("quickloadout_font_small") end
