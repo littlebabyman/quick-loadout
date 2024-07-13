@@ -430,8 +430,8 @@ function QLOpenMenu()
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
-    sbut.Text = "["..string.upper(savebind:GetString()).."]"
-    lbut.Text = "["..string.upper(loadbind:GetString()).."]"
+    sbut.Text = "[ "..string.upper(savebind:GetString()).." ]"
+    lbut.Text = "[ "..string.upper(loadbind:GetString()).." ]"
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
     sbut.DoClickInternal = function(self)
