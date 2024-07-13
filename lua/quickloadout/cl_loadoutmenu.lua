@@ -387,6 +387,7 @@ function QLOpenMenu()
     optbut:Dock(TOP)
     -- optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local closer = lcont:Add("Panel")
+    closer.Text = "[ "..string.upper(keybind:GetString()).." ]"
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Apply", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
@@ -398,6 +399,10 @@ function QLOpenMenu()
         self:SetToggle(true)
         CloseMenu()
     end
+    ccancel.PaintOver = function(self, x, y)
+        if refresh then return end
+        draw.SimpleText(closer.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+    end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
     csave:Dock(RIGHT)
     csave:Hide()
@@ -406,12 +411,10 @@ function QLOpenMenu()
         self:SetToggle(true)
         CloseMenu()
     end
-    closer:SizeToContentsY()
-    local offset = ccancel:GetWide() * 0.1
-    closer.Text = "[ "..string.upper(keybind:GetString()).." ]"
-    closer.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x- offset * 0.125, y- offset * 0.125, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+    csave.PaintOver = function(self, x, y)
+        draw.SimpleText(closer.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
+    closer:SizeToContentsY()
     local enable
     if enabled:GetBool() then
         enable = lcont:Add("DCheckBoxLabel")
