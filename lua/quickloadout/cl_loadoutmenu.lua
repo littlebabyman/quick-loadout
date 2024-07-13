@@ -36,6 +36,7 @@ end
 
 local keybind = GetConVar("quickloadout_key")
 local showcat = GetConVar("quickloadout_showcategory")
+local showslot = GetConVar("quickloadout_showslot")
 local blur = GetConVar("quickloadout_ui_blur")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
 local lastgiven = 0
@@ -43,6 +44,7 @@ local lastgiven = 0
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
+local slotlimit = GetConVar("quickloadout_slotlimit")
 local time = GetConVar("quickloadout_switchtime")
 local clips = GetConVar("quickloadout_spawnclips")
 local fontsize
@@ -228,6 +230,7 @@ local function GenerateWeaponTable()
             reftable = weapons.Get(class)
             if reftable then
                 wep.Base = reftable.Base
+                wep.Slot = reftable.Slot+1
                 -- wep.Stats = {
                 --     ["Damage"] = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
                 -- }
@@ -274,6 +277,7 @@ function QLOpenMenu()
         refresh = true
     end
     local count = 0
+    local count2 = {}
     local bg = vgui.Create("Panel")
     bg:SetParent(GetHUDPanel())
     bg:SetSize(ScrW(), ScrH())
@@ -317,7 +321,7 @@ function QLOpenMenu()
     end
 
     function GetMaxSlots()
-        return maxslots:GetBool() and " (" .. maxslots:GetInt() .. " weapon limit)" or !game.SinglePlayer() and " (32 weapon limit)" or ""
+        return (maxslots:GetBool() or slotlimit:GetBool()) and " (" .. ((maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and "32") .. (slotlimit:GetBool() and " weapons, " or " weapon limit") or "") .. (slotlimit:GetBool() and slotlimit:GetInt() .. " per slot" or "") .. ")" or ""
     end
 
     function CloseMenu()
@@ -545,12 +549,27 @@ function QLOpenMenu()
         local enablecat = options:Add("DCheckBoxLabel")
         enablecat:SetConVar("quickloadout_showcategory")
         enablecat:SetText("Weapon categories")
-        enablecat:SetTooltip("Toggles whether your equipped weapons should or should not show their weapon category underneath them.")
+        enablecat:SetTooltip("Toggles whether weapon buttons should or should not show their category underneath them.")
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
         enablecat:SetWrap(true)
         enablecat:SetTextColor(color_default)
         enablecat.Button.Toggle = function(self)
+            self:SetValue( !self:GetChecked() )
+            sbut:SetToggle(false)
+            lbut:SetToggle(false)
+            timer.Simple(0, function() CreateWeaponButtons() end)
+        end
+
+        local enableslot = options:Add("DCheckBoxLabel")
+        enableslot:SetConVar("quickloadout_showslot")
+        enableslot:SetText("Weapon slots")
+        enableslot:SetTooltip("Toggles whether weapon buttons should or should not show their inventory slot underneath them.")
+        enableslot:SetValue(showslot:GetBool())
+        enableslot:SetFont("quickloadout_font_small")
+        enableslot:SetWrap(true)
+        enableslot:SetTextColor(color_default)
+        enableslot.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
             sbut:SetToggle(false)
             lbut:SetToggle(false)
@@ -638,10 +657,10 @@ function QLOpenMenu()
     end
 
     function ShortenCategory(wep)
-        local ref, match, show = rtable[wep], "^[%w%d%p]+", showcat:GetBool()
+        local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
         local bc = ref and tostring(ref.Category:match(match)):Trim()
         local short = bc and (ref.Category:len() > 7 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match("^[%u%d%p]+%s")) or ref.Category):gsub("%b()", ""):Trim()
-        return ref and (show and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
+        return ref and (slot and ref.Slot and "Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
     end
 
     function TheCats(cat)
@@ -683,6 +702,7 @@ function QLOpenMenu()
         rcont:Hide()
         weplist:Clear()
         count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
+        -- count2 = slotlimit:GetBool() and slotlimit:GetInt() or 0
 
         for i, v in ipairs(ptable) do
             local button = GenerateLabel(weplist, QuickName(v), v, image)
@@ -699,6 +719,7 @@ function QLOpenMenu()
     function CreatePreviewButtons(key)
         category1:Clear()
         count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
+        -- count2 = slotlimit:GetBool() and slotlimit:GetInt() or 0
 
         if loadouts[key] then
             for i, v in ipairs(loadouts[key].weps) do
@@ -962,6 +983,7 @@ else
 end
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
+concommand.Add("quickloadout_reloadweapons", GenerateWeaponTable)
 -- cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
 -- cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
 
@@ -1003,6 +1025,9 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
                 self:SetText(string.upper(t or "none"))
             end)
         end
+        cl:Button("Open loadout menu", "quickloadout_menu")
+        cl:Button("Reload weapon list", "quickloadout_reloadweapons")
+        cl:Help("May freeze your game for a moment.\n")
     end)
 end)
 
