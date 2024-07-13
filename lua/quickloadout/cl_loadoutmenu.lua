@@ -407,6 +407,11 @@ function QLOpenMenu()
         CloseMenu()
     end
     closer:SizeToContentsY()
+    local offset = ccancel:GetWide() * 0.1
+    closer.Text = "[ "..string.upper(keybind:GetString()).." ]"
+    closer.PaintOver = function(self, x, y)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x- offset * 0.125, y- offset * 0.125, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+    end
     local enable
     if enabled:GetBool() then
         enable = lcont:Add("DCheckBoxLabel")
