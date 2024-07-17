@@ -233,7 +233,7 @@ local function GenerateWeaponTable()
             reftable = weapons.Get(class)
             if reftable then
                 wep.Base = reftable.Base
-                wep.Slot = reftable.Slot+1
+                if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
                 -- wep.Stats = {
                 --     ["Damage"] = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
                 -- }
@@ -387,7 +387,7 @@ function QLOpenMenu()
     optbut:Dock(TOP)
     -- optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local closer = lcont:Add("Panel")
-    closer.Text = "[ "..string.upper(keybind:GetString()).." ]"
+    closer.Text = "[ "..string.upper(keybind:GetString() or "").." ]"
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Apply", nil, image)
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
@@ -438,8 +438,8 @@ function QLOpenMenu()
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
-    sbut.Text = "[ "..string.upper(savebind:GetString()).." ]"
-    lbut.Text = "[ "..string.upper(loadbind:GetString()).." ]"
+    sbut.Text = "[ "..string.upper(savebind:GetString() or "").." ]"
+    lbut.Text = "[ "..string.upper(loadbind:GetString() or "").." ]"
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
     sbut.DoClickInternal = function(self)
@@ -557,7 +557,7 @@ function QLOpenMenu()
             default:SetWrap(true)
             default.Button.Toggle = function(self)
                 self:SetValue( !self:GetChecked() )
-                RefreshLoadout()
+                RefreshLoadout(closer)
             end
         else
             default = GenerateLabel(options, DefaultEnabled())
@@ -565,6 +565,84 @@ function QLOpenMenu()
         end
         default:SetTextColor(color_default)
         default:SetFont("quickloadout_font_small")
+
+        local bindpanel, loadpanel, savepanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
+        local binder, bindtext = vgui.Create("DBinder", bindpanel), GenerateLabel(bindpanel, "Loadout window bind")
+        bindtext:SetFont("quickloadout_font_small")
+        bindtext:Dock(FILL)
+        -- binder:SetConVar("quickloadout_key")
+        binder.Paint = optbut.Paint
+        binder:SetFont("quickloadout_font_small")
+        binder:SetTextColor(color_default)
+        -- binder:DockMargin(60,10,60,10)
+        binder:Dock(RIGHT)
+        binder:CenterHorizontal()
+        binder:SetText(string.upper(keybind:GetString() != "" and keybind:GetString() or "none"))
+        binder.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                keybind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+                closer.Text = "[ "..string.upper(keybind:GetString() or "").." ]"
+            end)
+        end
+        -- cl:Help("Loadout quickload bind")
+        -- local qloader = vgui.Create("DBinder", cl)
+        -- -- binder:SetConVar("quickloadout_key")
+        -- qloader:DockMargin(60,10,60,10)
+        -- qloader:Dock(TOP)
+        -- qloader:CenterHorizontal()
+        -- qloader:SetText(string.upper(keybindload:GetString() != "" and keybindload:GetString() or "none"))
+        -- qloader.OnChange = function(self, key)
+        --     timer.Simple(0, function()
+        --         local t = input.GetKeyName(key)
+        --         keybindload:SetString(t or "")
+        --         self:SetText(string.upper(t or "none"))
+        --     end)
+        -- end
+        -- cl:Help("Load menu toggle bind")
+        local loader, loadtext = vgui.Create("DBinder", loadpanel), GenerateLabel(loadpanel, "Load menu bind")
+        loadtext:SetFont("quickloadout_font_small")
+        loadtext:Dock(FILL)
+        -- binder:SetConVar("quickloadout_key")
+        loader.Paint = optbut.Paint
+        loader:SetFont("quickloadout_font_small")
+        loader:SetTextColor(color_default)
+        -- loader:DockMargin(60,10,60,10)
+        loader:Dock(RIGHT)
+        loader:CenterHorizontal()
+        loader:SetText(string.upper(loadbind:GetString() != "" and loadbind:GetString() or "none"))
+        loader.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                loadbind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+                lbut.Text = "[ "..string.upper(loadbind:GetString() or "").." ]"
+            end)
+        end
+        -- cl:Help("Save menu toggle bind")
+        local saver, savetext = vgui.Create("DBinder", savepanel), GenerateLabel(savepanel, "Save menu bind")
+        savetext:SetFont("quickloadout_font_small")
+        savetext:Dock(FILL)
+        -- binder:SetConVar("quickloadout_key")
+        saver.Paint = optbut.Paint
+        saver:SetFont("quickloadout_font_small")
+        saver:SetTextColor(color_default)
+        -- saver:DockMargin(60,10,60,10)
+        saver:Dock(RIGHT)
+        saver:CenterHorizontal()
+        saver:SetText(string.upper(savebind:GetString() != "" and savebind:GetString() or "none"))
+        saver.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                savebind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+                sbut.Text = "[ "..string.upper(savebind:GetString() or "").." ]"
+            end)
+        end
+        bindpanel:SetSize(binder:GetTextSize())
+        loadpanel:SetSize(loader:GetTextSize())
+        savepanel:SetSize(saver:GetTextSize())
 
         local enablecat = options:Add("DCheckBoxLabel")
         enablecat:SetConVar("quickloadout_showcategory")
@@ -746,7 +824,7 @@ function QLOpenMenu()
                 local button = GenerateLabel(category1, QuickName(v), v, image)
                 WepSelector(button, i, v)
                 button:SetIsToggle(false)
-                button.DoClickInternal = nil
+                button.DoClickInternal = function() end
                 button.DoRightClick = button.DoClickInternal
             end
         else
@@ -754,7 +832,7 @@ function QLOpenMenu()
                 local button = GenerateLabel(category1, QuickName(v), v, image)
                 WepSelector(button, i, v)
                 button:SetIsToggle(false)
-                button.DoClickInternal = nil
+                button.DoClickInternal = function() end
                 button.DoRightClick = button.DoClickInternal
             end
         end
