@@ -36,6 +36,7 @@ end
 
 local keybind = GetConVar("quickloadout_key")
 local keybindload = GetConVar("quickloadout_key_load")
+local cancelbind = GetConVar("quickloadout_menu_cancel")
 local loadbind = GetConVar("quickloadout_menu_load")
 local savebind = GetConVar("quickloadout_menu_save")
 local showcat = GetConVar("quickloadout_showcategory")
@@ -273,6 +274,7 @@ function QLOpenMenu()
     table.CopyFromTo(ptable, tmp)
     local buttonclicked = nil
     local tt = SysTime()
+    local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString()}
     if open then return else open = true end
     refresh = false
     function RefreshLoadout(pnl)
@@ -387,9 +389,10 @@ function QLOpenMenu()
     optbut:Dock(TOP)
     -- optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local closer = lcont:Add("Panel")
-    closer.Text = "[ "..string.upper(keybind:GetString() or "").." ]"
+    closer.Text = "[ "..string.upper(bindings.keybind or "").." ]"
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Apply", nil, image)
+    ccancel.Text = "[ "..string.upper(bindings.cancelbind or "").." ]"
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
@@ -400,14 +403,14 @@ function QLOpenMenu()
         CloseMenu()
     end
     ccancel.PaintOver = function(self, x, y)
-        if refresh then return end
-        draw.SimpleText(closer.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        -- if refresh then return end
+        draw.SimpleText((!refresh and ccancel.Text .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
     csave:Dock(RIGHT)
     csave:Hide()
     csave.DoClickInternal = function(self)
-        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes saved.")
+        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes applied.")
         self:SetToggle(true)
         CloseMenu()
     end
@@ -438,8 +441,8 @@ function QLOpenMenu()
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
-    sbut.Text = "[ "..string.upper(savebind:GetString() or "").." ]"
-    lbut.Text = "[ "..string.upper(loadbind:GetString() or "").." ]"
+    sbut.Text = "[ "..string.upper(bindings.savebind or "").." ]"
+    lbut.Text = "[ "..string.upper(bindings.loadbind or "").." ]"
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
     sbut.DoClickInternal = function(self)
@@ -533,9 +536,8 @@ function QLOpenMenu()
     function mainmenu:OnKeyCodePressed(key)
         if input.GetKeyCode(savebind:GetString()) != -1 and key == input.GetKeyCode(savebind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_save") then sbut:DoClickInternal() sbut:DoClick() return end
         if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:DoClick() return end
-        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then
-            CloseMenu()
-        end
+        if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() return end
+        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then CloseMenu() return end
     end
 
     function CreateOptionsMenu()
@@ -566,8 +568,8 @@ function QLOpenMenu()
         default:SetTextColor(color_default)
         default:SetFont("quickloadout_font_small")
 
-        local bindpanel, loadpanel, savepanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
-        local binder, bindtext = vgui.Create("DBinder", bindpanel), GenerateLabel(bindpanel, "Loadout window bind")
+        local bindpanel, canpanel, loadpanel, savepanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
+        local binder, bindtext = vgui.Create("DBinder", bindpanel), GenerateLabel(bindpanel, "Loadout window key")
         bindtext:SetFont("quickloadout_font_small")
         bindtext:Dock(FILL)
         -- binder:SetConVar("quickloadout_key")
@@ -577,13 +579,32 @@ function QLOpenMenu()
         -- binder:DockMargin(60,10,60,10)
         binder:Dock(RIGHT)
         binder:CenterHorizontal()
-        binder:SetText(string.upper(keybind:GetString() != "" and keybind:GetString() or "none"))
+        binder:SetText(string.upper(bindings.keybind))
         binder.OnChange = function(self, key)
             timer.Simple(0, function()
                 local t = input.GetKeyName(key)
                 keybind:SetString(t or "")
                 self:SetText(string.upper(t or "none"))
-                closer.Text = "[ "..string.upper(keybind:GetString() or "").." ]"
+                closer.Text = "[ "..string.upper(t or "").." ]"
+            end)
+        end
+        local canner, cantext = vgui.Create("DBinder", canpanel), GenerateLabel(canpanel, "Close and cancel key")
+        cantext:SetFont("quickloadout_font_small")
+        cantext:Dock(FILL)
+        -- binder:SetConVar("quickloadout_key")
+        canner.Paint = optbut.Paint
+        canner:SetFont("quickloadout_font_small")
+        canner:SetTextColor(color_default)
+        -- binder:DockMargin(60,10,60,10)
+        canner:Dock(RIGHT)
+        canner:CenterHorizontal()
+        canner:SetText(string.upper(bindings.cancelbind))
+        canner.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                keybind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+                ccancel.Text = "[ "..string.upper(t or "").." ]"
             end)
         end
         -- cl:Help("Loadout quickload bind")
@@ -601,7 +622,7 @@ function QLOpenMenu()
         --     end)
         -- end
         -- cl:Help("Load menu toggle bind")
-        local loader, loadtext = vgui.Create("DBinder", loadpanel), GenerateLabel(loadpanel, "Load menu bind")
+        local loader, loadtext = vgui.Create("DBinder", loadpanel), GenerateLabel(loadpanel, "Load menu key")
         loadtext:SetFont("quickloadout_font_small")
         loadtext:Dock(FILL)
         -- binder:SetConVar("quickloadout_key")
@@ -611,17 +632,17 @@ function QLOpenMenu()
         -- loader:DockMargin(60,10,60,10)
         loader:Dock(RIGHT)
         loader:CenterHorizontal()
-        loader:SetText(string.upper(loadbind:GetString() != "" and loadbind:GetString() or "none"))
+        loader:SetText(string.upper(bindings.loadbind))
         loader.OnChange = function(self, key)
             timer.Simple(0, function()
                 local t = input.GetKeyName(key)
                 loadbind:SetString(t or "")
                 self:SetText(string.upper(t or "none"))
-                lbut.Text = "[ "..string.upper(loadbind:GetString() or "").." ]"
+                lbut.Text = "[ "..string.upper(t or "").." ]"
             end)
         end
         -- cl:Help("Save menu toggle bind")
-        local saver, savetext = vgui.Create("DBinder", savepanel), GenerateLabel(savepanel, "Save menu bind")
+        local saver, savetext = vgui.Create("DBinder", savepanel), GenerateLabel(savepanel, "Save menu key")
         savetext:SetFont("quickloadout_font_small")
         savetext:Dock(FILL)
         -- binder:SetConVar("quickloadout_key")
@@ -631,16 +652,17 @@ function QLOpenMenu()
         -- saver:DockMargin(60,10,60,10)
         saver:Dock(RIGHT)
         saver:CenterHorizontal()
-        saver:SetText(string.upper(savebind:GetString() != "" and savebind:GetString() or "none"))
+        saver:SetText(string.upper(bindings.savebind))
         saver.OnChange = function(self, key)
             timer.Simple(0, function()
                 local t = input.GetKeyName(key)
                 savebind:SetString(t or "")
                 self:SetText(string.upper(t or "none"))
-                sbut.Text = "[ "..string.upper(savebind:GetString() or "").." ]"
+                sbut.Text = "[ "..string.upper(t or "").." ]"
             end)
         end
         bindpanel:SetSize(binder:GetTextSize())
+        canpanel:SetSize(canner:GetTextSize())
         loadpanel:SetSize(loader:GetTextSize())
         savepanel:SetSize(saver:GetTextSize())
 
@@ -1108,7 +1130,7 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
         sv:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
         sv:ControlHelp("Whether pressing the attack button disables grace period.")
         cl:SetName("Client")
-        cl:Help("Loadout window bind")
+        cl:Help("Loadout window key")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
         local binder = vgui.Create("DBinder", cl)
         -- binder:SetConVar("quickloadout_key")
@@ -1120,6 +1142,21 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
             timer.Simple(0, function()
                 local t = input.GetKeyName(key)
                 keybind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+            end)
+        end
+        cl:Help("Loadout change cancel key")
+        -- panel:CheckBox(maxslots, "Max weapons on spawn")
+        local canner = vgui.Create("DBinder", cl)
+        -- binder:SetConVar("quickloadout_key")
+        canner:DockMargin(60,10,60,10)
+        canner:Dock(TOP)
+        canner:CenterHorizontal()
+        canner:SetText(string.upper(cancelbind:GetString() != "" and cancelbind:GetString() or "none"))
+        canner.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                cancelbind:SetString(t or "")
                 self:SetText(string.upper(t or "none"))
             end)
         end
@@ -1137,7 +1174,7 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
         --         self:SetText(string.upper(t or "none"))
         --     end)
         -- end
-        cl:Help("Load menu toggle bind")
+        cl:Help("Load menu toggle key")
         local loader = vgui.Create("DBinder", cl)
         -- binder:SetConVar("quickloadout_key")
         loader:DockMargin(60,10,60,10)
@@ -1151,7 +1188,7 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
                 self:SetText(string.upper(t or "none"))
             end)
         end
-        cl:Help("Save menu toggle bind")
+        cl:Help("Save menu toggle key")
         local saver = vgui.Create("DBinder", cl)
         -- binder:SetConVar("quickloadout_key")
         saver:DockMargin(60,10,60,10)
