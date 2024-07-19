@@ -404,7 +404,7 @@ function QLOpenMenu()
     end
     ccancel.PaintOver = function(self, x, y)
         -- if refresh then return end
-        draw.SimpleText((!refresh and ccancel.Text .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
     csave:Dock(RIGHT)
