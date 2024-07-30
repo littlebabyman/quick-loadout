@@ -438,6 +438,19 @@ function QLOpenMenu()
     enable:SetFont("quickloadout_font_small")
     enable:DockMargin(lcont:GetWide() * 0.0475, lcont:GetWide() * 0.025, lcont:GetWide() * 0.0125, lcont:GetWide() * 0.015)
     enable:Dock(TOP)
+    local trash = LocalPlayer():GetWeapons()
+    local importer = GenerateLabel(lcont, "Import current weapons", nil, image)
+    importer:SetFont("quickloadout_font_medium")
+    importer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
+    importer.DoClickInternal = function(self)
+        for k, v in ipairs(trash) do ptable[k] = v:GetClass() end
+        CreateWeaponButtons()
+        RefreshLoadout(closer)
+    end
+    importer.OnReleased = function(self)
+        self:SetToggle(true)
+    end
+    importer:Dock(TOP)
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
@@ -504,6 +517,7 @@ function QLOpenMenu()
     end
     optbut.DoClickInternal = function(self)
         options:SetVisible(!self:GetToggle())
+        importer:SetVisible(self:GetToggle())
         saveload:SetVisible(self:GetToggle())
         lscroller:SetVisible(self:GetToggle())
         toptext:SetVisible(self:GetToggle())
@@ -545,9 +559,6 @@ function QLOpenMenu()
         options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
         options:SetY(lcont:GetWide() * 0.2)
         options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
-
-
-
 
         local default
         if override:GetInt() == -1 then
