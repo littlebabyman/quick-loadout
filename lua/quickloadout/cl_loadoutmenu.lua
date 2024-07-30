@@ -448,6 +448,7 @@ function QLOpenMenu()
         RefreshLoadout(closer)
     end
     importer.OnReleased = function(self)
+        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Imported currently equipped weapons to loadout.")
         self:SetToggle(true)
     end
     importer:Dock(TOP)
@@ -1033,7 +1034,7 @@ function QLOpenMenu()
             cattext, weptext = ShortenCategory(class), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
             button:SizeToContentsY(fontsize)
         else
-            if unusable then button:SetFont("quickloadout_font_small") end
+            if unusable then button:SetFont(button:GetText() == "+ Add Weapon" and "quickloadout_font_medium" or "quickloadout_font_small") end
             button:SetWrap(false)
             button:SizeToContentsY(button:GetWide() * 0.015)
         end
