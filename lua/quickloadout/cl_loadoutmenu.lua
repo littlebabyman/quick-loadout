@@ -455,11 +455,13 @@ function QLOpenMenu()
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
+    local modelpanel = vgui.Create("SpawnIcon", toptext)
     sbut.Text = "[ "..string.upper(bindings.savebind or "").." ]"
     lbut.Text = "[ "..string.upper(bindings.loadbind or "").." ]"
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
     sbut.DoClickInternal = function(self)
+        if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
         -- qllist:SetVisible(!self:GetToggle())
         lbut:SetToggle(false)
         -- weplist:SetVisible(self:GetToggle())
@@ -468,6 +470,7 @@ function QLOpenMenu()
     lbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     lbut:Dock(RIGHT)
     lbut.DoClickInternal = function(self)
+        if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
         -- qllist:SetVisible(!self:GetToggle())
         sbut:SetToggle(false)
         -- weplist:SetVisible(self:GetToggle())
@@ -485,7 +488,26 @@ function QLOpenMenu()
     toptext:SizeToContentsY(draw.GetFontHeight("quickloadout_font_medium"))
     toptext:SetFont("quickloadout_font_large")
     local mdl, mskin, mbg = GetConVar("cl_playermodel"), GetConVar("cl_playerskin"), GetConVar("cl_playerbodygroups")
-    local modelpanel = vgui.Create("SpawnIcon", toptext)
+    -- for k, v in pairs(list.Get("DesktopWindows").PlayerEditor) do
+    --     modelpanel.k = v
+    -- end
+    modelpanel.DoClickInternal = function()
+        optbut:OnToggled(image:IsVisible())
+        if IsValid(modelpanel.Window) then modelpanel.Window:Remove() return end
+        local window = vgui.Create("DFrame", mainmenu)
+        image:Hide()
+        window.DoRemoval = window.Remove
+        window.Remove = function() image:Show() window:DoRemoval() end
+        window.Paint = rcont.Paint
+        if rcont:IsVisible() then CreateWeaponButtons() end
+        modelpanel.Window = window
+        list.Get("DesktopWindows").PlayerEditor:init(window)
+        if IsValid(window) then
+            window:SetSize(mainmenu:GetWide() * 0.5, mainmenu:GetTall() * 0.8)
+            window:SetPos(rcont:GetX(), mainmenu:GetTall() * 0.1)
+        end
+    end
+    modelpanel.OnCursorEntered = optbut.OnCursorEntered
     modelpanel.Fade = modelpanel.Think
     modelpanel.Think = function(self)
         self:Fade()
@@ -496,7 +518,6 @@ function QLOpenMenu()
     end
     modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), mskin:GetInt(), mbg:GetString())
     modelpanel:SetSize(toptext:GetTall()*0.5, toptext:GetTall())
-    modelpanel:SetConsoleCommand("playermodel_selector")
     modelpanel:SetTooltip("Current model: "..mdl:GetString())
     modelpanel.OnDepressed = function(self)
         mainmenu:MoveToBack()
@@ -1058,6 +1079,7 @@ function QLOpenMenu()
             end
         end
         button.DoClickInternal = function()
+            if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
             rcont:Show()
             category1:Hide()
             category2:Hide()
@@ -1091,12 +1113,14 @@ end)
 
 hook.Add("InitPostEntity", "QuickLoadoutInit", function()
     GenerateWeaponTable()
-    if game.SinglePlayer() then
-        net.Start("QLSPHack")
-        net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
-        net.SendToServer()
-    end
-    NetworkLoadout()
+    timer.Simple(1, function()
+        if game.SinglePlayer() then
+            net.Start("QLSPHack")
+            net.WriteInt(input.GetKeyCode(keybind:GetString()), 9)
+            net.SendToServer()
+        end
+        NetworkLoadout()
+    end)
 end)
 
 if game.SinglePlayer() then
