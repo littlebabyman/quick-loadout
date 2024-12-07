@@ -251,9 +251,9 @@ local function GenerateWeaponTable()
             if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
                 wtable[wep.Category][wep.ClassName] = wep.PrintName
             else
-                local cat = reftable.SubCategory and string.gsub(reftable.SubCategory, "s$", "") or reftable.SubCatType
+                local cat = reftable.SubCategory or reftable.SubCatType
                 if (cat) then
-                    cat = string.gsub(cat, "^%d(%a)", "%1")
+                    cat = string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1")
                     wep.SubCategory = cat
                     if !wtable[wep.Category][cat] then
                         wtable[wep.Category][cat] = {}
@@ -519,6 +519,7 @@ function QLOpenMenu()
     modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), mskin:GetInt(), mbg:GetString())
     modelpanel:SetSize(toptext:GetTall()*0.5, toptext:GetTall())
     modelpanel:SetTooltip("Current model: "..mdl:GetString())
+    -- if ConVarExists("playermodel_selector") then modelpanel:SetConsoleCommand("playermodel_selector") end
     modelpanel.OnDepressed = function(self)
         mainmenu:MoveToBack()
     end
