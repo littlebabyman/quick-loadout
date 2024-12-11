@@ -13,6 +13,7 @@ if CLIENT then
     CreateClientConVar("quickloadout_weapons", "", true, true, "Quick loadout weapon classes. Nonfunctional, only exists to bring 'old' autosaved loadout to new system.")
     CreateClientConVar("quickloadout_key", "n", true, false, "Quick loadout keybind.")
     CreateClientConVar("quickloadout_key_load", "m", true, false, "Quick loadout loadmenu keybind.")
+    CreateClientConVar("quickloadout_menu_model", "b", true, false, "Quickly open the player model menu.")
     CreateClientConVar("quickloadout_menu_cancel", "c", true, false, "Cancel and discard all changes and close the menu.")
     CreateClientConVar("quickloadout_menu_save", "q", true, false, "Quickly switch to save menu.")
     CreateClientConVar("quickloadout_menu_load", "e", true, false, "Quickly switch to load menu.")

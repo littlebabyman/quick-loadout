@@ -39,6 +39,7 @@ local keybindload = GetConVar("quickloadout_key_load")
 local cancelbind = GetConVar("quickloadout_menu_cancel")
 local loadbind = GetConVar("quickloadout_menu_load")
 local savebind = GetConVar("quickloadout_menu_save")
+local modelbind = GetConVar("quickloadout_menu_model")
 local showcat = GetConVar("quickloadout_showcategory")
 local showslot = GetConVar("quickloadout_showslot")
 local blur = GetConVar("quickloadout_ui_blur")
@@ -274,7 +275,7 @@ function QLOpenMenu()
     table.CopyFromTo(ptable, tmp)
     local buttonclicked = nil
     local tt = SysTime()
-    local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString()}
+    local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString(), modelbind = modelbind:GetString()}
     if open then return else open = true end
     refresh = false
     function RefreshLoadout(pnl)
@@ -443,7 +444,13 @@ function QLOpenMenu()
     importer:SetFont("quickloadout_font_medium")
     importer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
     importer.DoClickInternal = function(self)
-        for k, v in ipairs(trash) do ptable[k] = v:GetClass() end
+        local holster = GetConVar("holsterweapon_weapon") and GetConVar("holsterweapon_weapon"):GetString()
+        local g = 0
+        table.Empty(ptable)
+        for k, v in ipairs(trash) do
+            if holster and v:GetClass() == (rtable[holster] and holster or "weaponholster") then g = 1 continue end
+            ptable[k-g] = v:GetClass()
+        end
         CreateWeaponButtons()
         RefreshLoadout(closer)
     end
@@ -458,6 +465,7 @@ function QLOpenMenu()
     local modelpanel = vgui.Create("SpawnIcon", toptext)
     sbut.Text = "[ "..string.upper(bindings.savebind or "").." ]"
     lbut.Text = "[ "..string.upper(bindings.loadbind or "").." ]"
+    modelpanel.Text = "[ "..string.upper(bindings.modelbind or "").." ]"
     sbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
     sbut:Dock(LEFT)
     sbut.DoClickInternal = function(self)
@@ -480,6 +488,9 @@ function QLOpenMenu()
         draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     lbut.PaintOver = function(self, x, y)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+    end
+    modelpanel.PaintOver = function(self, x, y)
         draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     saveload:SizeToContentsY()
@@ -573,6 +584,7 @@ function QLOpenMenu()
     function mainmenu:OnKeyCodePressed(key)
         if input.GetKeyCode(savebind:GetString()) != -1 and key == input.GetKeyCode(savebind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_save") then sbut:DoClickInternal() sbut:DoClick() return end
         if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:DoClick() return end
+        if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() return end
         if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() return end
         if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then CloseMenu() return end
     end
