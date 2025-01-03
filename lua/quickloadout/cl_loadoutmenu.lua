@@ -116,9 +116,11 @@ local function GenerateCategory(frame, name)
     category:SetSize(frame:GetParent():GetSize())
     category:Dock(FILL)
     category.Show = function(self)
-        if frame:GetName() == "DScrollPanel" then frame:GetVBar():SetScroll(0) end
         self:InvalidateChildren(true)
         frame:InvalidateLayout()
+        if frame:GetName() == "DScrollPanel" then
+            frame:GetVBar():SetScroll(0)
+        end
         self:SetVisible(true)
     end
     return category
@@ -139,12 +141,14 @@ local function TestImage(item, hud)
     end
 end
 
+local wrong = "Uh oh! Broken!"
+
 local function GenerateLabel(frame, name, class, panel)
     local button = frame:Add("DLabel")
     function NameSetup()
         return !istable(name) and name or class
     end
-    local text = NameSetup() or "Uh oh! Broken!"
+    local text = NameSetup() or wrong
     surface.SetFont("quickloadout_font_large")
     button.Name = class
     button:SetMouseInputEnabled(true)
@@ -153,11 +157,10 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(frame:GetWide() * 0.025, 0)
     button:SetWrap(true)
-    button:SetText(text)
-    -- button:SetAutoStretchVertical(true)
     button:SetTextColor(color_default)
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button:SetContentAlignment(7)
+    button:SetText(text)
     button:SizeToContentsY(button:GetWide() * 0.015)
     if ispanel(panel) then
         button:SetIsToggle(true)
@@ -254,7 +257,7 @@ local function GenerateWeaponTable()
             else
                 local cat = reftable.SubCategory or reftable.SubCatType
                 if (cat) then
-                    cat = string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1")
+                    cat = string.gsub(string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
                     wep.SubCategory = cat
                     if !wtable[wep.Category][cat] then
                         wtable[wep.Category][cat] = {}
