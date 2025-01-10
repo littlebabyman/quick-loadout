@@ -45,6 +45,7 @@ local showslot = GetConVar("quickloadout_showslot")
 local blur = GetConVar("quickloadout_ui_blur")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
 local lastgiven = 0
+local reminder = GetConVar("quickloadout_remind_client")
 
 local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
@@ -126,6 +127,7 @@ local function GenerateCategory(frame, name)
     return category
 end
 
+local notify = false
 local wtable = {}
 local open = false
 local rtable = {}
@@ -227,7 +229,7 @@ local function NetworkLoadout()
     net.SendToServer()
 end
 
-net.Receive("quickloadout", function() LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.") end)
+net.Receive("quickloadout", function() local spawn = net.ReadBool() if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.") end)
 
 local function GenerateWeaponTable()
     rtable = list.Get("Weapon")
@@ -616,6 +618,14 @@ function QLOpenMenu()
         end
         default:SetTextColor(color_default)
         default:SetFont("quickloadout_font_small")
+        local remind = options:Add("DCheckBoxLabel")
+        remind:SetConVar("quickloadout_remind_client")
+        remind:SetText("Loadout reminder on spawn")
+        remind:SetTall(options:GetWide() * 0.125)
+        remind:SetWrap(true)
+        remind:SetTextColor(color_default)
+        remind:SetFont("quickloadout_font_small")
+
 
         local bindpanel, canpanel, loadpanel, savepanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
         local binder, bindtext = vgui.Create("DBinder", bindpanel), GenerateLabel(bindpanel, "Loadout window key")

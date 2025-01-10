@@ -30,6 +30,7 @@ net.Receive("quickloadout", function(len, ply)
     end -- whaddya know this IS more reliable!
     if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
+        net.WriteBool(#ply.quickloadout > 0)
         net.Send(ply)
         return
     end
@@ -39,16 +40,16 @@ net.Receive("quickloadout", function(len, ply)
 end)
 
 local exctab = {
-    ["weapon_crossbow"] = true,
-    ["weapon_rpg"] = true,
-    ["weapon_frag"] = true,
-    ["weapon_slam"] = true,
-    ["weapon_rpg_hl1"] = true,
-    ["weapon_satchel"] = true,
-    ["weapon_handgrenade"] = true,
-    ["weapon_snark"] = true,
-    ["weapon_tripmine"] = true,
-    ["weapon_hornetgun"] = true
+    weapon_crossbow = true,
+    weapon_rpg = true,
+    weapon_frag = true,
+    weapon_slam = true,
+    weapon_rpg_hl1 = true,
+    weapon_satchel = true,
+    weapon_handgrenade = true,
+    weapon_snark = true,
+    weapon_tripmine = true,
+    weapon_hornetgun = true
 }
 
 function QuickLoadout(ply)
@@ -89,6 +90,11 @@ hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)
 
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply, trans)
     ply.qlspawntime = CurTime() or 0
+    if IsValid(ply) and ply.quickloadout then
+        net.Start("quickloadout")
+        net.WriteBool(true)
+        net.Send(ply)
+    end
 end)
 
 -- hook.Add("PostPlayerDeath", "QuickLoadoutDeath", function(ply)
