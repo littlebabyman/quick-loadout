@@ -51,7 +51,7 @@ local enabled = GetConVar("quickloadout_enable")
 local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local slotlimit = GetConVar("quickloadout_slotlimit")
-local time = GetConVar("quickloadout_switchtime")
+local time = GetConVar("quickloadout_gracetime")
 local clips = GetConVar("quickloadout_spawnclips")
 local fontsize
 local color_default = Color(255, 255, 255, 192)
@@ -127,7 +127,6 @@ local function GenerateCategory(frame, name)
     return category
 end
 
-local notify = false
 local wtable = {}
 local open = false
 local rtable = {}
@@ -220,8 +219,55 @@ local function GenerateEditableLabel(frame, name)
     return button
 end
 
+local function QLEditTime(t)
+    return CurTime() < t and "\n".. math.Truncate(t - CurTime(),1)
+end
+
+local notipan = nil
+local function QLNotify(noti)
+    local spawn = !isstring(noti) and noti
+    if spawn and !reminder:GetBool() then return end
+    if IsValid(notipan) then notipan:Remove() end
+    local text = "Your loadout will change next deployment."
+    if spawn then text = "[ " .. string.NiceName(keybind:GetString()) .. " ] Change loadout"
+    elseif isstring(noti) then text = noti
+    end
+    notipan = vgui.Create("DPanel", GetHUDPanel())
+    notipan.Paint = nil
+    local box = vgui.Create("DLabel", notipan)
+    box:SetFont("quickloadout_font_medium")
+    box:SetText(text)
+    local spawntime = spawn and (LocalPlayer():Health() > 0 and (time:GetBool() and time:GetInt() or 2) or 10) or 3
+    notipan:SetContentAlignment(8)
+    box:SetContentAlignment(8)
+    -- box:SetSize(box:GetTextSize())
+    box:SizeToContents()
+    box:Dock(FILL)
+    notipan:SetSize(box:GetTextSize())
+    notipan:SetTall(notipan:GetTall()*2)
+    if spawn and time:GetBool() then
+        local cutoff = vgui.Create("DLabel", notipan)
+        cutoff:SetFont("quickloadout_font_medium")
+        cutoff:SetText(spawntime)
+        cutoff:SizeToContents()
+        cutoff:SetContentAlignment(8)
+        cutoff:SetSize(cutoff:GetTextSize())
+        cutoff:Dock(FILL)
+        local spawncutoff = CurTime() + spawntime
+        cutoff.Think = function()
+            if spawncutoff > CurTime() then
+            cutoff:SetText(QLEditTime(spawncutoff) or "")
+            end
+        end
+    end
+    -- container:SizeToContentsY(draw.GetFontHeight("quickloadout_font_medium")*2)
+    local wpos = (ScrW() - box:GetWide()) * 0.5
+    notipan:SetPos(wpos, ScrH())
+    notipan:MoveTo(wpos, ScrH() * 0.8, 0.2, 0, -1, function() notipan:MoveTo(wpos, ScrH(), .2, spawntime - 0.2, -1, function() notipan:Remove() end) end)
+end
+
 local function NetworkLoadout()
-    if CurTime() < lastgiven + 1 then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "You're sending loadouts too quick! Calm down.") return end
+    if CurTime() < lastgiven + 1 then QLNotify("You're sending loadouts too quick! Calm down.") return end
     lastgiven = CurTime()
     local weps = util.Compress(util.TableToJSON(ptable))
     net.Start("quickloadout")
@@ -229,7 +275,12 @@ local function NetworkLoadout()
     net.SendToServer()
 end
 
-net.Receive("quickloadout", function() local spawn = net.ReadBool() if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.") end)
+net.Receive("quickloadout", function()
+    local spawn = net.ReadBool()
+    if IsValid(notipan) then notipan:Remove() end
+    QLNotify(spawn)
+    -- if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.")
+end)
 
 local function GenerateWeaponTable()
     rtable = list.Get("Weapon")
@@ -402,7 +453,7 @@ function QLOpenMenu()
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
-        if csave:IsVisible() then LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes discarded.") end
+        if csave:IsVisible() then QLNotify("Loadout changes discarded.") end
         ptable = tmp
         refresh = false
         self:SetToggle(true)
@@ -416,7 +467,7 @@ function QLOpenMenu()
     csave:Dock(RIGHT)
     csave:Hide()
     csave.DoClickInternal = function(self)
-        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Loadout changes applied.")
+        QLNotify("Loadout changes applied.")
         self:SetToggle(true)
         CloseMenu()
     end
@@ -460,7 +511,7 @@ function QLOpenMenu()
         RefreshLoadout(closer)
     end
     importer.OnReleased = function(self)
-        LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Imported currently equipped weapons to loadout.")
+        QLNotify("Imported currently equipped weapons to loadout.")
         self:SetToggle(true)
     end
     importer:Dock(TOP)
@@ -1038,13 +1089,13 @@ function QLOpenMenu()
             end
         else
             button.DoClickInternal = function(self)
-                LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " equipped!")
+                QLNotify(loadouts[key].name .. " equipped!")
                 ptable = loadouts[key].weps
                 RefreshLoadout()
                 CloseMenu()
             end
             button.DoRightClick = function(self)
-                LocalPlayer():PrintMessage(HUD_PRINTCENTER, loadouts[key].name .. " loaded!")
+                QLNotify(loadouts[key].name .. " loaded!")
                 ptable = loadouts[key].weps
                 RefreshLoadout(closer)
                 CreateWeaponButtons()
@@ -1185,13 +1236,14 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
         sv:ControlHelp("Enable gamemode's default loadout.")
         sv:NumSlider("Clips per weapon", "quickloadout_spawnclips", 0, 100, 0)
         sv:ControlHelp("How many clips worth of ammo each weapon is given.")
-        sv:NumSlider("Spawn grace time", "quickloadout_switchtime", 0, 60, 0)
+        sv:NumSlider("Spawn grace time", "quickloadout_gracetime", 0, 60, 0)
         sv:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
         sv:NumSlider("Max weapon slots", "quickloadout_maxslots", 0, 32, 0)
         sv:ControlHelp("Amount of weapons players can have on spawn. Max 32, 0 is infinite.")
-        sv:CheckBox("Shooting cancels grace", "quickloadout_switchtime_override")
+        sv:CheckBox("Shooting cancels grace", "quickloadout_gracetime_override")
         sv:ControlHelp("Whether pressing the attack button disables grace period.")
         cl:SetName("Client")
+        cl:CheckBox("Loadout reminder on spawn", "quickloadout_remind_client")
         cl:Help("Loadout window key")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
         local binder = vgui.Create("DBinder", cl)

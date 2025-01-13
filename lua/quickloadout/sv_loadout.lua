@@ -1,8 +1,8 @@
 local enabled = GetConVar("quickloadout_enable")
 local default = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
-local time = GetConVar("quickloadout_switchtime")
-local timestop = GetConVar("quickloadout_switchtime_override")
+local time = GetConVar("quickloadout_gracetime")
+local timestop = GetConVar("quickloadout_gracetime_override")
 local clips = GetConVar("quickloadout_spawnclips")
 
 util.AddNetworkString("quickloadout")
@@ -22,6 +22,7 @@ if game.SinglePlayer() then
 end
 
 net.Receive("quickloadout", function(len, ply)
+    -- if !ply.qlspawntime then ply.qlspawntime = CurTime() + 1 return end
     if !ply.quickloadout then ply.qlspawntime = CurTime() + 1 end
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
     else
@@ -30,7 +31,7 @@ net.Receive("quickloadout", function(len, ply)
     end -- whaddya know this IS more reliable!
     if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
-        net.WriteBool(#ply.quickloadout > 0)
+        net.WriteBool(false)
         net.Send(ply)
         return
     end
@@ -89,17 +90,26 @@ end
 hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)
 
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply, trans)
-    ply.qlspawntime = CurTime() or 0
-    if IsValid(ply) and ply.quickloadout then
+    -- if !trans then
+        ply.qlspawntime = CurTime() or 0
+    -- end
+    timer.Remove("QLPlayerSpawn" .. ply:UserID())
+    if IsValid(ply) then
         net.Start("quickloadout")
         net.WriteBool(true)
         net.Send(ply)
     end
 end)
 
--- hook.Add("PostPlayerDeath", "QuickLoadoutDeath", function(ply)
-
--- end)
+hook.Add("PostPlayerDeath", "QuickLoadoutDeath", function(ply)
+    timer.Create("QLPlayerSpawn" .. ply:UserID(), 10, 1, function()
+        if IsValid(ply) then
+            net.Start("quickloadout")
+            net.WriteBool(true)
+            net.Send(ply)
+        end
+    end)
+end)
 
 hook.Add("KeyPress", "QuickLoadoutCancel", function(ply, key)
     if !timestop:GetBool() then return end
