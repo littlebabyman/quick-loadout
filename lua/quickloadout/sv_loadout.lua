@@ -3,7 +3,7 @@ local default = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_gracetime")
 local timestop = GetConVar("quickloadout_gracetime_override")
-local clips = GetConVar("quickloadout_spawnclips")
+local clips = GetConVar("quickloadout_giveclips")
 
 util.AddNetworkString("quickloadout")
 util.AddNetworkString("qlnotification")
