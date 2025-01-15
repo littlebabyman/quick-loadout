@@ -4,7 +4,7 @@ CreateConVar("quickloadout_default", -1, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCV
 CreateConVar("quickloadout_slotlimit", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Max weapons per slot in a loadout. Currently nonfunctional.", 0, 32)
 CreateConVar("quickloadout_maxslots", 10, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Max weapon slots in a loadout.", 0, 32)
 CreateConVar("quickloadout_gracetime", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Grace period length (in seconds) to switch loadout after spawn.", 0)
-CreateConVar("quickloadout_spawnclips", 5, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Amount of clips worth of ammo a weapon gets upon applying a loadout.", 0)
+CreateConVar("quickloadout_spawnclips", -1, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Amount of clips worth of ammo a weapon gets upon applying a loadout. -1 uses weapon defaults instead.", -1)
 CreateConVar("quickloadout_gracetime_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Force grace period off on pressing primary attack.", 0, 1)
 
 if CLIENT then

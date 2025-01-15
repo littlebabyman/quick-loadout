@@ -62,17 +62,17 @@ function QuickLoadout(ply)
             if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
             if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
             else
-                ply:Give(wep, exctab[wep])
+                ply:Give(wep, ammomult >= 0 or exctab[wep])
                 local wget = ply:GetWeapon(wep)
+                if ammomult < 0 then continue end
                 timer.Simple(0, function()
                     if !(wget and IsValid(wget)) then return end
-                    local ammo = wget:GetMaxClip1()
-                    if wget:GetPrimaryAmmoType() >= 1 and ammo != 0 then
-                        ply:GiveAmmo(math.max(ammo, 1) * ammomult, wget:GetPrimaryAmmoType(), true)
-                    end
-                    ammo = wget:GetMaxClip2()
-                    if wget:GetSecondaryAmmoType() >= 1 and ammo != 0 then
-                        ply:GiveAmmo(math.max(ammo, 1) * ammomult, wget:GetSecondaryAmmoType(), true)
+                    local ammo1, ammo2, type1, type2 = wget:GetMaxClip1(), wget:GetMaxClip2(), wget:GetPrimaryAmmoType(), wget:GetSecondaryAmmoType()
+                    if wget:GetPrimaryAmmoType() >= 1 and ammo1 != 0 then
+                        ply:GiveAmmo(math.max(ammo1, 1) * (ammomult+(type1 == type2 and 2 or 1)), type1, true)
+                    end --Giving extra clip only to primary is intentional, and doubled if it's guessed to be akimbo
+                    if wget:GetSecondaryAmmoType() >= 1 and ammo2 != 0 then
+                        ply:GiveAmmo(math.max(ammo2, 1) * (ammomult), type2, true)
                     end
                 end)
             end
