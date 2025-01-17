@@ -3,7 +3,8 @@ local default = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_gracetime")
 local timestop = GetConVar("quickloadout_gracetime_override")
-local clips = GetConVar("quickloadout_giveclips")
+local clips1 = GetConVar("quickloadout_giveclips_primary")
+local clips2 = GetConVar("quickloadout_giveclips_secondary")
 
 util.AddNetworkString("quickloadout")
 util.AddNetworkString("qlnotification")
@@ -22,6 +23,7 @@ if game.SinglePlayer() then
 end
 
 net.Receive("quickloadout", function(len, ply)
+    if ply.qltransition then ply.qltransition = false return end
     -- if !ply.qlspawntime then ply.qlspawntime = CurTime() + 1 return end
     if !ply.quickloadout then ply.qlspawntime = CurTime() + 1 end
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
@@ -53,30 +55,31 @@ local exctab = {
 
 
 function QuickLoadout(ply)
+    if ply.qltransition then return end
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or table.IsEmpty(ply.quickloadout) or !ply:Alive() then return end
     ply:StripWeapons()
     ply:StripAmmo()
     timer.Simple(0, function()
         local wtable = list.Get("Weapon")
-        local ammomult = clips:GetInt()
+        local ammomult1, ammomult2 = clips1:GetInt(), clips2:GetInt()
         for k, wep in ipairs(ply.quickloadout) do
             if (!game.SinglePlayer() or maxslots:GetBool()) and count and count < k then break end
             if !wtable[wep] or !wtable[wep].Spawnable or (wtable[wep].AdminOnly and !ply:IsAdmin()) then count = count + 1
             else
-                ply:Give(wep, ammomult >= 0 or exctab[wep])
+                ply:Give(wep, ammomult1 >= 0 or exctab[wep])
                 local wget = ply:GetWeapon(wep)
-                if ammomult < 0 then continue end
+                if ammomult1 < 0 then continue end
                 wget:SetClip1(wget:GetMaxClip1())
                 wget:SetClip2(wget:GetMaxClip2())
                 timer.Simple(0, function()
                     if !(wget and IsValid(wget)) then return end
                     local ammo1, ammo2, type1, type2 = wget:GetMaxClip1(), wget:GetMaxClip2(), wget:GetPrimaryAmmoType(), wget:GetSecondaryAmmoType()
                     if wget:GetPrimaryAmmoType() >= 1 and ammo1 != 0 then
-                        ply:GiveAmmo(math.max(ammo1, 1) * (ammomult), type1, true)
+                        ply:GiveAmmo(math.max(ammo1, 1) * (ammomult1), type1, true)
                     end --Giving extra clip only to primary is intentional, and doubled if it's guessed to be akimbo
                     if wget:GetSecondaryAmmoType() >= 1 and ammo2 != 0 then
-                        ply:GiveAmmo(math.max(ammo2, 1) * (ammomult), type2, true)
+                        ply:GiveAmmo(math.max(ammo2, 1) * (ammomult2), type2, true)
                     end
                 end)
             end
@@ -95,6 +98,7 @@ hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)
 
 hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply, trans)
     -- if !trans then
+        ply.qltransition = trans
         ply.qlspawntime = CurTime() or 0
     -- end
     timer.Remove("QLPlayerSpawn" .. ply:UserID())

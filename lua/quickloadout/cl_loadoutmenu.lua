@@ -52,7 +52,7 @@ local override = GetConVar("quickloadout_default")
 local maxslots = GetConVar("quickloadout_maxslots")
 local slotlimit = GetConVar("quickloadout_slotlimit")
 local time = GetConVar("quickloadout_gracetime")
-local clips = GetConVar("quickloadout_giveclips")
+-- local clips = GetConVar("quickloadout_giveclips")
 local fontsize
 local color_default = Color(255, 255, 255, 192)
 
@@ -87,13 +87,13 @@ local function RefreshColors()
     function LessenBG(color)
         local temptbl = {r = 0, g = 0, b = 0, a = 0}
         for k, v in SortedPairs(color) do
-            table.Merge(temptbl, {[k] = math.floor(v * 0.125)})
+            table.Merge(temptbl, {[k] = math.floor(v * 0.125)}, true)
         end
     return Color(temptbl.r, temptbl.g, temptbl.b) end
     function LessenButton(color)
         local temptbl = {r = 0, g = 0, b = 0, a = 0}
         for k, v in SortedPairs(color) do
-           table.Merge(temptbl, {[k] = math.floor(v * 0.75)})
+           table.Merge(temptbl, {[k] = math.floor(v * 0.75)}, true)
         end
     return Color(temptbl.r, temptbl.g, temptbl.b) end
     local a, b, c, d = ColorAlpha(cvar_bg, 224) or Color(0,128,0,224), IsColor(LessenBG(cvar_bg)) and ColorAlpha(LessenBG(cvar_bg), 128) or Color(0,16,0,128), ColorAlpha(LessenButton(cvar_but), 128) or Color(0,96,0,128), ColorAlpha(cvar_but, 128) or Color(0,128,0,128)
@@ -1034,9 +1034,9 @@ function QLOpenMenu()
                 end
                 button.DoClickInternal = function()
                     if table.HasValue(ptable, key) and ptable[slot] then
-                        table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]})
+                        table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]}, true)
                     end
-                    table.Merge(ptable, {[slot] = key})
+                    table.Merge(ptable, {[slot] = key}, true)
                     cat:Clear()
                     CreateWeaponButtons()
                     RefreshLoadout(closer)
@@ -1070,7 +1070,7 @@ function QLOpenMenu()
             button.OnLabelTextChanged = function(self, text)
                 qllist:Clear()
                 if string.len(text) < 1 then text = "New Loadout " .. key end
-                table.Merge(loadouts, {[key] = {name = text, weps = ptable}})
+                table.Merge(loadouts, {[key] = {name = text, weps = ptable}}, true)
                 file.Write(dir .. gm .. "client_loadouts.json", util.TableToJSON(loadouts))
                 sbut:DoClickInternal()
                 sbut:DoClick()
@@ -1234,8 +1234,9 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
         default:AddChoice("Disabled", 0)
         default:AddChoice("Enabled", 1)
         sv:ControlHelp("Enable gamemode's default loadout.")
-        sv:NumSlider("Clips per weapon", "quickloadout_giveclips", -1, 100, 0)
-        sv:ControlHelp("How many clips worth of ammo each weapon is given.\n-1 to not override weapon defaults. May cause weapons to require a first reload.")
+        sv:NumSlider("Primary clips", "quickloadout_giveclips_primary", -1, 100, 0)
+        sv:NumSlider("Secondary clips", "quickloadout_giveclips_secondary", -1, 100, 0)
+        sv:Help("How many clips worth of ammo each weapon in a loadout is given.\n-1 to not override weapon defaults. Secondary requires primary to be 0 or higher.")
         sv:NumSlider("Spawn grace time", "quickloadout_gracetime", 0, 60, 0)
         sv:ControlHelp("Time you have to change loadout after spawning. 0 is infinite.\n15 is recommended for PvP events, 0 for pure sandbox.")
         sv:NumSlider("Max weapon slots", "quickloadout_maxslots", 0, 32, 0)
