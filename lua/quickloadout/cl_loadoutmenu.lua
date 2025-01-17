@@ -282,42 +282,45 @@ net.Receive("quickloadout", function()
     -- if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.")
 end)
 
-local function GenerateWeaponTable()
-    rtable = list.Get("Weapon")
-    local reftable
-    for class, wep in pairs(rtable) do
-        reftable = {}
-        if wep.Spawnable then
-            reftable = weapons.Get(class)
-            if reftable then
-                wep.Base = reftable.Base
-                if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
-                -- wep.Stats = {
-                --     ["Damage"] = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
-                -- }
-            end
-            if !wtable[wep.Category] then
-                wtable[wep.Category] = {}
-            end
-            local mat = (list.Get("ContentCategoryIcons")[wep.Category])
-            local image = reftable and (reftable.LoadoutImage or reftable.HudImage)
-            wep.Icon = mat
-            wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
-            wep.Image = image and wep.HudImage or TestImage(class) -- or (file.Exists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
-            wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
-            if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                wtable[wep.Category][wep.ClassName] = wep.PrintName
-            else
-                local cat = reftable.SubCategory or reftable.SubCatType
-                if (cat) then
-                    cat = string.gsub(string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
-                    wep.SubCategory = cat
-                    if !wtable[wep.Category][cat] then
-                        wtable[wep.Category][cat] = {}
-                    end
-                    wtable[wep.Category][cat][wep.ClassName] = wep.PrintName
+local function GenerateWeaponTable(force)
+    if table.IsEmpty(wtable) or force then
+        print("Generating weapon table...")
+        rtable = list.Get("Weapon")
+        local reftable
+        for class, wep in pairs(rtable) do
+            reftable = {}
+            if wep.Spawnable then
+                reftable = weapons.Get(class)
+                if reftable then
+                    wep.Base = reftable.Base
+                    if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
+                    -- wep.Stats = {
+                    --     ["Damage"] = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
+                    -- }
                 end
-                if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
+                if !wtable[wep.Category] then
+                    wtable[wep.Category] = {}
+                end
+                local mat = (list.Get("ContentCategoryIcons")[wep.Category])
+                local image = reftable and (reftable.LoadoutImage or reftable.HudImage)
+                wep.Icon = mat
+                wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
+                wep.Image = image and wep.HudImage or TestImage(class) -- or (file.Exists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
+                wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
+                if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
+                    wtable[wep.Category][wep.ClassName] = wep.PrintName
+                else
+                    local cat = reftable.SubCategory or reftable.SubCatType
+                    if (cat) then
+                        cat = string.gsub(string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
+                        wep.SubCategory = cat
+                        if !wtable[wep.Category][cat] then
+                            wtable[wep.Category][cat] = {}
+                        end
+                        wtable[wep.Category][cat][wep.ClassName] = wep.PrintName
+                    end
+                    if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
+                end
             end
         end
     end
@@ -404,10 +407,7 @@ function QLOpenMenu()
         end)
     end
 
-    if table.IsEmpty(wtable) then
-        print("Generating weapon table...")
-        GenerateWeaponTable()
-    end
+    GenerateWeaponTable()
     table.RemoveByValue(ptable, "")
     local lcont, rcont = mainmenu:Add("Panel"), mainmenu:Add("Panel")
     lcont:SetZPos(0)
@@ -1216,7 +1216,7 @@ else
 end
 
 concommand.Add("quickloadout_menu", QLOpenMenu)
-concommand.Add("quickloadout_reloadweapons", GenerateWeaponTable)
+concommand.Add("quickloadout_reloadweapons", function() GenerateWeaponTable(true) end)
 -- cvars.AddChangeCallback("quickloadout_weapons", NetworkLoadout)
 -- cvars.AddChangeCallback("quickloadout_enable_client", NetworkLoadout)
 
