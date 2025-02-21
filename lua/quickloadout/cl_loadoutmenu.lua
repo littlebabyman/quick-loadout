@@ -451,6 +451,7 @@ function QLOpenMenu()
     image.WepData = {}
     image.Think = function(self)
         if self.WepData.ammo and isnumber(self.WepData.mag) then
+            self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
             self.WepData.oneshot = self.WepData.mag == 1
             self.WepData.mag = (self.WepData.mag > 0 and "Clip size: " .. self.WepData.mag)
         end
@@ -469,7 +470,7 @@ function QLOpenMenu()
     end
     image.PaintOver = function(self, x, y)
         if self.WepData.ammo then
-            draw.SimpleText(language.GetPhrase(self.WepData.ammo), "quickloadout_font_medium", x * 0.975, x * 0.975, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(self.WepData.ammo, "quickloadout_font_medium", x * 0.975, x * 0.975, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
             if self.WepData.mag then
                 draw.SimpleText(self.WepData.mag, "quickloadout_font_medium", x * 0.025, x * 0.975, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
             end
