@@ -476,24 +476,24 @@ function QLOpenMenu()
         end
         if self.WepData.dmgrat then
             surface.SetDrawColor(col_bg)
-            surface.DrawRect(x * 0.025, x * 1.1, x * 0.45, x * 0.04)
+            surface.DrawRect(x * 0.025, x * 1.1, x * 0.5, x * 0.04)
             surface.SetDrawColor(color_default)
-            surface.DrawRect(x * 0.3825, x * 1.1, scale, x * 0.04)
+            surface.DrawRect(x * 0.425, x * 1.1, scale, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025, x * 1.1, x * 0.45 * self.WepData.dmgrat, x * 0.04)
+            surface.DrawRect(x * 0.025, x * 1.1, x * 0.5 * self.WepData.dmgrat, x * 0.04)
             surface.SetDrawColor(color_default)
-            surface.DrawOutlinedRect(x * 0.025, x * 1.1, x * 0.45, x * 0.04, scale)
-            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.5, x * 1.12, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            surface.DrawOutlinedRect(x * 0.025, x * 1.1, x * 0.5, x * 0.04, scale)
+            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.55, x * 1.12, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.075, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
         if self.WepData.rofrat and !self.WepData.oneshot then
             surface.SetDrawColor(col_bg)
-            surface.DrawRect(x * 0.025, x * 1.25, x * 0.45, x * 0.04)
+            surface.DrawRect(x * 0.025, x * 1.25, x * 0.5, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025, x * 1.25, x * 0.45 * self.WepData.rofrat, x * 0.04)
+            surface.DrawRect(x * 0.025, x * 1.25, x * 0.5 * self.WepData.rofrat, x * 0.04)
             surface.SetDrawColor(color_default)
-            surface.DrawOutlinedRect(x * 0.025, x * 1.25, x * 0.45, x * 0.04, scale)
-            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.5, x * 1.27, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            surface.DrawOutlinedRect(x * 0.025, x * 1.25, x * 0.5, x * 0.04, scale)
+            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.55, x * 1.27, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             draw.SimpleText(dtext[(!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2], "quickloadout_font_medium", x * 0.025, x * 1.225, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
     end
