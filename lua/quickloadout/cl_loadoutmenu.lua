@@ -303,7 +303,7 @@ local function GenerateWeaponTable(force)
                     wep.Stats = {
                         dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 1,
                         num = reftable.Num or reftable.Primary.NumShots or 1,
-                        rof = reftable.RPM or reftable.Primary.RPM or (reftable.Primary.Delay and reftable.Primary.Delay > 0 and 60 / reftable.Primary.Delay),
+                        rof = reftable.RPM or reftable.Primary.RPM or (reftable.FireDelay and math.Round(60 / reftable.FireDelay) or reftable.Primary.Delay and reftable.Primary.Delay > 0 and math.Round(60 / reftable.Primary.Delay)),
                         mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
                         ammo = game.GetAmmoName(game.GetAmmoID(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))
                     }
@@ -498,7 +498,7 @@ function QLOpenMenu()
         end
     end
     image:SetSize(height * 0.5, height * 0.8)
-    image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
+    image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.1, height * 0.1)
     -- image:SetKeepAspect(true)
 
     local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, image)
