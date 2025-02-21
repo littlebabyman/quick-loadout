@@ -177,6 +177,15 @@ local function GenerateLabel(frame, name, class, panel)
                 wepimg = Material(rtable[class] and (rtable[class].HudImage or rtable[class].Image) or "vgui/null", "smooth")
                 local ratio = wepimg:Width() / wepimg:Height()
                 panel.ImageRatio = ratio - 1
+                panel.WepData = {}
+                local stats = rtable[class] and rtable[class].Stats
+                if !stats then return end
+                if tonumber(stats.Damage) > 1 then
+                    panel.WepData.dmg = stats.Damage
+                    if tonumber(stats.ROF) then
+                        panel.WepData.rof = stats.ROF
+                    end
+                end
             end
         end
         button.OnToggled = function(self, state)
@@ -296,9 +305,10 @@ local function GenerateWeaponTable(force)
                 if reftable then
                     wep.Base = reftable.Base
                     if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
-                    -- wep.Stats = {
-                    --     ["Damage"] = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
-                    -- }
+                    wep.Stats = {
+                        Damage = (reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 1) * (reftable.Num or reftable.Primary.NumShots or 1),
+                        ROF = reftable.RPM or reftable.Primary.RPM or reftable.Primary.Delay and 60 / reftable.Primary.Delay,
+                    }
                 end
                 if !wtable[wep.Category] then
                     wtable[wep.Category] = {}
@@ -335,6 +345,7 @@ function QLOpenMenu()
     local tmp = {}
     table.CopyFromTo(ptable, tmp)
     local buttonclicked = nil
+    local dtext = {string.NiceName(language.GetPhrase("damage")), "RPM"}
     local tt = SysTime()
     local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString(), modelbind = modelbind:GetString()}
     if open then return else open = true end
@@ -430,16 +441,49 @@ function QLOpenMenu()
     local qllist, weplist = GenerateCategory(lscroller), GenerateCategory(lscroller)
     qllist:Hide()
     -- weplist:MakeDroppable("quickloadoutarrange", false)
-    local category1, category2, category3 = GenerateCategory(rscroller, "x Cancel"), GenerateCategory(rscroller, "< Categories"), GenerateCategory(rscroller, "< Subcategories")
+    local category1, category2, category3 = GenerateCategory(rscroller, "◀ Cancel"), GenerateCategory(rscroller, "◀ Categories"), GenerateCategory(rscroller, "◀ Subcategories")
     local image = mainmenu:Add("Panel")
     image.ImageRatio = 0
     image.Paint = function(self, x, y)
         surface.SetDrawColor(255, 255, 255)
         surface.SetMaterial(wepimg)
-        surface.DrawTexturedRect(0+(y*math.min(self.ImageRatio, 0)*0.25),0+(y*math.max(self.ImageRatio, 0)*0.25), x-(y*math.min(self.ImageRatio, 0)*0.5), y-(y*math.max(self.ImageRatio, 0)*0.5))
+        surface.DrawTexturedRect(0+(x*math.min(self.ImageRatio, 0)*0.25),0+(x*math.max(self.ImageRatio, 0)*0.25), x-(x*math.min(self.ImageRatio, 0)*0.5), x-(x*math.max(self.ImageRatio, 0)*0.5))
         draw.NoTexture()
     end
-    image:SetSize(height * 0.4, height * 0.4)
+    image.WepData = {}
+    image.Think = function(self)
+        if self.WepData.dmg and !self.WepData.dmgrat then
+            self.WepData.dmgrat = math.Clamp(self.WepData.dmg, 0, 125) * 0.008
+        end
+        if !self.WepData.dmg then self.WepData.dmgrat = nil end
+        if self.WepData.rof and !self.WepData.rofrat then
+            self.WepData.rofrat = math.Clamp(self.WepData.rof, 0, 1100) * 0.00091
+        end
+        if !self.WepData.rof then self.WepData.rofrat = nil end
+    end
+    image.PaintOver = function(self, x, y)
+        if self.WepData.dmgrat then
+            surface.SetDrawColor(col_bg)
+            surface.DrawRect(x * 0.025, x * 1.125, x * 0.5, x * 0.05)
+            surface.SetDrawColor(col_hl)
+            surface.DrawRect(x * 0.025, x * 1.125, x * 0.5 * self.WepData.dmgrat, x * 0.05)
+            surface.SetDrawColor(color_default)
+            surface.DrawOutlinedRect(x * 0.025, x * 1.125, x * 0.5, x * 0.05, scale)
+            draw.SimpleText(self.WepData.dmg, "quickloadout_font_large", x * 0.55, x * 1.2, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.1, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        end
+        if self.WepData.rofrat then
+            surface.SetDrawColor(col_bg)
+            surface.DrawRect(x * 0.025, x * 1.3, x * 0.5, x * 0.05)
+            surface.SetDrawColor(col_hl)
+            surface.DrawRect(x * 0.025, x * 1.3, x * 0.5 * self.WepData.rofrat, x * 0.05)
+            surface.SetDrawColor(color_default)
+            surface.DrawOutlinedRect(x * 0.025, x * 1.3, x * 0.5, x * 0.05, scale)
+            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.55, x * 1.375, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(dtext[2], "quickloadout_font_medium", x * 0.025, x * 1.275, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        end
+    end
+    image:SetSize(height * 0.4, height * 0.8)
     image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
 
@@ -606,6 +650,7 @@ function QLOpenMenu()
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
         wepimg = Material("vgui/null")
+        image.WepData = {}
     end
     optbut.DoClickInternal = function(self)
         options:SetVisible(!self:GetToggle())
@@ -640,11 +685,11 @@ function QLOpenMenu()
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
     function mainmenu:OnKeyCodePressed(key)
-        if input.GetKeyCode(savebind:GetString()) != -1 and key == input.GetKeyCode(savebind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_save") then sbut:DoClickInternal() sbut:DoClick() return end
-        if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:DoClick() return end
-        if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() return end
-        if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() return end
-        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then CloseMenu() return end
+        if input.GetKeyCode(savebind:GetString()) != -1 and key == input.GetKeyCode(savebind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_save") then sbut:DoClickInternal() sbut:Toggle() return end
+        if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:Toggle() return end
+        if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() modelpanel:OnDepressed() return end
+        if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() ccancel:Toggle() return end
+        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then csave:SetToggle(true) csave:Toggle() CloseMenu() return end
     end
 
     function CreateOptionsMenu()
@@ -892,7 +937,7 @@ function QLOpenMenu()
         local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
         local bc = ref and tostring(ref.Category:match(match)):Trim()
         local short = bc and (ref.Category:len() > 7 and (ref.Base and ref.Base:find(bc:lower()) != nil and ref.Category:gsub(bc, "") or ref.Category:match("^[%u%d%p]+%s")) or ref.Category):gsub("%b()", ""):Trim()
-        return ref and (slot and ref.Slot and "Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
+        return ref and (slot and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
     end
 
     function TheCats(cat)
@@ -984,12 +1029,13 @@ function QLOpenMenu()
             parent:SetToggle(false)
             parent:GetParent():Show()
             wepimg = Material(ptable[slot] and rtable[ptable[slot]] and (rtable[ptable[slot]].HudImage or rtable[ptable[slot]].Image) or "vgui/null", "smooth")
+            image.WepData = {}
             local ratio = wepimg:Width() / wepimg:Height()
             image.ImageRatio = ratio - 1
             if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
         for key, v in SortedPairs(tbl) do
-            if !(table.HasValue(ptable, key) and !ptable[slot]) then
+            -- if !(table.HasValue(ptable, key) and !ptable[slot]) then
                 local button = GenerateLabel(cat, v, key, image)
                 button.DoRightClick = cancel.DoClickInternal
                 local offset = button:GetWide() * 0.1
@@ -1016,13 +1062,17 @@ function QLOpenMenu()
                     end
                 continue end
                 local ref = rtable[key]
-                local usable = ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin()
+                local haswep = (table.HasValue(ptable, key) and !ptable[slot])
+                local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
                 local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
                 local ratio = wepimage:Width() / wepimage:Height()
-                local cattext, weptext = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory
+                local cattext, weptext, eqnum = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, key) and "#"..tostring(table.KeyFromValue(ptable, key))
+                if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, key)) then
+                    eqnum = eqnum .. " ↔ " .. "#"..slot
+                end
                 button.Paint = function(self, x, y)
                     local active = button:IsHovered()
-                    surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_but or col_col))
+                    surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_bg or col_col))
                     surface.DrawRect(0 , 0, x, y)
                     surface.SetDrawColor(255, 255, 255, 192)
                     if ref.Image then
@@ -1033,9 +1083,14 @@ function QLOpenMenu()
                     if weptext then
                         draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
+                    if eqnum then
+                        surface.SetDrawColor(255, 255, 255, 100)
+                        draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.25, offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+                    end
                 end
-                button.DoClickInternal = function()
-                    if table.HasValue(ptable, key) and ptable[slot] then
+                button.DoClickInternal = function(self)
+                    if table.HasValue(ptable, key) then
+                        if !ptable[slot] then self:SetToggle(true) return end
                         table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]}, true)
                     end
                     table.Merge(ptable, {[slot] = key}, true)
@@ -1044,7 +1099,7 @@ function QLOpenMenu()
                     RefreshLoadout(closer)
                 end
             end
-        end
+        -- end
         cat:Show()
     end
 
@@ -1126,6 +1181,7 @@ function QLOpenMenu()
         local catimage = Material(ref and ref.Icon or "vgui/null", "smooth")
         local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
         local cattext, weptext
+        local eqnum = "#"..index
         local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
         local ratio = w / h
         local icon = math.max(scale * 8, 16)
@@ -1140,22 +1196,25 @@ function QLOpenMenu()
         end
         button.Paint = function(self, x, y)
             local active = button:IsHovered() or button:GetToggle()
-            surface.SetDrawColor(unusable and (active and col_but or col_col) or (active and col_hl or col_but))
+            surface.SetDrawColor(unusable and (active and col_bg or col_col) or (active and col_hl or col_but))
             surface.DrawRect(0 , 0, x, y)
-            if !ref then return end
-            surface.SetDrawColor(255, 255, 255, 192)
-            if ref.Image then
-                surface.SetMaterial(wepimage)
-                surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
+            if ref then
+                surface.SetDrawColor(255, 255, 255, 192)
+                if ref.Image then
+                    surface.SetMaterial(wepimage)
+                    surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
+                end
+                if ref.Icon then
+                    surface.SetMaterial(catimage)
+                    surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
+                end
+                draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                if weptext then
+                    draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                end
             end
-            if ref.Icon then
-                surface.SetMaterial(catimage)
-                surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
-            end
-            draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-            if weptext then
-                draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-            end
+            surface.SetDrawColor(255, 255, 255, 100)
+            draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.25, offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
         end
         button.DoClickInternal = function()
             if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
