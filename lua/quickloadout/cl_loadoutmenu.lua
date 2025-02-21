@@ -180,12 +180,7 @@ local function GenerateLabel(frame, name, class, panel)
                 panel.WepData = {}
                 local stats = rtable[class] and rtable[class].Stats
                 if !stats then return end
-                if tonumber(stats.Damage) > 1 then
-                    panel.WepData.dmg = stats.Damage
-                    if tonumber(stats.ROF) then
-                        panel.WepData.rof = stats.ROF
-                    end
-                end
+                panel.WepData = stats
             end
         end
         button.OnToggled = function(self, state)
@@ -306,8 +301,11 @@ local function GenerateWeaponTable(force)
                     wep.Base = reftable.Base
                     if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
                     wep.Stats = {
-                        Damage = (reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 1) * (reftable.Num or reftable.Primary.NumShots or 1),
-                        ROF = reftable.RPM or reftable.Primary.RPM or reftable.Primary.Delay and 60 / reftable.Primary.Delay,
+                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 1,
+                        num = reftable.Num or reftable.Primary.NumShots or 1,
+                        rof = reftable.RPM or reftable.Primary.RPM or (reftable.Primary.Delay and reftable.Primary.Delay > 0 and 60 / reftable.Primary.Delay),
+                        mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
+                        ammo = game.GetAmmoName(game.GetAmmoID(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))
                     }
                 end
                 if !wtable[wep.Category] then
@@ -345,7 +343,7 @@ function QLOpenMenu()
     local tmp = {}
     table.CopyFromTo(ptable, tmp)
     local buttonclicked = nil
-    local dtext = {string.NiceName(language.GetPhrase("damage")), "RPM"}
+    local dtext = {string.NiceName(language.GetPhrase("damage")), "RPM", "APM"}
     local tt = SysTime()
     local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString(), modelbind = modelbind:GetString()}
     if open then return else open = true end
@@ -452,38 +450,54 @@ function QLOpenMenu()
     end
     image.WepData = {}
     image.Think = function(self)
-        if self.WepData.dmg and !self.WepData.dmgrat then
-            self.WepData.dmgrat = math.Clamp(self.WepData.dmg, 0, 125) * 0.008
+        if self.WepData.ammo and isnumber(self.WepData.mag) then
+            self.WepData.oneshot = self.WepData.mag == 1
+            self.WepData.mag = (self.WepData.mag > 0 and "Clip size: " .. self.WepData.mag)
         end
-        if !self.WepData.dmg then self.WepData.dmgrat = nil end
+        if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
+            self.WepData.dmgrat = math.Remap(math.Clamp(self.WepData.dmg * self.WepData.num, 0, 125), 0, 125, 0, 1)
+            self.WepData.dmgtotal = math.Round(self.WepData.dmg)
+            if self.WepData.num > 1 then
+                self.WepData.dmgtotal = self.WepData.dmg * self.WepData.num .. " (" .. self.WepData.dmgtotal .. "×" .. self.WepData.num .. ")"
+            end
+        end
+        -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
         if self.WepData.rof and !self.WepData.rofrat then
-            self.WepData.rofrat = math.Clamp(self.WepData.rof, 0, 1100) * 0.00091
+            self.WepData.rofrat = math.Remap(math.Clamp(self.WepData.rof, 0, 1100), 0, 1100, 0, 1)
         end
-        if !self.WepData.rof then self.WepData.rofrat = nil end
+        -- if !self.WepData.rof then self.WepData.rofrat = nil end
     end
     image.PaintOver = function(self, x, y)
+        if self.WepData.ammo then
+            draw.SimpleText(language.GetPhrase(self.WepData.ammo), "quickloadout_font_medium", x * 0.975, x * 0.975, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            if self.WepData.mag then
+                draw.SimpleText(self.WepData.mag, "quickloadout_font_medium", x * 0.025, x * 0.975, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            end
+        end
         if self.WepData.dmgrat then
             surface.SetDrawColor(col_bg)
-            surface.DrawRect(x * 0.025, x * 1.125, x * 0.5, x * 0.05)
-            surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025, x * 1.125, x * 0.5 * self.WepData.dmgrat, x * 0.05)
+            surface.DrawRect(x * 0.025, x * 1.1, x * 0.45, x * 0.04)
             surface.SetDrawColor(color_default)
-            surface.DrawOutlinedRect(x * 0.025, x * 1.125, x * 0.5, x * 0.05, scale)
-            draw.SimpleText(self.WepData.dmg, "quickloadout_font_large", x * 0.55, x * 1.2, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-            draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.1, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            surface.DrawRect(x * 0.3825, x * 1.1, scale, x * 0.04)
+            surface.SetDrawColor(col_hl)
+            surface.DrawRect(x * 0.025, x * 1.1, x * 0.45 * self.WepData.dmgrat, x * 0.04)
+            surface.SetDrawColor(color_default)
+            surface.DrawOutlinedRect(x * 0.025, x * 1.1, x * 0.45, x * 0.04, scale)
+            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.5, x * 1.12, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.075, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
-        if self.WepData.rofrat then
+        if self.WepData.rofrat and !self.WepData.oneshot then
             surface.SetDrawColor(col_bg)
-            surface.DrawRect(x * 0.025, x * 1.3, x * 0.5, x * 0.05)
+            surface.DrawRect(x * 0.025, x * 1.25, x * 0.45, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025, x * 1.3, x * 0.5 * self.WepData.rofrat, x * 0.05)
+            surface.DrawRect(x * 0.025, x * 1.25, x * 0.45 * self.WepData.rofrat, x * 0.04)
             surface.SetDrawColor(color_default)
-            surface.DrawOutlinedRect(x * 0.025, x * 1.3, x * 0.5, x * 0.05, scale)
-            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.55, x * 1.375, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-            draw.SimpleText(dtext[2], "quickloadout_font_medium", x * 0.025, x * 1.275, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            surface.DrawOutlinedRect(x * 0.025, x * 1.25, x * 0.45, x * 0.04, scale)
+            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.5, x * 1.27, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            draw.SimpleText(dtext[(!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2], "quickloadout_font_medium", x * 0.025, x * 1.225, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
     end
-    image:SetSize(height * 0.4, height * 0.8)
+    image:SetSize(height * 0.5, height * 0.8)
     image:SetPos((width - height) * 0.25 + height * 0.7, height * 0.1)
     -- image:SetKeepAspect(true)
 
@@ -1085,7 +1099,7 @@ function QLOpenMenu()
                     end
                     if eqnum then
                         surface.SetDrawColor(255, 255, 255, 100)
-                        draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.25, offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+                        draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
                     end
                 end
                 button.DoClickInternal = function(self)
@@ -1214,7 +1228,7 @@ function QLOpenMenu()
                 end
             end
             surface.SetDrawColor(255, 255, 255, 100)
-            draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.25, offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+            draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
         end
         button.DoClickInternal = function()
             if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
