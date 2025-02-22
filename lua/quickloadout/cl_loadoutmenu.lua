@@ -54,7 +54,7 @@ local slotlimit = GetConVar("quickloadout_slotlimit")
 local time = GetConVar("quickloadout_gracetime")
 -- local clips = GetConVar("quickloadout_giveclips")
 local fontsize
-local color_default = Color(255, 255, 255, 192)
+local color_default = Color(255, 255, 255, 191)
 
 local function CreateFonts()
     local fonttable = string.Split(fonts:GetString():len() > 0 and fonts:GetString() or fonts:GetDefault(), ",")
@@ -158,7 +158,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(frame:GetWide() * 0.025, 0)
     button:SetWrap(true)
-    button:SetTextColor(color_default)
+    button:SetTextColor(color_white)
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button:SetContentAlignment(7)
     button:SetText(text)
@@ -203,7 +203,7 @@ local function GenerateEditableLabel(frame, name)
     button:SetWrap(true)
     if name then button:SetText(text) end
     button:SizeToContentsY(button:GetWide() * 0.015)
-    button:SetTextColor(color_default)
+    button:SetTextColor(color_white)
     button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
     button:SetContentAlignment(7)
     button.DoClickInternal = function(self)
@@ -241,7 +241,7 @@ local function QLNotify(noti)
     local box = vgui.Create("DLabel", notipan)
     box:SetFont("quickloadout_font_medium")
     box:SetText(text)
-    box:SetTextColor(color_default)
+    box:SetTextColor(color_white)
     local spawntime = spawn and (IsValid(LocalPlayer()) and LocalPlayer():Health() > 0 and (time:GetBool() and time:GetInt() or 2) or 10) or 3
     notipan:SetContentAlignment(8)
     box:SetContentAlignment(8)
@@ -254,7 +254,7 @@ local function QLNotify(noti)
         local cutoff = vgui.Create("DLabel", notipan)
         cutoff:SetFont("quickloadout_font_medium")
         cutoff:SetText(spawntime)
-        cutoff:SetTextColor(color_default)
+        cutoff:SetTextColor(color_white)
         cutoff:SizeToContents()
         cutoff:SetContentAlignment(8)
         cutoff:SetSize(cutoff:GetTextSize())
@@ -305,7 +305,9 @@ local function GenerateWeaponTable(force)
                         num = reftable.Num or reftable.Primary.NumShots or 1,
                         rof = reftable.RPM or reftable.Primary.RPM or (reftable.FireDelay and math.Round(60 / reftable.FireDelay) or reftable.Primary.Delay and reftable.Primary.Delay > 0 and math.Round(60 / reftable.Primary.Delay)),
                         mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
-                        ammo = game.GetAmmoName(game.GetAmmoID(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))
+                        mag2 = reftable.Secondary.ClipSize or 0,
+                        ammo = game.GetAmmoName(game.GetAmmoID(tostring(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))),
+                        ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo)))
                     }
                 end
                 if !wtable[wep.Category] then
@@ -443,7 +445,7 @@ function QLOpenMenu()
     local image = mainmenu:Add("Panel")
     image.ImageRatio = 0
     image.Paint = function(self, x, y)
-        surface.SetDrawColor(255, 255, 255)
+        surface.SetDrawColor(color_white)
         surface.SetMaterial(wepimg)
         surface.DrawTexturedRect(0+(x*math.min(self.ImageRatio, 0)*0.25),0+(x*math.max(self.ImageRatio, 0)*0.25), x-(x*math.min(self.ImageRatio, 0)*0.5), x-(x*math.max(self.ImageRatio, 0)*0.5))
         draw.NoTexture()
@@ -453,10 +455,16 @@ function QLOpenMenu()
         if self.WepData.ammo and isnumber(self.WepData.mag) then
             self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
             self.WepData.oneshot = self.WepData.mag == 1
-            self.WepData.mag = (self.WepData.mag > 0 and "Clip size: " .. self.WepData.mag)
+            self.WepData.mag = (self.WepData.mag > 0 and "Primary clip: " .. self.WepData.mag)
+        end
+        if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
+            self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
+            self.WepData.mag2 = (self.WepData.mag2 > 0 and "Secondary clip: " .. self.WepData.mag2)
         end
         if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
-            self.WepData.dmgrat = math.Remap(math.Clamp(self.WepData.dmg * self.WepData.num, 0, 125), 0, 125, 0, 1)
+            local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
+            self.WepData.dmgrat = math.Clamp(ratmap, 0, 1)
+            self.WepData.dmgrat2 = math.Clamp(ratmap - 1, 0, 1)
             self.WepData.dmgtotal = math.Round(self.WepData.dmg)
             if self.WepData.num > 1 then
                 self.WepData.dmgtotal = self.WepData.dmg * self.WepData.num .. " (" .. self.WepData.dmgtotal .. "×" .. self.WepData.num .. ")"
@@ -464,42 +472,61 @@ function QLOpenMenu()
         end
         -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
         if self.WepData.rof and !self.WepData.rofrat then
-            self.WepData.rofrat = math.Remap(math.Clamp(self.WepData.rof, 0, 1100), 0, 1100, 0, 1)
+            local ratmap = math.Remap(self.WepData.rof, 0, 900, 0, 1)
+            self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
+            self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
         end
+        self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
         -- if !self.WepData.rof then self.WepData.rofrat = nil end
     end
     image.PaintOver = function(self, x, y)
         if self.WepData.ammo then
-            draw.SimpleText(self.WepData.ammo, "quickloadout_font_medium", x * 0.975, x * 0.975, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(self.WepData.ammo, "quickloadout_font_medium", x * 0.025, x * 0.95, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             if self.WepData.mag then
-                draw.SimpleText(self.WepData.mag, "quickloadout_font_medium", x * 0.025, x * 0.975, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                draw.SimpleText(self.WepData.mag, "quickloadout_font_medium", x * 0.025, x * 0.875, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            end
+        end
+        if self.WepData.ammo2 then
+            draw.SimpleText(self.WepData.ammo2, "quickloadout_font_medium", x * 0.975, x * 0.95, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            if self.WepData.mag2 then
+                draw.SimpleText(self.WepData.mag2, "quickloadout_font_medium", x * 0.975, x * 0.875, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, scale, bgcolor)
             end
         end
         if self.WepData.dmgrat then
             surface.SetDrawColor(col_bg)
             surface.DrawRect(x * 0.025, x * 1.1, x * 0.5, x * 0.04)
-            surface.SetDrawColor(color_default)
-            surface.DrawRect(x * 0.425, x * 1.1, scale2, x * 0.04)
+            surface.SetDrawColor(color_white)
+            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.dmgrat, x * 1.1, scale2, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025, x * 1.1, x * 0.5 * self.WepData.dmgrat, x * 0.04)
-            surface.SetDrawColor(color_default)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.1, (x * 0.5 - scale2) * self.WepData.dmgrat, x * 0.04)
+            surface.SetDrawColor(color_white)
+            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.dmgrat2, x * 1.1, scale2, x * 0.04)
+            surface.SetDrawColor(col_hl)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.1, (x * 0.5 - scale2) * self.WepData.dmgrat2, x * 0.04)
+            surface.SetDrawColor(color_white)
             surface.DrawOutlinedRect(x * 0.025, x * 1.1, x * 0.5, x * 0.04, scale2)
-            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.55, x * 1.12, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
-            draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.075, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.55, x * 1.115, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.05, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
         end
         if self.WepData.rofrat and !self.WepData.oneshot then
             surface.SetDrawColor(col_bg)
             surface.DrawRect(x * 0.025, x * 1.25, x * 0.5, x * 0.04)
+            surface.SetDrawColor(color_white)
+            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.rofrat, x * 1.25, scale2, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025, x * 1.25, x * 0.5 * self.WepData.rofrat, x * 0.04)
-            surface.SetDrawColor(color_default)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.25, (x * 0.5 - scale2) * self.WepData.rofrat, x * 0.04)
+            surface.SetDrawColor(color_white)
+            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.rofrat2, x * 1.25, scale2, x * 0.04)
+            surface.SetDrawColor(col_hl)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.25, (x * 0.5 - scale2) * self.WepData.rofrat2, x * 0.04)
+            surface.SetDrawColor(color_white)
             surface.DrawOutlinedRect(x * 0.025, x * 1.25, x * 0.5, x * 0.04, scale2)
-            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.55, x * 1.27, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
-            draw.SimpleText(dtext[(!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2], "quickloadout_font_medium", x * 0.025, x * 1.225, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.55, x * 1.265, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            draw.SimpleText(dtext[self.WepData.type], "quickloadout_font_medium", x * 0.025, x * 1.2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
         end
     end
-    image:SetSize(height * 0.5, height * 0.8)
-    image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.1, height * 0.1)
+    image:SetSize(height * 0.45, height * 0.8)
+    image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.2, height * 0.1)
     -- image:SetKeepAspect(true)
 
     local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, image)
@@ -522,7 +549,7 @@ function QLOpenMenu()
     end
     ccancel.PaintOver = function(self, x, y)
         -- if refresh then return end
-        draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
     csave:Dock(RIGHT)
@@ -533,7 +560,7 @@ function QLOpenMenu()
         CloseMenu()
     end
     csave.PaintOver = function(self, x, y)
-        draw.SimpleText(closer.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(closer.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     closer:SizeToContentsY()
     local enable
@@ -552,7 +579,7 @@ function QLOpenMenu()
         enable:SetTextInset(0, 0)
     end
     enable:SetTall(lcont:GetWide() * 0.075)
-    enable:SetTextColor(color_default)
+    enable:SetTextColor(color_white)
     enable:SetFont("quickloadout_font_small")
     enable:DockMargin(lcont:GetWide() * 0.0475, lcont:GetWide() * 0.025, lcont:GetWide() * 0.0125, lcont:GetWide() * 0.015)
     enable:Dock(TOP)
@@ -602,13 +629,13 @@ function QLOpenMenu()
         if !self:GetToggle() then CreateLoadoutButtons(false) qllist:Show() weplist:Hide() else CreateWeaponButtons() qllist:Hide() weplist:Show() end
     end
     sbut.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     lbut.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     modelpanel.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     saveload:SizeToContentsY()
     saveload:Dock(TOP)
@@ -659,7 +686,7 @@ function QLOpenMenu()
     local panos = modelpanel:GetWide()
     toptext.PaintOver = function(self, x, y)
         if self:GetToggle() then return end
-        draw.SimpleText(self.Name, "quickloadout_font_small", x - panos - math.max(lcont:GetWide() * 0.01, 1), y, color_default, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Name, "quickloadout_font_small", x - panos - math.max(lcont:GetWide() * 0.01, 1), y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
@@ -686,7 +713,7 @@ function QLOpenMenu()
     lbar.Paint = nil
     rbar.Paint = nil
     lbar.btnGrip.Paint = function(self, x, y)
-        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, Color(255, 255, 255, 128))
+        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, Color(255, 255, 255, 127))
     end
     rbar.btnGrip.Paint = lbar.btnGrip.Paint
 
@@ -729,14 +756,14 @@ function QLOpenMenu()
             default = GenerateLabel(options, DefaultEnabled())
             default:SetTextInset(0, 0)
         end
-        default:SetTextColor(color_default)
+        default:SetTextColor(color_white)
         default:SetFont("quickloadout_font_small")
         local remind = options:Add("DCheckBoxLabel")
         remind:SetConVar("quickloadout_remind_client")
         remind:SetText("Loadout reminder on spawn")
         remind:SetTall(options:GetWide() * 0.125)
         remind:SetWrap(true)
-        remind:SetTextColor(color_default)
+        remind:SetTextColor(color_white)
         remind:SetFont("quickloadout_font_small")
 
 
@@ -747,7 +774,7 @@ function QLOpenMenu()
         -- binder:SetConVar("quickloadout_key")
         binder.Paint = optbut.Paint
         binder:SetFont("quickloadout_font_small")
-        binder:SetTextColor(color_default)
+        binder:SetTextColor(color_white)
         -- binder:DockMargin(60,10,60,10)
         binder:Dock(RIGHT)
         binder:CenterHorizontal()
@@ -766,7 +793,7 @@ function QLOpenMenu()
         -- binder:SetConVar("quickloadout_key")
         canner.Paint = optbut.Paint
         canner:SetFont("quickloadout_font_small")
-        canner:SetTextColor(color_default)
+        canner:SetTextColor(color_white)
         -- binder:DockMargin(60,10,60,10)
         canner:Dock(RIGHT)
         canner:CenterHorizontal()
@@ -800,7 +827,7 @@ function QLOpenMenu()
         -- binder:SetConVar("quickloadout_key")
         loader.Paint = optbut.Paint
         loader:SetFont("quickloadout_font_small")
-        loader:SetTextColor(color_default)
+        loader:SetTextColor(color_white)
         -- loader:DockMargin(60,10,60,10)
         loader:Dock(RIGHT)
         loader:CenterHorizontal()
@@ -820,7 +847,7 @@ function QLOpenMenu()
         -- binder:SetConVar("quickloadout_key")
         saver.Paint = optbut.Paint
         saver:SetFont("quickloadout_font_small")
-        saver:SetTextColor(color_default)
+        saver:SetTextColor(color_white)
         -- saver:DockMargin(60,10,60,10)
         saver:Dock(RIGHT)
         saver:CenterHorizontal()
@@ -845,7 +872,7 @@ function QLOpenMenu()
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
         enablecat:SetWrap(true)
-        enablecat:SetTextColor(color_default)
+        enablecat:SetTextColor(color_white)
         enablecat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
             sbut:SetToggle(false)
@@ -860,7 +887,7 @@ function QLOpenMenu()
         enableslot:SetValue(showslot:GetBool())
         enableslot:SetFont("quickloadout_font_small")
         enableslot:SetWrap(true)
-        enableslot:SetTextColor(color_default)
+        enableslot:SetTextColor(color_white)
         enableslot.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
             sbut:SetToggle(false)
@@ -875,7 +902,7 @@ function QLOpenMenu()
         enableblur:SetValue(blur:GetBool())
         enableblur:SetFont("quickloadout_font_small")
         enableblur:SetWrap(true)
-        enableblur:SetTextColor(color_default)
+        enableblur:SetTextColor(color_white)
 
         local fontpanel = options:Add("Panel")
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
@@ -890,7 +917,7 @@ function QLOpenMenu()
         fonttext:SetTextInset(0, 0)
         fonttext:DockMargin(0, 0, options:GetWide() * 0.025, 0)
         fonttext:Dock(LEFT)
-        fonttext:SetTextColor(color_default)
+        fonttext:SetTextColor(color_white)
         Derma_Install_Convar_Functions(fontfield)
         fontfield:SetFont("quickloadout_font_small")
         fontfield:SetConVar("quickloadout_ui_fonts")
@@ -1069,7 +1096,7 @@ function QLOpenMenu()
                     numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                     -- PrintTable(tbl)
                     button.PaintOver = function(self, x, y)
-                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_default, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                     button.DoClickInternal = function()
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
@@ -1089,7 +1116,7 @@ function QLOpenMenu()
                     local active = button:IsHovered()
                     surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_bg or col_col))
                     surface.DrawRect(0 , 0, x, y)
-                    surface.SetDrawColor(255, 255, 255, 192)
+                    surface.SetDrawColor(color_default)
                     if ref.Image then
                         surface.SetMaterial(wepimage)
                         surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
@@ -1099,7 +1126,7 @@ function QLOpenMenu()
                         draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                     if eqnum then
-                        surface.SetDrawColor(255, 255, 255, 100)
+                        surface.SetDrawColor(255, 255, 255, 95)
                         draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
                     end
                 end
@@ -1214,7 +1241,7 @@ function QLOpenMenu()
             surface.SetDrawColor(unusable and (active and col_bg or col_col) or (active and col_hl or col_but))
             surface.DrawRect(0 , 0, x, y)
             if ref then
-                surface.SetDrawColor(255, 255, 255, 192)
+                surface.SetDrawColor(color_default)
                 if ref.Image then
                     surface.SetMaterial(wepimage)
                     surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
@@ -1228,7 +1255,7 @@ function QLOpenMenu()
                     draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
             end
-            surface.SetDrawColor(255, 255, 255, 100)
+            surface.SetDrawColor(255, 255, 255, 95)
             draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
         end
         button.DoClickInternal = function()
