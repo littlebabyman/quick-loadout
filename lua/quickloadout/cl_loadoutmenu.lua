@@ -39,8 +39,10 @@ local keybindload = GetConVar("quickloadout_key_load")
 local cancelbind = GetConVar("quickloadout_menu_cancel")
 local loadbind = GetConVar("quickloadout_menu_load")
 local savebind = GetConVar("quickloadout_menu_save")
+local optbind = GetConVar("quickloadout_menu_options")
 local modelbind = GetConVar("quickloadout_menu_model")
 local showcat = GetConVar("quickloadout_showcategory")
+local showsubcat = GetConVar("quickloadout_showsubcategory")
 local showslot = GetConVar("quickloadout_showslot")
 local blur = GetConVar("quickloadout_ui_blur")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
@@ -172,12 +174,10 @@ local function GenerateLabel(frame, name, class, panel)
             surface.DrawRect(0 , 0, x, y)
         end
         button.OnCursorEntered = function(self)
-            if self:GetToggle() then return end
-            surface.PlaySound("garrysmod/ui_hover.wav")
+            panel.Text = nil
+            wepimg = nil
+            panel.WepData = {}
             if class and !istable(class) then
-                panel.Text = nil
-                wepimg = nil
-                panel.WepData = {}
                 if rtable[class] then
                     panel.Text = class
                     local icon = rtable[class].HudImage or rtable[class].Image
@@ -191,6 +191,8 @@ local function GenerateLabel(frame, name, class, panel)
                     panel.WepData = stats
                 end
             end
+            if self:GetToggle() then return end
+            surface.PlaySound("garrysmod/ui_hover.wav")
         end
         button.OnToggled = function(self, state)
             surface.PlaySound(state and "garrysmod/ui_click.wav" or "garrysmod/ui_return.wav")
@@ -361,7 +363,7 @@ function QLOpenMenu()
     local buttonclicked = nil
     local dtext = {string.NiceName(language.GetPhrase("damage")), "RPM", "APM"}
     local tt = SysTime()
-    local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString(), modelbind = modelbind:GetString()}
+    local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString(), modelbind = modelbind:GetString(), optbind = optbind:GetString()}
     if open then return else open = true end
     refresh = false
     function RefreshLoadout(pnl)
@@ -553,6 +555,11 @@ function QLOpenMenu()
     local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, image)
     options:Hide()
     optbut:Dock(TOP)
+    optbut.Text = "[ "..string.upper(bindings.optbind or "").." ]"
+    optbut.PaintOver = function(self, x, y)
+        -- if refresh then return end
+        draw.SimpleText(optbut.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+    end
     -- optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local closer = lcont:Add("Panel")
     closer.Text = "[ "..string.upper(bindings.keybind or "").." ]"
@@ -568,7 +575,6 @@ function QLOpenMenu()
         self:SetToggle(true)
         CloseMenu()
     end
-    ccancel.OnCursorEntered = optbut.OnCursorEntered
     ccancel.PaintOver = function(self, x, y)
         -- if refresh then return end
         draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
@@ -712,7 +718,7 @@ function QLOpenMenu()
     end
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
-        if buttonclicked then return end
+        -- if buttonclicked then return end
         wepimg = nil
         image.Text = nil
         image.WepData = {}
@@ -754,6 +760,7 @@ function QLOpenMenu()
         if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:Toggle() return end
         if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() modelpanel:OnDepressed() return end
         if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() ccancel:Toggle() return end
+        if input.GetKeyCode(optbind:GetString()) != -1 and key == input.GetKeyCode(optbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_options") then optbut:DoClickInternal() optbut:Toggle() return end
         if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then csave:SetToggle(true) csave:Toggle() CloseMenu() return end
     end
 
@@ -790,7 +797,7 @@ function QLOpenMenu()
         remind:SetFont("quickloadout_font_small")
 
 
-        local bindpanel, canpanel, loadpanel, savepanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
+        local bindpanel, canpanel, loadpanel, savepanel, optpanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
         local binder, bindtext = vgui.Create("DBinder", bindpanel), GenerateLabel(bindpanel, "Loadout window key")
         bindtext:SetFont("quickloadout_font_small")
         bindtext:Dock(FILL)
@@ -883,20 +890,57 @@ function QLOpenMenu()
                 sbut.Text = "[ "..string.upper(t or "").." ]"
             end)
         end
+        
+        local opter, opttext = vgui.Create("DBinder", optpanel), GenerateLabel(optpanel, "Options menu key")
+        opttext:SetFont("quickloadout_font_small")
+        opttext:Dock(FILL)
+        -- binder:SetConVar("quickloadout_key")
+        opter.Paint = optbut.Paint
+        opter:SetFont("quickloadout_font_small")
+        opter:SetTextColor(color_white)
+        -- loader:DockMargin(60,10,60,10)
+        opter:Dock(RIGHT)
+        opter:CenterHorizontal()
+        opter:SetText(string.upper(bindings.optbind))
+        opter.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                optbind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+                optbut.Text = "[ "..string.upper(t or "").." ]"
+            end)
+        end
+
         bindpanel:SetSize(binder:GetTextSize())
         canpanel:SetSize(canner:GetTextSize())
         loadpanel:SetSize(loader:GetTextSize())
         savepanel:SetSize(saver:GetTextSize())
+        optpanel:SetSize(opter:GetTextSize())
 
         local enablecat = options:Add("DCheckBoxLabel")
         enablecat:SetConVar("quickloadout_showcategory")
         enablecat:SetText("Weapon categories")
-        enablecat:SetTooltip("Toggles whether weapon buttons should or should not show their category underneath them.")
+        enablecat:SetTooltip("Toggles whether weapon buttons should or should not show their spawnmenu category underneath them.")
         enablecat:SetValue(showcat:GetBool())
         enablecat:SetFont("quickloadout_font_small")
         enablecat:SetWrap(true)
         enablecat:SetTextColor(color_white)
         enablecat.Button.Toggle = function(self)
+            self:SetValue( !self:GetChecked() )
+            sbut:SetToggle(false)
+            lbut:SetToggle(false)
+            timer.Simple(0, function() CreateWeaponButtons() end)
+        end
+
+        local enablesubcat = options:Add("DCheckBoxLabel")
+        enablesubcat:SetConVar("quickloadout_showsubcategory")
+        enablesubcat:SetText("Weapon subcategories")
+        enablesubcat:SetTooltip("Toggles whether weapon buttons should or should not show their weapon subcategory underneath them.")
+        enablesubcat:SetValue(showsubcat:GetBool())
+        enablesubcat:SetFont("quickloadout_font_small")
+        enablesubcat:SetWrap(true)
+        enablesubcat:SetTextColor(color_white)
+        enablesubcat.Button.Toggle = function(self)
             self:SetValue( !self:GetChecked() )
             sbut:SetToggle(false)
             lbut:SetToggle(false)
@@ -1360,8 +1404,10 @@ concommand.Add("quickloadout_reloadweapons", function() GenerateWeaponTable(true
 hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
     spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "QuickLoadoutSettings", "Quick Loadout", "", "", function(panel)
         local sv, cl = vgui.Create("DForm"), vgui.Create("DForm")
+        local binds = vgui.Create("DForm")
         panel:AddItem(sv)
         panel:AddItem(cl)
+        binds:SetName("Key bindings")
         sv:SetName("Server")
         sv:CheckBox("Enable quick loadouts", "quickloadout_enable")
         sv:ControlHelp("Globally enables quick loadout on server.")
@@ -1382,9 +1428,10 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
         sv:ControlHelp("Whether pressing the attack button disables grace period.")
         cl:SetName("Client")
         cl:CheckBox("Loadout reminder on spawn", "quickloadout_remind_client")
-        cl:Help("Loadout window key")
+        cl:AddItem(binds)
+        binds:Help("Loadout window key")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
-        local binder = vgui.Create("DBinder", cl)
+        local binder = vgui.Create("DBinder", binds)
         -- binder:SetConVar("quickloadout_key")
         binder:DockMargin(60,10,60,10)
         binder:Dock(TOP)
@@ -1397,9 +1444,9 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
                 self:SetText(string.upper(t or "none"))
             end)
         end
-        cl:Help("Loadout change cancel key")
+        binds:Help("Loadout change cancel key")
         -- panel:CheckBox(maxslots, "Max weapons on spawn")
-        local canner = vgui.Create("DBinder", cl)
+        local canner = vgui.Create("DBinder", binds)
         -- binder:SetConVar("quickloadout_key")
         canner:DockMargin(60,10,60,10)
         canner:Dock(TOP)
@@ -1426,8 +1473,8 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
         --         self:SetText(string.upper(t or "none"))
         --     end)
         -- end
-        cl:Help("Load menu toggle key")
-        local loader = vgui.Create("DBinder", cl)
+        binds:Help("Load menu toggle key")
+        local loader = vgui.Create("DBinder", binds)
         -- binder:SetConVar("quickloadout_key")
         loader:DockMargin(60,10,60,10)
         loader:Dock(TOP)
@@ -1440,8 +1487,8 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
                 self:SetText(string.upper(t or "none"))
             end)
         end
-        cl:Help("Save menu toggle key")
-        local saver = vgui.Create("DBinder", cl)
+        binds:Help("Save menu toggle key")
+        local saver = vgui.Create("DBinder", binds)
         -- binder:SetConVar("quickloadout_key")
         saver:DockMargin(60,10,60,10)
         saver:Dock(TOP)
@@ -1454,6 +1501,21 @@ hook.Add("PopulateToolMenu", "CATQuickLoadoutSettings", function()
                 self:SetText(string.upper(t or "none"))
             end)
         end
+        binds:Help("Options menu toggle key")
+        local opter = vgui.Create("DBinder", binds)
+        -- binder:SetConVar("quickloadout_key")
+        opter:DockMargin(60,10,60,10)
+        opter:Dock(TOP)
+        opter:CenterHorizontal()
+        opter:SetText(string.upper(optbind:GetString() != "" and optbind:GetString() or "none"))
+        opter.OnChange = function(self, key)
+            timer.Simple(0, function()
+                local t = input.GetKeyName(key)
+                optbind:SetString(t or "")
+                self:SetText(string.upper(t or "none"))
+            end)
+        end
+        cl:ControlHelp("")
         cl:Button("Open loadout menu", "quickloadout_menu")
         cl:Button("Reload weapon list", "quickloadout_reloadweapons")
         cl:Help("May freeze your game for a moment.\n")
