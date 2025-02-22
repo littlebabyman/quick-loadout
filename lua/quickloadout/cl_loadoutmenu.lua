@@ -54,7 +54,7 @@ local slotlimit = GetConVar("quickloadout_slotlimit")
 local time = GetConVar("quickloadout_gracetime")
 -- local clips = GetConVar("quickloadout_giveclips")
 local fontsize
-local color_default = Color(255, 255, 255, 191)
+local color_default, color_medium, color_light = Color(255, 255, 255, 191), Color(255, 255, 255, 127), Color(255, 255, 255, 95)
 
 local function CreateFonts()
     local fonttable = string.Split(fonts:GetString():len() > 0 and fonts:GetString() or fonts:GetDefault(), ",")
@@ -130,7 +130,7 @@ end
 local wtable = {}
 local open = false
 local rtable = {}
-local wepimg = Material("vgui/null")
+local wepimg = nil
 
 local function TestImage(item, hud)
     if !item then return "vgui/null" end
@@ -140,6 +140,7 @@ local function TestImage(item, hud)
     elseif file.Exists("materials/vgui/entities/" .. item .. ".vmt", "GAME") then return "vgui/entities/" .. item
     -- else return "vgui/null"
     end
+    return
 end
 
 local wrong = "Uh oh! Broken!"
@@ -174,13 +175,21 @@ local function GenerateLabel(frame, name, class, panel)
             if self:GetToggle() then return end
             surface.PlaySound("garrysmod/ui_hover.wav")
             if class and !istable(class) then
-                wepimg = Material(rtable[class] and (rtable[class].HudImage or rtable[class].Image) or "vgui/null", "smooth")
-                local ratio = wepimg:Width() / wepimg:Height()
-                panel.ImageRatio = ratio - 1
+                panel.Text = nil
+                wepimg = nil
                 panel.WepData = {}
-                local stats = rtable[class] and rtable[class].Stats
-                if !stats then return end
-                panel.WepData = stats
+                if rtable[class] then
+                    panel.Text = class
+                    local icon = rtable[class].HudImage or rtable[class].Image
+                    if icon then
+                        wepimg = Material(icon, "smooth")
+                        local ratio = wepimg:Width() / wepimg:Height()
+                        panel.ImageRatio = ratio - 1
+                    end
+                    local stats = rtable[class].Stats
+                    if !stats then return end
+                    panel.WepData = stats
+                end
             end
         end
         button.OnToggled = function(self, state)
@@ -292,11 +301,19 @@ local function GenerateWeaponTable(force)
     if table.IsEmpty(wtable) or force then
         print("Generating weapon table...")
         rtable = list.Get("Weapon")
-        local reftable
-        for class, wep in pairs(rtable) do
-            reftable = {}
+        local reftable = {}
+        for class, wep in SortedPairs(rtable) do
             if wep.Spawnable then
                 reftable = weapons.Get(class)
+                if !wtable[wep.Category] then
+                    wtable[wep.Category] = {}
+                end
+                local mat = (list.Get("ContentCategoryIcons")[wep.Category])
+                local image = reftable and (reftable.LoadoutImage or reftable.HudImage)
+                wep.Icon = mat
+                wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
+                wep.Image = image and wep.HudImage or TestImage(class) -- or wep.SpawnIcon
+                wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
                 if reftable then
                     wep.Base = reftable.Base
                     if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
@@ -307,18 +324,14 @@ local function GenerateWeaponTable(force)
                         mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
                         mag2 = reftable.Secondary.ClipSize or 0,
                         ammo = game.GetAmmoName(game.GetAmmoID(tostring(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))),
-                        ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo)))
+                        ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo))),
                     }
+                    -- mdl = !wep.Image and (reftable.WorldModel or reftable.ViewModel)
+                    -- local mdl = "materials/spawnicons/" .. string.StripExtension() .. ".png"
+                    -- if #reftable.WorldModel > 0 then
+                    --     wep.SpawnIcon = file.Exists(mdl, "GAME") and mdl
+                    -- end
                 end
-                if !wtable[wep.Category] then
-                    wtable[wep.Category] = {}
-                end
-                local mat = (list.Get("ContentCategoryIcons")[wep.Category])
-                local image = reftable and (reftable.LoadoutImage or reftable.HudImage)
-                wep.Icon = mat
-                wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
-                wep.Image = image and wep.HudImage or TestImage(class) -- or (file.Exists( "spawnicons/".. reftable.WorldModel, "MOD") and "spawnicons/".. reftable.WorldModel)
-                wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
                 if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
                     wtable[wep.Category][wep.ClassName] = wep.PrintName
                 else
@@ -334,6 +347,7 @@ local function GenerateWeaponTable(force)
                     if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
                 end
             end
+            reftable = {}
         end
     end
 end
@@ -378,7 +392,7 @@ function QLOpenMenu()
     bg:Show()
     local mainmenu = vgui.Create("EditablePanel", bg)
     local scale, scale2 = ScreenScale(1), ScreenScaleH(1)
-    wepimg = Material("vgui/null")
+    wepimg = nil
     mainmenu:SetZPos(-1)
     mainmenu:SetSize(bg:GetSize())
     local width, height = bg:GetSize()
@@ -443,43 +457,52 @@ function QLOpenMenu()
     -- weplist:MakeDroppable("quickloadoutarrange", false)
     local category1, category2, category3 = GenerateCategory(rscroller, "◀ Cancel"), GenerateCategory(rscroller, "◀ Categories"), GenerateCategory(rscroller, "◀ Subcategories")
     local image = mainmenu:Add("Panel")
-    image.ImageRatio = 0
+    image:SetSize(height * 0.45, height * 0.8)
+    image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.2, height * 0.1)
+    image.WepData = {}
+    image.ImageRatio = 1
+    image.Text = nil
     image.Paint = function(self, x, y)
+        if !wepimg then return end
         surface.SetDrawColor(color_white)
         surface.SetMaterial(wepimg)
         surface.DrawTexturedRect(0+(x*math.min(self.ImageRatio, 0)*0.25),0+(x*math.max(self.ImageRatio, 0)*0.25), x-(x*math.min(self.ImageRatio, 0)*0.5), x-(x*math.max(self.ImageRatio, 0)*0.5))
         draw.NoTexture()
     end
-    image.WepData = {}
     image.Think = function(self)
-        if self.WepData.ammo and isnumber(self.WepData.mag) then
-            self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
-            self.WepData.oneshot = self.WepData.mag == 1
-            self.WepData.mag = (self.WepData.mag > 0 and "Primary clip: " .. self.WepData.mag)
-        end
-        if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
-            self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
-            self.WepData.mag2 = (self.WepData.mag2 > 0 and "Secondary clip: " .. self.WepData.mag2)
-        end
-        if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
-            local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
-            self.WepData.dmgrat = math.Clamp(ratmap, 0, 1)
-            self.WepData.dmgrat2 = math.Clamp(ratmap - 1, 0, 1)
-            self.WepData.dmgtotal = math.Round(self.WepData.dmg)
-            if self.WepData.num > 1 then
-                self.WepData.dmgtotal = self.WepData.dmg * self.WepData.num .. " (" .. self.WepData.dmgtotal .. "×" .. self.WepData.num .. ")"
+        if #self.WepData <= 0 then
+            if self.WepData.ammo and isnumber(self.WepData.mag) then
+                self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
+                self.WepData.oneshot = self.WepData.mag == 1
+                self.WepData.mag = (self.WepData.mag > 0 and "Primary clip: " .. self.WepData.mag)
             end
+            if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
+                self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
+                self.WepData.mag2 = (self.WepData.mag2 > 0 and "Secondary clip: " .. self.WepData.mag2)
+            end
+            if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
+                local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
+                self.WepData.dmgrat = math.Clamp(ratmap, 0, 1)
+                self.WepData.dmgrat2 = math.Clamp(ratmap - 1, 0, 1)
+                self.WepData.dmgtotal = math.Round(self.WepData.dmg)
+                if self.WepData.num > 1 then
+                    self.WepData.dmgtotal = self.WepData.dmg * self.WepData.num .. " (" .. self.WepData.dmgtotal .. "×" .. self.WepData.num .. ")"
+                end
+            end
+            -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
+            if self.WepData.rof and !self.WepData.rofrat then
+                local ratmap = math.Remap(self.WepData.rof, 0, 900, 0, 1)
+                self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
+                self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
+            end
+            self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
         end
-        -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
-        if self.WepData.rof and !self.WepData.rofrat then
-            local ratmap = math.Remap(self.WepData.rof, 0, 900, 0, 1)
-            self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
-            self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
-        end
-        self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
         -- if !self.WepData.rof then self.WepData.rofrat = nil end
     end
     image.PaintOver = function(self, x, y)
+        if self.Text then
+            draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+        end
         if self.WepData.ammo then
             draw.SimpleText(self.WepData.ammo, "quickloadout_font_medium", x * 0.025, x * 0.95, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             if self.WepData.mag then
@@ -525,8 +548,6 @@ function QLOpenMenu()
             draw.SimpleText(dtext[self.WepData.type], "quickloadout_font_medium", x * 0.025, x * 1.2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
         end
     end
-    image:SetSize(height * 0.45, height * 0.8)
-    image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.2, height * 0.1)
     -- image:SetKeepAspect(true)
 
     local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, image)
@@ -547,6 +568,7 @@ function QLOpenMenu()
         self:SetToggle(true)
         CloseMenu()
     end
+    ccancel.OnCursorEntered = optbut.OnCursorEntered
     ccancel.PaintOver = function(self, x, y)
         -- if refresh then return end
         draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
@@ -691,7 +713,8 @@ function QLOpenMenu()
     toptext:Dock(TOP)
     toptext.OnCursorEntered = function()
         if buttonclicked then return end
-        wepimg = Material("vgui/null")
+        wepimg = nil
+        image.Text = nil
         image.WepData = {}
     end
     optbut.DoClickInternal = function(self)
@@ -713,7 +736,7 @@ function QLOpenMenu()
     lbar.Paint = nil
     rbar.Paint = nil
     lbar.btnGrip.Paint = function(self, x, y)
-        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, Color(255, 255, 255, 127))
+        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, color_medium)
     end
     rbar.btnGrip.Paint = lbar.btnGrip.Paint
 
@@ -1070,10 +1093,21 @@ function QLOpenMenu()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
-            wepimg = Material(ptable[slot] and rtable[ptable[slot]] and (rtable[ptable[slot]].HudImage or rtable[ptable[slot]].Image) or "vgui/null", "smooth")
+            wepimg = nil
+            image.Text = nil
             image.WepData = {}
-            local ratio = wepimg:Width() / wepimg:Height()
-            image.ImageRatio = ratio - 1
+            -- if ptable[slot] and rtable[ptable[slot]] then
+            --     local weapon = rtable[ptable[slot]]
+            --     local icon = weapon.HudImage or weapon.Image
+            --     if icon then
+            --         wepimg = Material(icon, "smooth")
+            --         local ratio = wepimg:Width() / wepimg:Height()
+            --         image.ImageRatio = ratio - 1
+            --     end
+            --     if weapon.Stats then
+            --         image.WepData = weapon.Stats
+            --     end
+            -- end
             if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
         for key, v in SortedPairs(tbl) do
@@ -1126,7 +1160,7 @@ function QLOpenMenu()
                         draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                     if eqnum then
-                        surface.SetDrawColor(255, 255, 255, 95)
+                        surface.SetDrawColor(color_light)
                         draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
                     end
                 end
@@ -1255,7 +1289,7 @@ function QLOpenMenu()
                     draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
             end
-            surface.SetDrawColor(255, 255, 255, 95)
+            surface.SetDrawColor(color_light)
             draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
         end
         button.DoClickInternal = function()
