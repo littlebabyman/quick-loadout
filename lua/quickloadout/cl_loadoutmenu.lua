@@ -177,17 +177,16 @@ local function GenerateLabel(frame, name, class, panel)
             panel.Text = nil
             wepimg = nil
             panel.WepData = {}
-            if class and !istable(class) then
-                if rtable[class] then
-                    panel.Text = class
-                    local icon = rtable[class].HudImage or rtable[class].Image
-                    if icon then
-                        wepimg = Material(icon, "smooth")
-                        local ratio = wepimg:Width() / wepimg:Height()
-                        panel.ImageRatio = ratio - 1
-                    end
-                    local stats = rtable[class].Stats
-                    if !stats then return end
+            if class and !istable(class) and rtable[class] then
+                panel.Text = class
+                local icon = rtable[class].HudImage or rtable[class].Image
+                if icon then
+                    wepimg = Material(icon, "smooth")
+                    local ratio = wepimg:Width() / wepimg:Height()
+                    panel.ImageRatio = ratio - 1
+                end
+                local stats = rtable[class].Stats
+                if stats then
                     panel.WepData = stats
                 end
             end
@@ -316,27 +315,26 @@ local function GenerateWeaponTable(force)
                 wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
                 wep.Image = image and wep.HudImage or TestImage(class) -- or wep.SpawnIcon
                 wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
+                if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
+                    wtable[wep.Category][wep.ClassName] = wep.PrintName
+                end
                 if reftable then
                     wep.Base = reftable.Base
                     if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
                     wep.Stats = {
-                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 1,
+                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 0,
                         num = reftable.Num or reftable.Primary.NumShots or 1,
                         rof = reftable.RPM or reftable.Primary.RPM or (reftable.FireDelay and math.Round(60 / reftable.FireDelay) or reftable.Primary.Delay and reftable.Primary.Delay > 0 and math.Round(60 / reftable.Primary.Delay)),
-                        mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
-                        mag2 = reftable.Secondary.ClipSize or 0,
                         ammo = game.GetAmmoName(game.GetAmmoID(tostring(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))),
+                        mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
                         ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo))),
+                        mag2 = reftable.Secondary.ClipSize or 0,
                     }
                     -- mdl = !wep.Image and (reftable.WorldModel or reftable.ViewModel)
                     -- local mdl = "materials/spawnicons/" .. string.StripExtension() .. ".png"
                     -- if #reftable.WorldModel > 0 then
                     --     wep.SpawnIcon = file.Exists(mdl, "GAME") and mdl
                     -- end
-                end
-                if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                    wtable[wep.Category][wep.ClassName] = wep.PrintName
-                else
                     local cat = reftable.SubCategory or reftable.SubCatType
                     if (cat) then
                         cat = string.gsub(string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")

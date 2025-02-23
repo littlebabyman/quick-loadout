@@ -70,11 +70,11 @@ function QuickLoadout(ply)
                 ply:Give(wep, ammomult1 >= 0 or exctab[wep])
                 local wget = ply:GetWeapon(wep)
                 if ammomult1 < 0 then continue end
-                wget:SetClip1(wget:GetMaxClip1())
-                wget:SetClip2(wget:GetMaxClip2())
                 timer.Simple(0, function()
                     if !(wget and IsValid(wget)) then return end
                     local ammo1, ammo2, type1, type2 = wget:GetMaxClip1(), wget:GetMaxClip2(), wget:GetPrimaryAmmoType(), wget:GetSecondaryAmmoType()
+                    wget:SetClip1(ammo1)
+                    wget:SetClip2(type2)
                     if wget:GetPrimaryAmmoType() >= 1 and ammo1 != 0 then
                         ply:GiveAmmo(math.max(ammo1, 1) * (ammomult1), type1, true)
                     end --Giving extra clip only to primary is intentional, and doubled if it's guessed to be akimbo
