@@ -428,8 +428,8 @@ function QLOpenMenu()
         end)
         if !refresh then return end
         file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
-        timer.Simple(0.2, function()
-            mainmenu.Paint = nil
+        timer.Simple(0, function()
+            -- mainmenu.Paint = nil
             NetworkLoadout()
         end)
     end
