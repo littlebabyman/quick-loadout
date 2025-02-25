@@ -500,18 +500,17 @@ function QLOpenMenu()
             self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
         end
         if !self.WepData.type then
-            self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
+            self.WepData.type = self.Text and rtable[self.Text].Stats and ((!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2)
         end
     end
     image.PaintOver = function(self, x, y)
-        if self.Text then
-            if rtable[self.Text].Stats then
-                draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.075, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
-                draw.SimpleText(warntext, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
-            else
-                draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
-            end
+        if !self.Text then return end
+        if !self.WepData.type then
+            draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            return
         end
+        draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.075, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+        draw.SimpleText(warntext, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
         if self.WepData.ammo then
             draw.SimpleText(self.WepData.ammo, "quickloadout_font_medium", x * 0.025, x * 0.95, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             if self.WepData.mag then
