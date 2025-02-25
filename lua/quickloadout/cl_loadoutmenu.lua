@@ -500,12 +500,12 @@ function QLOpenMenu()
                 self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
                 self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
             end
-            self.WepData.type = self.Text and rtable[self.Text].Stats and ((!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2)
+            self.WepData.type = self.Text and rtable[self.Text].Stats and ((!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2) or 0
         end
     end
     image.PaintOver = function(self, x, y)
         if !self.Text then return end
-        if !self.WepData.type then
+        if self.WepData.type == 0 then
             draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             return
         end
