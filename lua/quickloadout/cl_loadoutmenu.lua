@@ -357,7 +357,7 @@ local function GenerateWeaponTable(force)
 end
 
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
-local warntext = "Displayed stats may be inaccurate."
+local warntext = "Disclaimer: Displayed stats may be inaccurate."
 
 local refresh = false
 function QLOpenMenu()
