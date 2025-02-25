@@ -505,9 +505,11 @@ function QLOpenMenu()
     end
     image.PaintOver = function(self, x, y)
         if self.Text then
-            draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             if rtable[self.Text].Stats then
-                draw.SimpleText(warntext, "quickloadout_font_small", x * 0.025, y - x * 0.075, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+                draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.075, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+                draw.SimpleText(warntext, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            else
+                draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             end
         end
         if self.WepData.ammo then
