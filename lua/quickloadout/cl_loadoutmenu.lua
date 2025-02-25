@@ -119,8 +119,10 @@ local function GenerateCategory(frame, name)
     category:SetSize(frame:GetParent():GetSize())
     category:Dock(FILL)
     category.Show = function(self)
-        self:InvalidateChildren(true)
         frame:InvalidateLayout()
+        -- self:SizeToChildren(false, true)
+        self:InvalidateLayout()
+        self:InvalidateChildren(true)
         if frame:GetName() == "DScrollPanel" then
             frame:GetVBar():SetScroll(0)
         end
@@ -157,7 +159,7 @@ local function GenerateLabel(frame, name, class, panel)
     button.Name = class
     button:SetMouseInputEnabled(true)
     button:SetMinimumSize(nil, frame:GetWide() * 0.075)
-    button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
+    button:SetSize(frame:GetWide() * 0.975, frame:GetWide() * 0.125)
     button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(frame:GetWide() * 0.025, 0)
     button:SetWrap(true)
@@ -197,6 +199,7 @@ local function GenerateLabel(frame, name, class, panel)
             surface.PlaySound(state and "garrysmod/ui_click.wav" or "garrysmod/ui_return.wav")
         end
     end
+    button:InvalidateLayout(true)
     return button
 end
 
@@ -207,7 +210,7 @@ local function GenerateEditableLabel(frame, name)
     button:SetName(name)
     button:SetMouseInputEnabled(true)
     button:SetKeyboardInputEnabled(true)
-    button:SetSize(frame:GetWide(), frame:GetWide() * 0.125)
+    button:SetSize(frame:GetWide() * 0.975, frame:GetWide() * 0.125)
     button:SetFontInternal("quickloadout_font_large")
     button:SetTextInset(frame:GetWide() * 0.025, 0)
     button:SetWrap(true)
@@ -230,6 +233,7 @@ local function GenerateEditableLabel(frame, name)
         if self:GetToggle() then return end
         surface.PlaySound("garrysmod/ui_hover.wav")
     end
+    button:InvalidateLayout(true)
     return button
 end
 
@@ -442,7 +446,7 @@ function QLOpenMenu()
         surface.SetDrawColor(col_col)
         surface.DrawRect(0,0, x, y)
     end
-    lcont:SetSize(height * 0.3, height)
+    lcont:SetSize(height * 0.33, height)
     lcont:SetX((width - height) * 0.25)
     lcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetWide() * 0.05, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont:CopyBase(lcont)
@@ -474,11 +478,11 @@ function QLOpenMenu()
             if self.WepData.ammo and isnumber(self.WepData.mag) then
                 self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
                 self.WepData.oneshot = self.WepData.mag == 1
-                self.WepData.mag = (self.WepData.mag > 0 and "Primary clip: " .. self.WepData.mag)
+                self.WepData.mag = (self.WepData.mag > 0 and "Mag. size: " .. self.WepData.mag)
             end
             if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
                 self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
-                self.WepData.mag2 = (self.WepData.mag2 > 0 and "Secondary clip: " .. self.WepData.mag2)
+                self.WepData.mag2 = (self.WepData.mag2 > 0 and "Alt. mag. size: " .. self.WepData.mag2)
             end
             if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
                 local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
@@ -486,7 +490,8 @@ function QLOpenMenu()
                 self.WepData.dmgrat2 = math.Clamp(ratmap - 1, 0, 1)
                 self.WepData.dmgtotal = math.Round(self.WepData.dmg)
                 if self.WepData.num > 1 then
-                    self.WepData.dmgtotal = self.WepData.dmg * self.WepData.num .. " (" .. self.WepData.dmgtotal .. "×" .. self.WepData.num .. ")"
+                    self.WepData.dmgsplit = self.WepData.dmgtotal .. "×" .. self.WepData.num
+                    self.WepData.dmgtotal = math.Round(self.WepData.dmg * self.WepData.num)
                 end
             end
             -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
@@ -517,34 +522,48 @@ function QLOpenMenu()
         end
         if self.WepData.dmgrat then
             surface.SetDrawColor(col_bg)
-            surface.DrawRect(x * 0.025, x * 1.1, x * 0.5, x * 0.04)
+            surface.DrawRect(x * 0.025, x * 1.1, x * 0.55, x * 0.04)
             surface.SetDrawColor(color_white)
-            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.dmgrat, x * 1.1, scale2, x * 0.04)
+            surface.DrawRect(x * 0.025 + (x * 0.55 - scale2) * self.WepData.dmgrat, x * 1.1, scale2, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025 + scale2, x * 1.1, (x * 0.5 - scale2) * self.WepData.dmgrat, x * 0.04)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.1, (x * 0.55 - scale2) * self.WepData.dmgrat, x * 0.04)
             surface.SetDrawColor(color_white)
-            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.dmgrat2, x * 1.1, scale2, x * 0.04)
+            surface.DrawRect(x * 0.025 + (x * 0.55 - scale2) * self.WepData.dmgrat2, x * 1.1, scale2, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025 + scale2, x * 1.1, (x * 0.5 - scale2) * self.WepData.dmgrat2, x * 0.04)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.1, (x * 0.55 - scale2) * self.WepData.dmgrat2, x * 0.04)
             surface.SetDrawColor(color_white)
-            surface.DrawOutlinedRect(x * 0.025, x * 1.1, x * 0.5, x * 0.04, scale2)
-            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.55, x * 1.115, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            if self.WepData.dmgrat2 == 1 then
+                surface.SetMaterial(mat)
+                surface.DrawTexturedRect(x * 0.575, x * 1.1, x * 0.02, x * 0.04)
+                draw.NoTexture()
+            end
+            surface.DrawOutlinedRect(x * 0.025, x * 1.1, x * 0.55, x * 0.04, scale2)
+            draw.SimpleText(self.WepData.dmgtotal, "quickloadout_font_large", x * 0.6, x * 1.115, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            if self.WepData.dmgsplit then
+                if !self.WepData.dmgxoff then self.WepData.dmgxoff = surface.GetTextSize(self.WepData.dmgtotal) end
+                draw.SimpleText(self.WepData.dmgsplit, "quickloadout_font_medium", x * 0.625 + self.WepData.dmgxoff, x * 1.115, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            end
             draw.SimpleText(dtext[1], "quickloadout_font_medium", x * 0.025, x * 1.05, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
         end
         if self.WepData.rofrat and !self.WepData.oneshot then
             surface.SetDrawColor(col_bg)
-            surface.DrawRect(x * 0.025, x * 1.25, x * 0.5, x * 0.04)
+            surface.DrawRect(x * 0.025, x * 1.25, x * 0.55, x * 0.04)
             surface.SetDrawColor(color_white)
-            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.rofrat, x * 1.25, scale2, x * 0.04)
+            surface.DrawRect(x * 0.025 + (x * 0.55 - scale2) * self.WepData.rofrat, x * 1.25, scale2, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025 + scale2, x * 1.25, (x * 0.5 - scale2) * self.WepData.rofrat, x * 0.04)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.25, (x * 0.55 - scale2) * self.WepData.rofrat, x * 0.04)
             surface.SetDrawColor(color_white)
-            surface.DrawRect(x * 0.025 + (x * 0.5 - scale2) * self.WepData.rofrat2, x * 1.25, scale2, x * 0.04)
+            surface.DrawRect(x * 0.025 + (x * 0.55 - scale2) * self.WepData.rofrat2, x * 1.25, scale2, x * 0.04)
             surface.SetDrawColor(col_hl)
-            surface.DrawRect(x * 0.025 + scale2, x * 1.25, (x * 0.5 - scale2) * self.WepData.rofrat2, x * 0.04)
+            surface.DrawRect(x * 0.025 + scale2, x * 1.25, (x * 0.55 - scale2) * self.WepData.rofrat2, x * 0.04)
             surface.SetDrawColor(color_white)
-            surface.DrawOutlinedRect(x * 0.025, x * 1.25, x * 0.5, x * 0.04, scale2)
-            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.55, x * 1.265, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            if self.WepData.rofrat2 == 1 then
+                surface.SetMaterial(mat)
+                surface.DrawTexturedRect(x * 0.575, x * 1.25, x * 0.02, x * 0.04)
+                draw.NoTexture()
+            end
+            surface.DrawOutlinedRect(x * 0.025, x * 1.25, x * 0.55, x * 0.04, scale2)
+            draw.SimpleText(self.WepData.rof, "quickloadout_font_large", x * 0.6, x * 1.265, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
             draw.SimpleText(dtext[self.WepData.type], "quickloadout_font_medium", x * 0.025, x * 1.2, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
         end
     end
@@ -556,7 +575,7 @@ function QLOpenMenu()
     optbut.Text = "[ "..string.upper(bindings.optbind or "").." ]"
     optbut.PaintOver = function(self, x, y)
         -- if refresh then return end
-        draw.SimpleText(optbut.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(optbut.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     -- optbut:DockMargin(math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.005, 1), math.max(lcont:GetWide() * 0.155, 1))
     local closer = lcont:Add("Panel")
@@ -575,7 +594,7 @@ function QLOpenMenu()
     end
     ccancel.PaintOver = function(self, x, y)
         -- if refresh then return end
-        draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText((!refresh and ccancel.Text .. "/" .. closer.Text) or ccancel.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     csave:SetWide(math.ceil(closer:GetWide() * 0.485))
     csave:Dock(RIGHT)
@@ -586,7 +605,7 @@ function QLOpenMenu()
         CloseMenu()
     end
     csave.PaintOver = function(self, x, y)
-        draw.SimpleText(closer.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(closer.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     closer:SizeToContentsY()
     local enable
@@ -607,12 +626,12 @@ function QLOpenMenu()
     enable:SetTall(lcont:GetWide() * 0.075)
     enable:SetTextColor(color_white)
     enable:SetFont("quickloadout_font_small")
-    enable:DockMargin(lcont:GetWide() * 0.0475, lcont:GetWide() * 0.025, lcont:GetWide() * 0.0125, lcont:GetWide() * 0.015)
+    enable:DockMargin(lcont:GetTall() * 0.0155, lcont:GetTall() * 0.00775, lcont:GetTall() * 0.0155, lcont:GetTall() * 0.00775)
     enable:Dock(TOP)
     local trash = LocalPlayer():GetWeapons()
     local importer = GenerateLabel(lcont, "Import current weapons", nil, image)
     importer:SetFont("quickloadout_font_medium")
-    importer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.125)
+    importer:SetSize(lcont:GetWide(), lcont:GetTall() * 0.04)
     importer.DoClickInternal = function(self)
         local holster = GetConVar("holsterweapon_weapon") and GetConVar("holsterweapon_weapon"):GetString()
         local g = 0
@@ -630,7 +649,7 @@ function QLOpenMenu()
     end
     importer:Dock(TOP)
     local saveload = lcont:Add("Panel")
-    saveload:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
+    saveload:SetSize(lcont:GetWide(), lcont:GetTall() * 0.05)
     local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
     local modelpanel = vgui.Create("SpawnIcon", toptext)
     sbut.Text = "[ "..string.upper(bindings.savebind or "").." ]"
@@ -655,13 +674,13 @@ function QLOpenMenu()
         if !self:GetToggle() then CreateLoadoutButtons(false) qllist:Show() weplist:Hide() else CreateWeaponButtons() qllist:Hide() weplist:Show() end
     end
     sbut.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     lbut.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     modelpanel.PaintOver = function(self, x, y)
-        draw.SimpleText(self.Text, "quickloadout_font_small", x, y, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+        draw.SimpleText(self.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     saveload:SizeToContentsY()
     saveload:Dock(TOP)
@@ -1096,6 +1115,8 @@ function QLOpenMenu()
         WepSelector(newwep, #ptable + 1, nil)
         -- if sbut:GetToggle() then sbut:Toggle()
         -- elseif lbut:GetToggle() then lbut:Toggle() end
+        lscroller:InvalidateChildren(true)
+        weplist:InvalidateLayout(true)
         qllist:Hide()
         weplist:Show()
     end
@@ -1153,80 +1174,85 @@ function QLOpenMenu()
             if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
         for key, v in SortedPairs(tbl) do
-            -- if !(table.HasValue(ptable, key) and !ptable[slot]) then
-                local button = GenerateLabel(cat, v, key, image)
-                button.DoRightClick = cancel.DoClickInternal
-                local offset = button:GetWide() * 0.1
-                button:SizeToContentsY(fontsize)
-                if istable(v) then
-                    local wepcount, catcount = 0, 0
-                    local numbers = ""
-                    for sub, tab in pairs(v) do
-                        if istable(tab) then
-                            catcount = catcount + 1
-                            wepcount = wepcount + table.Count(tab)
-                        else
-                            wepcount = wepcount + 1
-                        end
-                    end
-                    numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
-                    -- PrintTable(tbl)
-                    button.PaintOver = function(self, x, y)
-                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                    end
-                    button.DoClickInternal = function()
-                        PopulateCategory(button, v, cont, TheCats(cat), slot)
-                        cat:Hide()
-                    end
-                continue end
-                local ref = rtable[key]
-                local haswep = (table.HasValue(ptable, key) and !ptable[slot])
-                local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
-                local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
-                local ratio = wepimage:Width() / wepimage:Height()
-                local cattext, weptext, eqnum = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, key) and "#"..tostring(table.KeyFromValue(ptable, key))
-                if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, key)) then
-                    eqnum = eqnum .. " ↔ " .. "#"..slot
-                end
-                button.Paint = function(self, x, y)
-                    local active = button:IsHovered()
-                    surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_bg or col_col))
-                    surface.DrawRect(0 , 0, x, y)
-                    surface.SetDrawColor(color_default)
-                    if ref.Image then
-                        surface.SetMaterial(wepimage)
-                        surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
-                    end
-                    draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                    if weptext then
-                        draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                    end
-                    if eqnum then
-                        surface.SetDrawColor(color_light)
-                        draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+            local button = GenerateLabel(cat, v, key, image)
+            button.DoRightClick = cancel.DoClickInternal
+            button:SizeToContentsY(fontsize)
+            button:InvalidateLayout(true)
+            if istable(v) then
+                local wepcount, catcount = 0, 0
+                local numbers = ""
+                for sub, tab in pairs(v) do
+                    if istable(tab) then
+                        catcount = catcount + 1
+                        wepcount = wepcount + table.Count(tab)
+                    else
+                        wepcount = wepcount + 1
                     end
                 end
-                button.DoClickInternal = function(self)
-                    if table.HasValue(ptable, key) then
-                        if !ptable[slot] then self:SetToggle(true) return end
-                        table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]}, true)
-                    end
-                    table.Merge(ptable, {[slot] = key}, true)
-                    cat:Clear()
-                    CreateWeaponButtons()
-                    RefreshLoadout(closer)
+                numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
+                -- PrintTable(tbl)
+                button.PaintOver = function(self, x, y)
+                    local offset = math.min(x * 0.1, y * 0.5)
+                    draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                end
+                button.DoClickInternal = function()
+                    PopulateCategory(button, v, cont, TheCats(cat), slot)
+                    cat:Hide()
+                end
+            continue end
+            local ref = rtable[key]
+            local haswep = (table.HasValue(ptable, key) and !ptable[slot])
+            local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
+            local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
+            local ratio = wepimage:Width() / wepimage:Height()
+            local cattext, weptext, eqnum = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, key) and "#"..tostring(table.KeyFromValue(ptable, key))
+            if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, key)) then
+                eqnum = eqnum .. " ↔ " .. "#"..slot
+            end
+            button.Paint = function(self, x, y)
+                local offset = math.min(x * 0.1, y * 0.5)
+                local active = button:IsHovered()
+                surface.SetDrawColor(usable and (active and col_hl or col_but) or (active and col_bg or col_col))
+                surface.DrawRect(0 , 0, x, y)
+                surface.SetDrawColor(color_default)
+                if ref.Image then
+                    surface.SetMaterial(wepimage)
+                    surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
+                end
+                draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                if weptext then
+                    draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                end
+                if eqnum then
+                    surface.SetDrawColor(color_light)
+                    draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
                 end
             end
-        -- end
+            button.DoClickInternal = function(self)
+                if table.HasValue(ptable, key) then
+                    if !ptable[slot] then self:SetToggle(true) return end
+                    table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]}, true)
+                end
+                table.Merge(ptable, {[slot] = key}, true)
+                cat:Clear()
+                CreateWeaponButtons()
+                RefreshLoadout(closer)
+            end
+        end
+        -- cont:InvalidateLayout()
+        -- print("hi")
+        -- cat:InvalidateLayout(true)
+        -- cat:SizeToChildren(false, true)
+        -- cat:InvalidateChildren(true)
         cat:Show()
     end
 
     function LoadoutSelector(button, key)
         -- print(button, key)
         local wepcount = (loadouts[key] and #loadouts[key].weps or #ptable) .. " weapons"
-        local offset = button:GetWide() * 0.1
         button:SizeToContentsY(fontsize)
         button.PaintOver = function(self, x, y)
+            local offset = math.min(x * 0.1, y * 0.5)
             draw.SimpleText(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
         if button.ClassName == "DLabelEditable" then
@@ -1300,7 +1326,7 @@ function QLOpenMenu()
         local wepimage = Material(ref and ref.Image or "vgui/null", "smooth")
         local cattext, weptext
         local eqnum = "#"..index
-        local w, h, offset = wepimage:Width(), wepimage:Height(), button:GetWide() * 0.1
+        local w, h = wepimage:Width(), wepimage:Height()
         local ratio = w / h
         local icon = math.max(scale * 8, 16)
         button:SetText(button:GetText())
@@ -1313,6 +1339,7 @@ function QLOpenMenu()
             button:SizeToContentsY(button:GetWide() * 0.015)
         end
         button.Paint = function(self, x, y)
+            local offset = math.min(x * 0.1, y * 0.5)
             local active = button:IsHovered() or button:GetToggle()
             surface.SetDrawColor(unusable and (active and col_bg or col_col) or (active and col_hl or col_but))
             surface.DrawRect(0 , 0, x, y)
@@ -1359,6 +1386,7 @@ function QLOpenMenu()
             CreateWeaponButtons()
             RefreshLoadout(closer)
         end
+        button:InvalidateLayout(true)
     end
     CreateWeaponButtons()
 end
