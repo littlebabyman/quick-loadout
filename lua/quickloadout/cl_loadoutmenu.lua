@@ -326,13 +326,13 @@ local function GenerateWeaponTable(force)
                     wep.Base = reftable.Base
                     if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
                     wep.Stats = {
-                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage or 0,
+                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
                         num = reftable.Num or reftable.Primary.NumShots or 1,
                         rof = reftable.RPM or reftable.Primary.RPM or (reftable.FireDelay and math.Round(60 / reftable.FireDelay) or reftable.Primary.Delay and reftable.Primary.Delay > 0 and math.Round(60 / reftable.Primary.Delay)),
                         ammo = game.GetAmmoName(game.GetAmmoID(tostring(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))),
-                        mag = reftable.ClipSize or reftable.Primary.ClipSize or 0,
+                        mag = reftable.ClipSize or reftable.Primary.ClipSize,
                         ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo))),
-                        mag2 = reftable.Secondary.ClipSize or 0,
+                        mag2 = reftable.Secondary.ClipSize,
                     }
                     -- mdl = !wep.Image and (reftable.WorldModel or reftable.ViewModel)
                     -- local mdl = "materials/spawnicons/" .. string.StripExtension() .. ".png"
@@ -494,14 +494,14 @@ function QLOpenMenu()
                 self.WepData.dmgtotal = math.Round(self.WepData.dmg * self.WepData.num)
             end
         end
-        -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
         if self.WepData.rof and !self.WepData.rofrat then
             local ratmap = math.Remap(self.WepData.rof, 0, 900, 0, 1)
             self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
             self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
         end
-        self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
-        -- if !self.WepData.rof then self.WepData.rofrat = nil end
+        if !self.WepData.type then
+            self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
+        end
     end
     image.PaintOver = function(self, x, y)
         if self.Text then
