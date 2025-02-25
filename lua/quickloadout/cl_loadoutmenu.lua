@@ -357,6 +357,7 @@ local function GenerateWeaponTable(force)
 end
 
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
+local warntext = "Displayed stats may be inaccurate."
 
 local refresh = false
 function QLOpenMenu()
@@ -474,39 +475,40 @@ function QLOpenMenu()
         draw.NoTexture()
     end
     image.Think = function(self)
-        if #self.WepData <= 0 then
-            if self.WepData.ammo and isnumber(self.WepData.mag) then
-                self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
-                self.WepData.oneshot = self.WepData.mag == 1
-                self.WepData.mag = (self.WepData.mag > 0 and "Mag. size: " .. self.WepData.mag)
-            end
-            if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
-                self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
-                self.WepData.mag2 = (self.WepData.mag2 > 0 and "Alt. mag. size: " .. self.WepData.mag2)
-            end
-            if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
-                local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
-                self.WepData.dmgrat = math.Clamp(ratmap, 0, 1)
-                self.WepData.dmgrat2 = math.Clamp(ratmap - 1, 0, 1)
-                self.WepData.dmgtotal = math.Round(self.WepData.dmg)
-                if self.WepData.num > 1 then
-                    self.WepData.dmgsplit = self.WepData.dmgtotal .. "×" .. self.WepData.num
-                    self.WepData.dmgtotal = math.Round(self.WepData.dmg * self.WepData.num)
-                end
-            end
-            -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
-            if self.WepData.rof and !self.WepData.rofrat then
-                local ratmap = math.Remap(self.WepData.rof, 0, 900, 0, 1)
-                self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
-                self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
-            end
-            self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
+        if self.WepData.ammo and isnumber(self.WepData.mag) then
+            self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
+            self.WepData.oneshot = self.WepData.mag == 1
+            self.WepData.mag = (self.WepData.mag > 0 and "Mag. size: " .. self.WepData.mag)
         end
+        if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
+            self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
+            self.WepData.mag2 = (self.WepData.mag2 > 0 and "Alt. mag. size: " .. self.WepData.mag2)
+        end
+        if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
+            local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
+            self.WepData.dmgrat = math.Clamp(ratmap, 0, 1)
+            self.WepData.dmgrat2 = math.Clamp(ratmap - 1, 0, 1)
+            self.WepData.dmgtotal = math.Round(self.WepData.dmg)
+            if self.WepData.num > 1 then
+                self.WepData.dmgsplit = self.WepData.dmgtotal .. "×" .. self.WepData.num
+                self.WepData.dmgtotal = math.Round(self.WepData.dmg * self.WepData.num)
+            end
+        end
+        -- if !self.WepData.dmg then self.WepData.dmgrat = nil end
+        if self.WepData.rof and !self.WepData.rofrat then
+            local ratmap = math.Remap(self.WepData.rof, 0, 900, 0, 1)
+            self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
+            self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
+        end
+        self.WepData.type = (!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2
         -- if !self.WepData.rof then self.WepData.rofrat = nil end
     end
     image.PaintOver = function(self, x, y)
         if self.Text then
             draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            if rtable[self.Text].Stats then
+                draw.SimpleText(warntext, "quickloadout_font_small", x * 0.025, y - x * 0.075, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
+            end
         end
         if self.WepData.ammo then
             draw.SimpleText(self.WepData.ammo, "quickloadout_font_medium", x * 0.025, x * 0.95, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
