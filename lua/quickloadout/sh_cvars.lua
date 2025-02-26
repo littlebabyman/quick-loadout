@@ -20,6 +20,7 @@ if CLIENT then
     CreateClientConVar("quickloadout_menu_save", "q", true, false, "Quickly switch to save menu.")
     CreateClientConVar("quickloadout_menu_load", "e", true, false, "Quickly switch to load menu.")
     CreateClientConVar("quickloadout_menu_options", "o", true, false, "Quickly switch to options menu.")
+    CreateClientConVar("quickloadout_showcharacter", 1, true, false, "Show your player character on the menu.")
     CreateClientConVar("quickloadout_showcategory", 1, true, false, "Show weapon categories on weapon buttons.")
     CreateClientConVar("quickloadout_showsubcategory", 1, true, false, "Show weapon subcategories on weapon buttons.")
     CreateClientConVar("quickloadout_showslot", 1, true, false, "Show weapon slot on weapon buttons.")

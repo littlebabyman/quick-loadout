@@ -45,6 +45,7 @@ local showcat = GetConVar("quickloadout_showcategory")
 local showsubcat = GetConVar("quickloadout_showsubcategory")
 local showslot = GetConVar("quickloadout_showslot")
 local blur = GetConVar("quickloadout_ui_blur")
+local showguy = GetConVar("quickloadout_showcharacter")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
 local lastgiven = 0
 local reminder = GetConVar("quickloadout_remind_client")
@@ -168,7 +169,7 @@ local function GenerateLabel(frame, name, class, panel)
     button:SetContentAlignment(7)
     button:SetText(text)
     button:SizeToContentsY(button:GetWide() * 0.015)
-    if ispanel(panel) then
+    if ispanel(panel) and ispanel(panel.image) then
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
             local active = button:IsHovered() or button:GetToggle()
@@ -176,20 +177,24 @@ local function GenerateLabel(frame, name, class, panel)
             surface.DrawRect(0 , 0, x, y)
         end
         button.OnCursorEntered = function(self)
-            panel.Text = nil
+            panel.image.Text = nil
             wepimg = nil
-            panel.WepData = {}
+            panel.image.WepData = {}
+            panel.theguy:SetWeapon("")
             if class and !istable(class) and rtable[class] then
-                panel.Text = class
+                panel.image.Text = class
                 local icon = rtable[class].HudImage or rtable[class].Image
                 if icon then
                     wepimg = Material(icon, "smooth")
                     local ratio = wepimg:Width() / wepimg:Height()
-                    panel.ImageRatio = ratio - 1
+                    panel.image.ImageRatio = ratio - 1
                 end
                 local stats = rtable[class].Stats
                 if stats then
-                    panel.WepData = stats
+                    panel.image.WepData = stats
+                    if ispanel(panel.theguy) then
+                        panel.theguy:SetWeapon(panel.image.WepData.mdl or "")
+                    end
                 end
             end
             if self:GetToggle() then return end
@@ -333,8 +338,9 @@ local function GenerateWeaponTable(force)
                         mag = reftable.ClipSize or reftable.Primary.ClipSize,
                         ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo))),
                         mag2 = reftable.Secondary.ClipSize,
+                        mdl = reftable.WorldModel,
+                        holdtype = reftable.HoldType,
                     }
-                    -- mdl = !wep.Image and (reftable.WorldModel or reftable.ViewModel)
                     -- local mdl = "materials/spawnicons/" .. string.StripExtension() .. ".png"
                     -- if #reftable.WorldModel > 0 then
                     --     wep.SpawnIcon = file.Exists(mdl, "GAME") and mdl
@@ -358,6 +364,22 @@ end
 
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
 local warntext = "Disclaimer: Displayed stats may be inaccurate."
+local holdtypetbl = {
+    pistol = "idle_melee_angry",
+    revolver = "idle_melee_angry",
+    duel = "idle_dual",
+    smg = "idle_rpg",
+    ar2 = "idle_rpg",
+    shotgun = "cidle_passive",
+    rpg = "cidle_passive",
+    physgun = "cidle_passive",
+    crossbow = "idle_rpg",
+    camera = "idle_slam",
+    slam = "idle_slam",
+    grenade = "idle_slam",
+    knife = "idle_slam",
+    fist = "pose_standing_02",
+}
 
 local refresh = false
 function QLOpenMenu()
@@ -369,6 +391,7 @@ function QLOpenMenu()
     local bindings = {keybind = keybind:GetString(), cancelbind = cancelbind:GetString(), loadbind = loadbind:GetString(), savebind = savebind:GetString(), modelbind = modelbind:GetString(), optbind = optbind:GetString()}
     if open then return else open = true end
     refresh = false
+    local scale, scale2 = ScreenScale(1), ScreenScaleH(1)
     function RefreshLoadout(pnl)
         if IsValid(pnl) then for k,v in ipairs(pnl:GetChildren()) do v:SetVisible(true) end end
         refresh = true
@@ -395,12 +418,17 @@ function QLOpenMenu()
         surface.DrawTexturedRect(0, 0, w, h)
     end
     bg:Show()
-    local mainmenu = vgui.Create("EditablePanel", bg)
-    local scale, scale2 = ScreenScale(1), ScreenScaleH(1)
-    wepimg = nil
-    mainmenu:SetZPos(-1)
-    mainmenu:SetSize(bg:GetSize())
     local width, height = bg:GetSize()
+    local mainmenu = vgui.Create("EditablePanel", bg)
+    mainmenu.Close = function(self)
+        if refresh then QLNotify("Loadout changes discarded.") end
+        ptable = tmp
+        refresh = false
+        CloseMenu()
+    end
+    mainmenu:SetSize(width, height)
+    mainmenu:SetZPos(-1)
+    wepimg = nil
     local bgcolor = ColorAlpha(col_bg, 64)
     mainmenu.Paint = function(self, x, y)
         surface.SetDrawColor(col_bg)
@@ -461,20 +489,28 @@ function QLOpenMenu()
     qllist:Hide()
     -- weplist:MakeDroppable("quickloadoutarrange", false)
     local category1, category2, category3 = GenerateCategory(rscroller, "◀ Cancel"), GenerateCategory(rscroller, "◀ Categories"), GenerateCategory(rscroller, "◀ Subcategories")
-    local image = mainmenu:Add("Panel")
-    image:SetSize(height * 0.45, height * 0.8)
-    image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.2, height * 0.1)
-    image.WepData = {}
-    image.ImageRatio = 1
-    image.Text = nil
-    image.Paint = function(self, x, y)
+    mainmenu.image = mainmenu:Add("Panel")
+    mainmenu.theguy = vgui.Create("DModelPanel", mainmenu)
+    AccessorFunc(mainmenu.theguy, "Entity2", "Entity2")
+    mainmenu.theguy.DoPaint = mainmenu.theguy.Paint
+    mainmenu.theguy.Paint = function(self, x, y)
+        if !showguy:GetBool() then return end
+        mainmenu.theguy:DoPaint(x, y)
+    end
+    mainmenu.image:SetZPos(0)
+    mainmenu.image:SetSize(height * 0.45, height * 0.8)
+    mainmenu.image:SetPos(rcont:GetPos() + rcont:GetWide() * 1.2, height * 0.1)
+    mainmenu.image.WepData = {}
+    mainmenu.image.ImageRatio = 1
+    mainmenu.image.Text = nil
+    mainmenu.image.Paint = function(self, x, y)
         if !wepimg then return end
         surface.SetDrawColor(color_white)
         surface.SetMaterial(wepimg)
         surface.DrawTexturedRect(0+(x*math.min(self.ImageRatio, 0)*0.25),0+(x*math.max(self.ImageRatio, 0)*0.25), x-(x*math.min(self.ImageRatio, 0)*0.5), x-(x*math.max(self.ImageRatio, 0)*0.5))
         draw.NoTexture()
     end
-    image.Think = function(self)
+    mainmenu.image.Think = function(self)
         if !self.WepData.type then
             if self.WepData.ammo and isnumber(self.WepData.mag) then
                 self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
@@ -503,7 +539,7 @@ function QLOpenMenu()
             self.WepData.type = self.Text and rtable[self.Text].Stats and ((!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2) or 0
         end
     end
-    image.PaintOver = function(self, x, y)
+    mainmenu.image.PaintOver = function(self, x, y)
         if !self.Text then return end
         if self.WepData.type == 0 then
             draw.SimpleText(self.Text, "quickloadout_font_small", x * 0.025, y - x * 0.025, color_light, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, scale, bgcolor)
@@ -572,7 +608,7 @@ function QLOpenMenu()
     end
     -- image:SetKeepAspect(true)
 
-    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, image)
+    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, mainmenu)
     options:Hide()
     optbut:Dock(TOP)
     optbut.Text = "[ "..string.upper(bindings.optbind or "").." ]"
@@ -584,12 +620,12 @@ function QLOpenMenu()
     local closer = lcont:Add("Panel")
     closer.Text = "[ "..string.upper(bindings.keybind or "").." ]"
     closer:SetSize(lcont:GetWide(), lcont:GetWide() * 0.155)
-    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, image), GenerateLabel(closer, "Apply", nil, image)
+    local ccancel, csave = GenerateLabel(closer, "Cancel", nil, mainmenu), GenerateLabel(closer, "Apply", nil, mainmenu)
     ccancel.Text = "[ "..string.upper(bindings.cancelbind or "").." ]"
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
-        if csave:IsVisible() then QLNotify("Loadout changes discarded.") end
+        if refresh then QLNotify("Loadout changes discarded.") end
         ptable = tmp
         refresh = false
         self:SetToggle(true)
@@ -611,6 +647,18 @@ function QLOpenMenu()
         draw.SimpleText(closer.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
     end
     closer:SizeToContentsY()
+    local closerbut = vgui.Create("DButton", mainmenu)
+    closerbut:SetIsToggle(true)
+    closerbut.OnToggled = ccancel.OnToggled
+    closerbut.DoClickInternal = ccancel.DoClickInternal
+    closerbut.DoClick = ccancel.DoClick
+    closerbut.OnCursorEntered = ccancel.OnCursorEntered
+    closerbut:SetText("")
+    closerbut:SetSize(height * 0.04, height * 0.04)
+    closerbut:SetPos(width - scale2 - closerbut:GetWide(), scale2)
+    closerbut.Paint = function(self, x, y)
+        draw.SimpleText("×", "quickloadout_font_large", x * 0.5, y * 0.5, color_default, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, scale, bgcolor)
+    end
     local enable
     if enabled:GetBool() then
         enable = lcont:Add("DCheckBoxLabel")
@@ -632,7 +680,7 @@ function QLOpenMenu()
     enable:DockMargin(lcont:GetTall() * 0.0155, lcont:GetTall() * 0.00775, lcont:GetTall() * 0.0155, lcont:GetTall() * 0.00775)
     enable:Dock(TOP)
     local trash = LocalPlayer():GetWeapons()
-    local importer = GenerateLabel(lcont, "Import current weapons", nil, image)
+    local importer = GenerateLabel(lcont, "Import current weapons", nil, mainmenu)
     importer:SetFont("quickloadout_font_medium")
     importer:SetSize(lcont:GetWide(), lcont:GetTall() * 0.04)
     importer.DoClickInternal = function(self)
@@ -653,7 +701,7 @@ function QLOpenMenu()
     importer:Dock(TOP)
     local saveload = lcont:Add("Panel")
     saveload:SetSize(lcont:GetWide(), lcont:GetTall() * 0.05)
-    local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", image), GenerateLabel(saveload, "Load", "vgui/null", image), GenerateLabel(lcont)
+    local sbut, lbut, toptext = GenerateLabel(saveload, "Save", "vgui/null", mainmenu), GenerateLabel(saveload, "Load", "vgui/null", mainmenu), GenerateLabel(lcont)
     local modelpanel = vgui.Create("SpawnIcon", toptext)
     sbut.Text = "[ "..string.upper(bindings.savebind or "").." ]"
     lbut.Text = "[ "..string.upper(bindings.loadbind or "").." ]"
@@ -695,12 +743,12 @@ function QLOpenMenu()
     --     modelpanel.k = v
     -- end
     modelpanel.DoClickInternal = function()
-        optbut:OnToggled(image:IsVisible())
+        optbut:OnToggled(mainmenu.image:IsVisible())
         if IsValid(modelpanel.Window) then modelpanel.Window:Remove() return end
         local window = vgui.Create("DFrame", mainmenu)
-        image:Hide()
+        mainmenu.image:Hide()
         window.DoRemoval = window.Remove
-        window.Remove = function() image:Show() window:DoRemoval() end
+        window.Remove = function() mainmenu.image:Show() window:DoRemoval() end
         window.Paint = rcont.Paint
         if rcont:IsVisible() then CreateWeaponButtons() end
         modelpanel.Window = window
@@ -717,6 +765,8 @@ function QLOpenMenu()
         if player_manager.TranslatePlayerModel(mdl:GetString()) != self:GetModelName() then
             self:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()))
             self:SetTooltip("Current model: "..mdl:GetString())
+            mainmenu.theguy:SetModel(self:GetModelName())
+            function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
         end
     end
     modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), mskin:GetInt(), mbg:GetString())
@@ -727,6 +777,60 @@ function QLOpenMenu()
         mainmenu:MoveToBack()
     end
     -- modelpanel.PaintOver = function(x,y)
+
+    mainmenu.theguy:SetModel(modelpanel:GetModelName())
+    function mainmenu.theguy:LayoutEntity() return end
+    function mainmenu.theguy:SetWeapon( strModelName )
+
+        -- Note - there's no real need to delete the old
+        -- entity, it will get garbage collected, but this is nicer.
+        if !showguy:GetBool() then return end
+        if ( IsValid( self.Entity2 ) ) then
+            self.Entity2:Remove()
+            self.Entity2 = nil
+        end
+    
+        -- Note: Not in menu dll
+        if ( !ClientsideModel ) then return end
+        
+        self.Entity2 = ClientsideModel( strModelName, RENDERGROUP_OTHER )
+        if ( !IsValid( self.Entity2 ) ) then
+            if !IsValid(self.Entity) then return end
+            self.Entity:SetSequence("pose_standing_02")
+        return end
+    
+        self.Entity2:SetNoDraw( true )
+        self.Entity2:SetIK( false )
+        self.Entity2:ResetSequence( 0 )
+        self.Entity2:AddEffects(EF_BONEMERGE)
+        if !IsValid(self.Entity) then return end
+        self.Entity2:SetParent(self.Entity)
+        local holdtype = mainmenu.image.WepData.holdtype
+        self.Entity:SetSequence(holdtype and holdtypetbl[holdtype] or "idle_suitcase")
+    
+    end
+    function mainmenu.theguy:GetWeapon()
+    
+        if ( !IsValid( self.Entity2 ) ) then return end
+    
+        return self.Entity2:GetModel()
+    
+    end
+    function mainmenu.theguy:PostDrawModel(ent)
+        if !IsValid(self.Entity) then return end
+        if !IsValid(self.Entity2) then return end
+        self.Entity2:DrawModel()
+    end
+    function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
+    mainmenu.theguy:SetZPos(-1)
+    mainmenu.theguy:SetSize(height * 0.8, height * 0.6)
+    mainmenu.theguy:SetPos(width - height * 0.65, height * 0.4)
+    mainmenu.theguy:SetFOV(40)
+    mainmenu.theguy.Entity:SetSequence("pose_standing_02")
+    mainmenu.theguy.Entity:AddEffects(EF_ITEM_BLINK)
+    mainmenu.theguy.Entity:SetEyeTarget(Vector(100, 0, 64))
+    mainmenu.theguy:SetLookAt(Vector(20, 0, 50))
+    mainmenu.theguy:SetCamPos(Vector(100, 70, 64))
 
     -- end
     modelpanel:Dock(RIGHT)
@@ -740,8 +844,9 @@ function QLOpenMenu()
     toptext.OnCursorEntered = function()
         -- if buttonclicked then return end
         wepimg = nil
-        image.Text = nil
-        image.WepData = {}
+        mainmenu.image.Text = nil
+        mainmenu.image.WepData = {}
+        mainmenu.theguy:SetWeapon("")
     end
     optbut.DoClickInternal = function(self)
         options:SetVisible(!self:GetToggle())
@@ -991,6 +1096,15 @@ function QLOpenMenu()
         enableblur:SetWrap(true)
         enableblur:SetTextColor(color_white)
 
+        local enableguy = options:Add("DCheckBoxLabel")
+        enableguy:SetConVar("quickloadout_showcharacter")
+        enableguy:SetText("Background character")
+        enableguy:SetTooltip("Shows your player character, holding the various weapons when the menu is open.")
+        enableguy:SetValue(showguy:GetBool())
+        enableguy:SetFont("quickloadout_font_small")
+        enableguy:SetWrap(true)
+        enableguy:SetTextColor(color_white)
+
         local fontpanel = options:Add("Panel")
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
         local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Fonts"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
@@ -1094,7 +1208,7 @@ function QLOpenMenu()
         else
             toptext:SetText("LMB equip and close\nRMB equip and edit")
             for i, v in ipairs(loadouts) do
-                local button = GenerateLabel(qllist, v.name, "vgui/null", image)
+                local button = GenerateLabel(qllist, v.name, "vgui/null", mainmenu)
                 LoadoutSelector(button, i)
             end
             if !next(loadouts) then GenerateLabel(qllist, "No loadouts saved.") end
@@ -1111,10 +1225,10 @@ function QLOpenMenu()
         -- count2 = slotlimit:GetBool() and slotlimit:GetInt() or 0
 
         for i, v in ipairs(ptable) do
-            local button = GenerateLabel(weplist, QuickName(v), v, image)
+            local button = GenerateLabel(weplist, QuickName(v), v, mainmenu)
             WepSelector(button, i, v)
         end
-        local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", image)
+        local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", mainmenu)
         WepSelector(newwep, #ptable + 1, nil)
         -- if sbut:GetToggle() then sbut:Toggle()
         -- elseif lbut:GetToggle() then lbut:Toggle() end
@@ -1131,7 +1245,7 @@ function QLOpenMenu()
 
         if loadouts[key] then
             for i, v in ipairs(loadouts[key].weps) do
-                local button = GenerateLabel(category1, QuickName(v), v, image)
+                local button = GenerateLabel(category1, QuickName(v), v, mainmenu)
                 WepSelector(button, i, v)
                 button:SetIsToggle(false)
                 button.DoClickInternal = function() end
@@ -1139,7 +1253,7 @@ function QLOpenMenu()
             end
         else
             for i, v in ipairs(ptable) do
-                local button = GenerateLabel(category1, QuickName(v), v, image)
+                local button = GenerateLabel(category1, QuickName(v), v, mainmenu)
                 WepSelector(button, i, v)
                 button:SetIsToggle(false)
                 button.DoClickInternal = function() end
@@ -1153,15 +1267,16 @@ function QLOpenMenu()
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
         cat:Clear()
-        local cancel = GenerateLabel(cat, cat.Name, collapse, image)
+        local cancel = GenerateLabel(cat, cat.Name, collapse, mainmenu)
         cancel.DoClickInternal = function(self)
             cat:Hide()
             self:SetToggle(true)
             parent:SetToggle(false)
             parent:GetParent():Show()
             wepimg = nil
-            image.Text = nil
-            image.WepData = {}
+            mainmenu.image.Text = nil
+            mainmenu.image.WepData = {}
+            mainmenu.theguy:SetWeapon("")
             -- if ptable[slot] and rtable[ptable[slot]] then
             --     local weapon = rtable[ptable[slot]]
             --     local icon = weapon.HudImage or weapon.Image
@@ -1177,7 +1292,7 @@ function QLOpenMenu()
             if cat == category1 then buttonclicked = nil rcont:Hide() end
         end
         for key, v in SortedPairs(tbl) do
-            local button = GenerateLabel(cat, v, key, image)
+            local button = GenerateLabel(cat, v, key, mainmenu)
             button.DoRightClick = cancel.DoClickInternal
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
