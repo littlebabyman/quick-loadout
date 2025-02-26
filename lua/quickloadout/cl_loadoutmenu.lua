@@ -46,6 +46,7 @@ local showsubcat = GetConVar("quickloadout_showsubcategory")
 local showslot = GetConVar("quickloadout_showslot")
 local blur = GetConVar("quickloadout_ui_blur")
 local showguy = GetConVar("quickloadout_showcharacter")
+local showgun = GetConVar("quickloadout_showcharacter_weapon")
 local fonts, fontscale = GetConVar("quickloadout_ui_fonts"), GetConVar("quickloadout_ui_font_scale")
 local lastgiven = 0
 local reminder = GetConVar("quickloadout_remind_client")
@@ -766,7 +767,7 @@ function QLOpenMenu()
             self:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()))
             self:SetTooltip("Current model: "..mdl:GetString())
             mainmenu.theguy:SetModel(self:GetModelName())
-            function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
+            mainmenu.theguy:ResetParameters()
         end
     end
     modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), mskin:GetInt(), mbg:GetString())
@@ -784,7 +785,7 @@ function QLOpenMenu()
 
         -- Note - there's no real need to delete the old
         -- entity, it will get garbage collected, but this is nicer.
-        if !showguy:GetBool() then return end
+        if !showguy:GetBool() or !showgun:GetBool() then return end
         if ( IsValid( self.Entity2 ) ) then
             self.Entity2:Remove()
             self.Entity2 = nil
@@ -822,15 +823,21 @@ function QLOpenMenu()
         self.Entity2:DrawModel()
     end
     function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
+    function mainmenu.theguy:ResetParameters()
+        self.Entity:SetSequence("pose_standing_02")
+        self.Entity:AddEffects(EF_ITEM_BLINK)
+        self.Entity:SetEyeTarget(Vector(100, 0, 64))
+        function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
+        if !self:GetWeapon() then return end
+        self:SetWeapon( self:GetWeapon() )
+    end
     mainmenu.theguy:SetZPos(-1)
     mainmenu.theguy:SetSize(height * 0.8, height * 0.6)
     mainmenu.theguy:SetPos(width - height * 0.65, height * 0.4)
     mainmenu.theguy:SetFOV(40)
-    mainmenu.theguy.Entity:SetSequence("pose_standing_02")
-    mainmenu.theguy.Entity:AddEffects(EF_ITEM_BLINK)
-    mainmenu.theguy.Entity:SetEyeTarget(Vector(100, 0, 64))
     mainmenu.theguy:SetLookAt(Vector(20, 0, 50))
     mainmenu.theguy:SetCamPos(Vector(100, 70, 64))
+    mainmenu.theguy:ResetParameters()
 
     -- end
     modelpanel:Dock(RIGHT)
@@ -1099,11 +1106,20 @@ function QLOpenMenu()
         local enableguy = options:Add("DCheckBoxLabel")
         enableguy:SetConVar("quickloadout_showcharacter")
         enableguy:SetText("Background character")
-        enableguy:SetTooltip("Shows your player character, holding the various weapons when the menu is open.")
+        enableguy:SetTooltip("Shows your player character in the background when the menu is open.")
         enableguy:SetValue(showguy:GetBool())
         enableguy:SetFont("quickloadout_font_small")
         enableguy:SetWrap(true)
         enableguy:SetTextColor(color_white)
+
+        local enablegun = options:Add("DCheckBoxLabel")
+        enablegun:SetConVar("quickloadout_showcharacter_weapon")
+        enablegun:SetText("Background character weapons")
+        enablegun:SetTooltip("Shows your player character holding the various weapons available.")
+        enablegun:SetValue(showgun:GetBool())
+        enablegun:SetFont("quickloadout_font_small")
+        enablegun:SetWrap(true)
+        enablegun:SetTextColor(color_white)
 
         local fontpanel = options:Add("Panel")
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
