@@ -366,14 +366,14 @@ end
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
 local warntext = "Disclaimer: Displayed stats may be inaccurate."
 local holdtypetbl = {
-    pistol = "idle_melee_angry",
-    revolver = "idle_melee_angry",
+    pistol = "idle_revolver",
+    revolver = "idle_revolver",
     duel = "idle_dual",
     smg = "idle_rpg",
     ar2 = "idle_rpg",
-    shotgun = "cidle_passive",
-    rpg = "cidle_passive",
-    physgun = "cidle_passive",
+    shotgun = "idle_passive",
+    rpg = "idle_passive",
+    physgun = "idle_passive",
     crossbow = "idle_rpg",
     camera = "idle_slam",
     slam = "idle_slam",
@@ -807,7 +807,7 @@ function QLOpenMenu()
         if !IsValid(self.Entity) then return end
         self.Entity2:SetParent(self.Entity)
         local holdtype = mainmenu.image.WepData.holdtype
-        self.Entity:SetSequence(holdtype and holdtypetbl[holdtype] or "idle_suitcase")
+        self.Entity:SetSequence(holdtype and holdtypetbl[holdtype] or "idle_suitcase" or "idle_all")
     
     end
     function mainmenu.theguy:GetWeapon()
