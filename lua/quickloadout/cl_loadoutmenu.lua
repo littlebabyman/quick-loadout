@@ -797,7 +797,7 @@ function QLOpenMenu()
         self.Entity2 = ClientsideModel( strModelName, RENDERGROUP_OTHER )
         if ( !IsValid( self.Entity2 ) ) then
             if !IsValid(self.Entity) then return end
-            self.Entity:SetSequence("pose_standing_02")
+            self.Entity:ResetSequence("pose_standing_02")
         return end
     
         self.Entity2:SetNoDraw( true )
@@ -807,7 +807,7 @@ function QLOpenMenu()
         if !IsValid(self.Entity) then return end
         self.Entity2:SetParent(self.Entity)
         local holdtype = mainmenu.image.WepData.holdtype
-        self.Entity:SetSequence(holdtype and holdtypetbl[holdtype] or "idle_suitcase" or "idle_all")
+        self.Entity:ResetSequence(holdtype and holdtypetbl[holdtype] or "idle_suitcase" or 1)
     
     end
     function mainmenu.theguy:GetWeapon()
@@ -824,7 +824,7 @@ function QLOpenMenu()
     end
     function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
     function mainmenu.theguy:ResetParameters()
-        self.Entity:SetSequence("pose_standing_02")
+        self.Entity:ResetSequence("pose_standing_02")
         self.Entity:AddEffects(EF_ITEM_BLINK)
         self.Entity:SetEyeTarget(Vector(100, 0, 64))
         function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
