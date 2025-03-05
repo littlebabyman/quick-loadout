@@ -516,11 +516,11 @@ function QLOpenMenu()
             if self.WepData.ammo and isnumber(self.WepData.mag) then
                 self.WepData.ammo = string.NiceName(language.GetPhrase(self.WepData.ammo))
                 self.WepData.oneshot = self.WepData.mag == 1
-                self.WepData.mag = (self.WepData.mag > 0 and "Mag. size: " .. self.WepData.mag)
+                self.WepData.mag = (self.WepData.mag > 0 and "Capacity: " .. self.WepData.mag)
             end
             if self.WepData.ammo2 and isnumber(self.WepData.mag2) then
                 self.WepData.ammo2 = string.NiceName(language.GetPhrase(self.WepData.ammo2))
-                self.WepData.mag2 = (self.WepData.mag2 > 0 and "Alt. mag. size: " .. self.WepData.mag2)
+                self.WepData.mag2 = (self.WepData.mag2 > 0 and "Alt. capacity: " .. self.WepData.mag2)
             end
             if self.WepData.dmg and self.WepData.dmg > 1 and !self.WepData.dmgrat then
                 local ratmap = math.Remap(self.WepData.dmg * self.WepData.num, 0, 100, 0, 1)
