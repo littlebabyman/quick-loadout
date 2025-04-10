@@ -1326,7 +1326,7 @@ function QLOpenMenu()
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
             local icon = math.max(scale * 8, 16)
-            local catimage = Material(category2.Icon or list.Get("ContentCategoryIcons")[key] or "vgui/null", "mips")
+            local catimage = Material(!cat1 and category2.Icon or list.Get("ContentCategoryIcons")[key] or "vgui/null", "mips")
             if istable(v) then
                 local wepcount, catcount = 0, 0
                 local numbers = ""
