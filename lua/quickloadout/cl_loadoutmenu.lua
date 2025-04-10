@@ -1295,6 +1295,7 @@ function QLOpenMenu()
 
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
         cat:Clear()
+        local cat1 = cat == category1
         local cancel = GenerateLabel(cat, cat.Name, collapse, mainmenu)
         cancel.DoClickInternal = function(self)
             cat:Hide()
@@ -1317,7 +1318,7 @@ function QLOpenMenu()
             --         image.WepData = weapon.Stats
             --     end
             -- end
-            if cat == category1 then buttonclicked = nil rcont:Hide() end
+            if cat1 then buttonclicked = nil rcont:Hide() end
         end
         for key, v in SortedPairs(tbl) do
             local button = GenerateLabel(cat, v, key, mainmenu)
@@ -1325,8 +1326,9 @@ function QLOpenMenu()
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
             local icon = math.max(scale * 8, 16)
+            local catimage = Material(category2.Icon or list.Get("ContentCategoryIcons")[key] or "vgui/null", "mips")
             if istable(v) then
-                local wepcount, catcount, cat2 = 0, 0, cat == category2
+                local wepcount, catcount = 0, 0
                 local numbers = ""
                 for sub, tab in pairs(v) do
                     if istable(tab) then
@@ -1338,7 +1340,6 @@ function QLOpenMenu()
                 end
                 numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                 -- PrintTable(tbl)
-                local catimage = Material(category2.Icon or list.Get("ContentCategoryIcons")[key] or "vgui/null", "mips")
                 button.PaintOver = function(self, x, y)
                     local offset = math.min(x * 0.1, y * 0.5)
                     draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
@@ -1351,12 +1352,12 @@ function QLOpenMenu()
                         render.PopFilterMag()
                         render.PopFilterMin()
                     end
-                    if cat2 and category2.Category then
+                    if !cat1 and category2.Category then
                         draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                     end
                 end
                 button.DoClickInternal = function()
-                    if cat == category1 then
+                    if cat1 then
                         category2.Icon = list.Get("ContentCategoryIcons")[key]
                         category2.Category = ShortenCategory(key)
                     end
@@ -1367,7 +1368,7 @@ function QLOpenMenu()
             local ref = rtable[key]
             local haswep = (table.HasValue(ptable, key) and !ptable[slot])
             local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
-            local catimage = Material(ref and ref.Icon or "vgui/null", "mips")
+            -- local catimage = Material(ref and ref.Icon or "vgui/null", "mips")
             local wepimage = Material(ref and ref.Image or "vgui/null", "mips")
             local ratio = wepimage:Width() / wepimage:Height()
             local cattext, weptext, eqnum = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, key) and "#"..tostring(table.KeyFromValue(ptable, key))
@@ -1386,13 +1387,17 @@ function QLOpenMenu()
                     surface.SetMaterial(wepimage)
                     surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
                 end
-                if ref.Icon then
+                if catimage then
+                    surface.SetDrawColor(color_default)
                     surface.SetMaterial(catimage)
                     surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
                 end
                 render.PopFilterMag()
                 render.PopFilterMin()
-                draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                if !cat1 and category2.Category then
+                    draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                end
+                -- draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 if weptext then
                     draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
