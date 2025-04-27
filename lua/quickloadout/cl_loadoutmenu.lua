@@ -114,6 +114,8 @@ cvars.AddChangeCallback("quickloadout_ui_fonts", function() timer.Simple(0, Crea
 -- cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
+LoadSavedLoadouts()
+
 local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
     if name then category.Name = name end
@@ -325,9 +327,9 @@ local function GenerateWeaponTable(force)
                 wep.Icon = mat
                 wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
                 wep.Image = image and wep.HudImage or TestImage(class) -- or wep.SpawnIcon
-                wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or wep.ClassName
+                wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or class
                 if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                    wtable[nicecat][wep.ClassName] = wep.PrintName
+                    wtable[nicecat][class] = wep.PrintName
                 end
                 if reftable then
                     wep.Base = reftable.Base
@@ -354,7 +356,7 @@ local function GenerateWeaponTable(force)
                         if !wtable[nicecat][cat] then
                             wtable[nicecat][cat] = {}
                         end
-                        wtable[nicecat][cat][wep.ClassName] = wep.PrintName
+                        wtable[nicecat][cat][class] = wep.PrintName
                     end
                     if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
                 end
@@ -1223,7 +1225,6 @@ function QLOpenMenu()
         category2:Hide()
         category3:Hide()
         qllist:Clear()
-        LoadSavedLoadouts()
 
         if saving then
             toptext:SetText("LMB save loadout\nRMB delete loadout")
