@@ -184,7 +184,7 @@ local function GenerateLabel(frame, name, class, panel)
             wepimg = nil
             panel.image.WepData = {}
             panel.theguy:SetWeapon("")
-            if class and !istable(class) and rtable[class] then
+            if class and rtable[class] then
                 panel.image.Text = class
                 local icon = rtable[class].HudImage or rtable[class].Image
                 if icon then
@@ -264,7 +264,7 @@ local function QLNotify(noti)
     box:SetFont("quickloadout_font_medium")
     box:SetText(text)
     box:SetTextColor(color_white)
-    local spawntime = spawn and (IsValid(LocalPlayer()) and LocalPlayer():Health() > 0 and (time:GetBool() and time:GetInt() or 2) or 10) or 3
+    local spawntime = spawn and (IsValid(LocalPlayer()) and LocalPlayer():Health() > 0 and (time:GetBool() and time:GetInt() or 0) or 8) or 1
     notipan:SetContentAlignment(8)
     box:SetContentAlignment(8)
     -- box:SetSize(box:GetTextSize())
@@ -291,7 +291,7 @@ local function QLNotify(noti)
     -- container:SizeToContentsY(draw.GetFontHeight("quickloadout_font_medium")*2)
     local wpos = (ScrW() - box:GetWide()) * 0.5
     notipan:SetPos(wpos, ScrH())
-    notipan:MoveTo(wpos, ScrH() * 0.8, 0.2, 0, -1, function() notipan:MoveTo(wpos, ScrH(), .2, spawntime - 0.2, -1, function() notipan:Remove() end) end)
+    notipan:MoveTo(wpos, ScrH() * 0.8, 0.2, 0, -1, function() notipan:MoveTo(wpos, ScrH(), .2, spawntime + 1.8, -1, function() notipan:Remove() end) end)
 end
 
 local function NetworkLoadout()
@@ -327,9 +327,9 @@ local function GenerateWeaponTable(force)
                 wep.Icon = mat
                 wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
                 wep.Image = image and wep.HudImage or TestImage(class) -- or wep.SpawnIcon
-                wep.PrintName = reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or class
+                wep.PrintName = language.GetPhrase(reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or class)
                 if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                    wtable[nicecat][class] = wep.PrintName
+                    table.ForceInsert(wtable[nicecat], {class = class, name = wep.PrintName})
                 end
                 if reftable then
                     wep.Base = reftable.Base
@@ -356,7 +356,7 @@ local function GenerateWeaponTable(force)
                         if !wtable[nicecat][cat] then
                             wtable[nicecat][cat] = {}
                         end
-                        wtable[nicecat][cat][class] = wep.PrintName
+                        table.ForceInsert(wtable[nicecat][cat], {class = class, name = wep.PrintName})
                     end
                     if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
                 end
@@ -1294,6 +1294,11 @@ function QLOpenMenu()
         category1:Show()
     end
 
+    local function SomePairsShit(tbl, real)
+        if real then return SortedPairsByMemberValue(tbl, "name") end
+        return SortedPairs(tbl)
+    end
+
     function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
         cat:Clear()
         local cat1 = cat == category1
@@ -1321,23 +1326,34 @@ function QLOpenMenu()
             -- end
             if cat1 then buttonclicked = nil rcont:Hide() end
         end
+        local seq = table.IsSequential(tbl)
+        if seq then table.SortByMember(tbl, "name", true) end
         for key, v in SortedPairs(tbl) do
-            local button = GenerateLabel(cat, v, key, mainmenu)
+            local button = GenerateLabel(cat, v.name, seq and v.class or key, mainmenu)
             button.DoRightClick = cancel.DoClickInternal
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
             local icon = math.max(scale * 8, 16)
             local catimage = Material(!cat1 and category2.Icon or list.Get("ContentCategoryIcons")[key] or "vgui/null", "mips")
-            if istable(v) then
+            if !seq then
                 local wepcount, catcount = 0, 0
-                local numbers = ""
+                local numbers, subseq = "", table.IsSequential(v)
                 for sub, tab in pairs(v) do
-                    if istable(tab) then
+                    if !subseq then
                         catcount = catcount + 1
                         wepcount = wepcount + table.Count(tab)
                     else
                         wepcount = wepcount + 1
                     end
+                end
+                if wepcount == 1 then
+                    button:Remove()
+                    button = GenerateLabel(cat, v[1].name, v[1].class, mainmenu)
+                    button.DoRightClick = cancel.DoClickInternal
+                    button:SizeToContentsY(fontsize)
+                    button:InvalidateLayout(true)
+                    button.LoneRider = {ShortenCategory(key), list.Get("ContentCategoryIcons")[key]}
+                    goto onewep
                 end
                 numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                 -- PrintTable(tbl)
@@ -1367,14 +1383,16 @@ function QLOpenMenu()
                     cat:Hide()
                 end
             continue end
-            local ref = rtable[key]
-            local haswep = (table.HasValue(ptable, key) and !ptable[slot])
+            ::onewep::
+            local keyname = (button.LoneRider and v[1] or v).class
+            local ref = rtable[keyname]
+            local haswep = (table.HasValue(ptable, keyname) and !ptable[slot])
             local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
             -- local catimage = Material(ref and ref.Icon or "vgui/null", "mips")
             local wepimage = Material(ref and ref.Image or "vgui/null", "mips")
             local ratio = wepimage:Width() / wepimage:Height()
-            local cattext, weptext, eqnum = ShortenCategory(key), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, key) and "#"..tostring(table.KeyFromValue(ptable, key))
-            if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, key)) then
+            local cattext, weptext, eqnum = ShortenCategory(keyname), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, keyname) and "#"..tostring(table.KeyFromValue(ptable, keyname))
+            if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, keyname)) then
                 eqnum = eqnum .. " ↔ " .. "#"..slot
             end
             button.Paint = function(self, x, y)
@@ -1396,7 +1414,9 @@ function QLOpenMenu()
                 end
                 render.PopFilterMag()
                 render.PopFilterMin()
-                if !cat1 and category2.Category then
+                if cat1 and button.LoneRider then
+                    draw.SimpleText(button.LoneRider[1], "quickloadout_font_small", x - offset * 0.125 - (button.LoneRider[2] and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                elseif !cat1 and category2.Category then
                     draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
                 -- draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
@@ -1409,21 +1429,16 @@ function QLOpenMenu()
                 end
             end
             button.DoClickInternal = function(self)
-                if table.HasValue(ptable, key) then
+                if table.HasValue(ptable, keyname) then
                     if !ptable[slot] then self:SetToggle(true) return end
-                    table.Merge(ptable, {[table.KeyFromValue(ptable, key)] = ptable[slot]}, true)
+                    table.Merge(ptable, {[table.KeyFromValue(ptable, keyname)] = ptable[slot]}, true)
                 end
-                table.Merge(ptable, {[slot] = key}, true)
+                table.Merge(ptable, {[slot] = keyname}, true)
                 cat:Clear()
                 CreateWeaponButtons()
                 RefreshLoadout(closer)
             end
         end
-        -- cont:InvalidateLayout()
-        -- print("hi")
-        -- cat:InvalidateLayout(true)
-        -- cat:SizeToChildren(false, true)
-        -- cat:InvalidateChildren(true)
         cat:Show()
     end
 
