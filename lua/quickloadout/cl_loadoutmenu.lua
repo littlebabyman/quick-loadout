@@ -1391,7 +1391,7 @@ function QLOpenMenu()
             -- local catimage = Material(ref and ref.Icon or "vgui/null", "mips")
             local wepimage = Material(ref and ref.Image or "vgui/null", "mips")
             local ratio = wepimage:Width() / wepimage:Height()
-            local cattext, weptext, eqnum = ShortenCategory(keyname), ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, keyname) and "#"..tostring(table.KeyFromValue(ptable, keyname))
+            local weptext, eqnum = ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, keyname) and "#"..tostring(table.KeyFromValue(ptable, keyname))
             if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, keyname)) then
                 eqnum = eqnum .. " ↔ " .. "#"..slot
             end
