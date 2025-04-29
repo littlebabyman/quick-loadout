@@ -1346,44 +1346,44 @@ function QLOpenMenu()
                         wepcount = wepcount + 1
                     end
                 end
-                if wepcount == 1 then
+                if catcount == 0 and wepcount == 1 then
                     button:Remove()
                     button = GenerateLabel(cat, v[1].name, v[1].class, mainmenu)
                     button.DoRightClick = cancel.DoClickInternal
                     button:SizeToContentsY(fontsize)
                     button:InvalidateLayout(true)
                     button.LoneRider = {ShortenCategory(key), list.Get("ContentCategoryIcons")[key]}
-                    goto onewep
-                end
-                numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
-                -- PrintTable(tbl)
-                button.PaintOver = function(self, x, y)
-                    local offset = math.min(x * 0.1, y * 0.5)
-                    surface.SetDrawColor(color_default)
-                    draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                    if catimage then
+                else
+                    numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
+                    -- PrintTable(tbl)
+                    button.PaintOver = function(self, x, y)
+                        local offset = math.min(x * 0.1, y * 0.5)
                         surface.SetDrawColor(color_default)
-                        render.PushFilterMag(TEXFILTER.LINEAR)
-                        render.PushFilterMin(TEXFILTER.LINEAR)
-                        surface.SetMaterial(catimage)
-                        surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
-                        render.PopFilterMag()
-                        render.PopFilterMin()
+                        draw.SimpleText(numbers, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                        if catimage then
+                            surface.SetDrawColor(color_default)
+                            render.PushFilterMag(TEXFILTER.LINEAR)
+                            render.PushFilterMin(TEXFILTER.LINEAR)
+                            surface.SetMaterial(catimage)
+                            surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
+                            render.PopFilterMag()
+                            render.PopFilterMin()
+                        end
+                        if !cat1 and category2.Category then
+                            draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                        end
                     end
-                    if !cat1 and category2.Category then
-                        draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                    button.DoClickInternal = function()
+                        if cat1 then
+                            category2.Icon = list.Get("ContentCategoryIcons")[key]
+                            category2.Category = ShortenCategory(key)
+                        end
+                        PopulateCategory(button, v, cont, TheCats(cat), slot)
+                        cat:Hide()
                     end
+                    continue
                 end
-                button.DoClickInternal = function()
-                    if cat1 then
-                        category2.Icon = list.Get("ContentCategoryIcons")[key]
-                        category2.Category = ShortenCategory(key)
-                    end
-                    PopulateCategory(button, v, cont, TheCats(cat), slot)
-                    cat:Hide()
-                end
-            continue end
-            ::onewep::
+            end
             local keyname = (button.LoneRider and v[1] or v).class
             local ref = rtable[keyname]
             local haswep = (table.HasValue(ptable, keyname) and !ptable[slot])
