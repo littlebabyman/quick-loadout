@@ -114,8 +114,6 @@ cvars.AddChangeCallback("quickloadout_ui_fonts", function() timer.Simple(0, Crea
 -- cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
-LoadSavedLoadouts()
-
 local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
     if name then category.Name = name end
@@ -1225,6 +1223,8 @@ function QLOpenMenu()
         category2:Hide()
         category3:Hide()
         qllist:Clear()
+
+        LoadSavedLoadouts()
 
         if saving then
             toptext:SetText("LMB save loadout\nRMB delete loadout")
