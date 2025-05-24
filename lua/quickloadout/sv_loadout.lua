@@ -1,5 +1,6 @@
 local enabled = GetConVar("quickloadout_enable")
 local default = GetConVar("quickloadout_default")
+local model = GetConVar("quickloadout_applymodel")
 local maxslots = GetConVar("quickloadout_maxslots")
 local time = GetConVar("quickloadout_gracetime")
 local timestop = GetConVar("quickloadout_gracetime_override")
@@ -29,6 +30,7 @@ net.Receive("quickloadout", function(len, ply)
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
     else
         local dt = util.JSONToTable(util.Decompress(net.ReadData(len)))
+        print(dt, ply.quickloadout)
         ply.quickloadout = dt
     end -- whaddya know this IS more reliable!
     if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
@@ -37,6 +39,7 @@ net.Receive("quickloadout", function(len, ply)
         net.Send(ply)
         return
     end
+    if model:GetBool() then hook.Run("PlayerSetModel", ply) ply:SetupHands() end
     hook.Run("PlayerLoadout", ply)
 end)
 
@@ -57,10 +60,11 @@ local exctab = {
 function QuickLoadout(ply)
     if ply.qltransition then return end
     local count = maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and 32 or 0
-    if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or table.IsEmpty(ply.quickloadout) or !ply:Alive() then return end
+    if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
     ply:StripAmmo()
     timer.Simple(0, function()
+        if table.IsEmpty(ply.quickloadout) then return end
         local wtable = list.Get("Weapon")
         local ammomult1, ammomult2 = clips1:GetInt(), clips2:GetInt()
         for k, wep in ipairs(ply.quickloadout) do
@@ -87,6 +91,7 @@ function QuickLoadout(ply)
         ply:SelectWeapon(ply.quickloadout[1])
     end)
     ply:SetActiveWeapon(NULL)
+    
     if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1)) then
         return true
     end

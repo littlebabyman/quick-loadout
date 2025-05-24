@@ -7,6 +7,7 @@ CreateConVar("quickloadout_gracetime", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "G
 CreateConVar("quickloadout_giveclips_primary", -1, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Amount of clips worth of primary ammo a weapon gets upon applying a loadout. -1 uses weapon default instead.", -1)
 CreateConVar("quickloadout_giveclips_secondary", -1, {FCVAR_ARCHIVE + FCVAR_REPLICATED}, "Amount of clips worth of secondary ammo a weapon gets upon applying a loadout. -1 uses weapon default instead.", -1)
 CreateConVar("quickloadout_gracetime_override", 0, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Force grace period off on pressing primary attack.", 0, 1)
+CreateConVar("quickloadout_applymodel", 1, {FCVAR_ARCHIVE + FCVAR_REPLICATED + FCVAR_NOTIFY}, "Re-applies player model on loadout refresh.", 0, 1)
 
 if CLIENT then
     CreateClientConVar("quickloadout_enable_client", 1, true, true, "Enable quick loadout sending.", 0, 1)
