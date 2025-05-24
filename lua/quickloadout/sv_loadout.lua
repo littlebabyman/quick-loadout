@@ -91,8 +91,7 @@ function QuickLoadout(ply)
         ply:SelectWeapon(ply.quickloadout[1])
     end)
     ply:SetActiveWeapon(NULL)
-    
-    if !(default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1)) then
+    if !(table.IsEmpty(ply.quickloadout) or default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1)) then
         return true
     end
 end
