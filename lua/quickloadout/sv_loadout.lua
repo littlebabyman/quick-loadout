@@ -63,8 +63,7 @@ function QuickLoadout(ply)
     if !IsValid(ply) or !enabled:GetBool() or !ply.quickloadout or !ply:Alive() then return end
     ply:StripWeapons()
     ply:StripAmmo()
-    timer.Simple(0, function()
-        if table.IsEmpty(ply.quickloadout) then return end
+    if !table.IsEmpty(ply.quickloadout) then
         local wtable = list.Get("Weapon")
         local ammomult1, ammomult2 = clips1:GetInt(), clips2:GetInt()
         for k, wep in ipairs(ply.quickloadout) do
@@ -88,8 +87,12 @@ function QuickLoadout(ply)
                 end)
             end
         end
-        ply:SelectWeapon(ply.quickloadout[1])
-    end)
+        timer.Simple(0, function()
+            local weps = ply:GetWeapons()
+            ply:SelectWeapon(weps[1])
+            ply:SetSaveValue("m_hLastWeapon", weps[2] or NULL)
+        end)
+    end
     ply:SetActiveWeapon(NULL)
     if !(ply:GetInfoNum("quickloadout_enable_client", 1) == 0 or default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1)) then
         return true
