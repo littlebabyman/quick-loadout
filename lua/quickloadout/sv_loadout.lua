@@ -30,7 +30,6 @@ net.Receive("quickloadout", function(len, ply)
     if ply:GetInfoNum("quickloadout_enable_client", 0) == 0 then ply.quickloadout = {}
     else
         local dt = util.JSONToTable(util.Decompress(net.ReadData(len)))
-        print(dt, ply.quickloadout)
         ply.quickloadout = dt
     end -- whaddya know this IS more reliable!
     if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
