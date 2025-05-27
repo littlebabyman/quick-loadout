@@ -259,15 +259,14 @@ local function QLNotify(note, priority)
     local spawn = !isstring(note) and note
     if spawn and !reminder:GetBool() then return end
     if IsValid(notipan) then
-        if (notipan.Priority == false or notipan.Priority == priority) then
+        if (notipan.Priority and !priority) then return end
+        if (!notipan.Priority or notipan.Priority and priority) then
             notipan:Remove()
-        elseif notipan.Priority != priority then
-            return
         end
     end
     local text = "Your loadout will change next deployment."
-    if spawn then text = "[ " .. string.NiceName(keybind:GetString()) .. " ] Change loadout"
-    elseif isstring(note) then text = note
+    if isstring(note) then text = note
+    elseif spawn or !note and priority then text = "[ " .. string.NiceName(keybind:GetString()) .. " ] Change loadout"
     end
     notipan = vgui.Create("DPanel", GetHUDPanel())
     notipan.Paint = nil
@@ -302,6 +301,11 @@ local function QLNotify(note, priority)
     end
     -- container:SizeToContentsY(draw.GetFontHeight("quickloadout_font_medium")*2)
     local wpos = (ScrW() - box:GetWide()) * 0.5
+    if !note and priority then
+        notipan:SetPos(wpos, ScrH() * 0.8)
+        notipan:MoveTo(wpos, ScrH(), 0.2, 0, -1, function() notipan:Remove() end)
+        return
+    end
     notipan:SetPos(wpos, ScrH())
     notipan:MoveTo(wpos, ScrH() * 0.8, 0.2, 0, -1, function() notipan:MoveTo(wpos, ScrH(), .2, spawntime + 1.8, -1, function() notipan:Remove() end) end)
 end
