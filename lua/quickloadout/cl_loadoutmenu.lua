@@ -255,16 +255,23 @@ local function QLEditTime(t)
 end
 
 local notipan = nil
-local function QLNotify(noti)
-    local spawn = !isstring(noti) and noti
+local function QLNotify(note, priority)
+    local spawn = !isstring(note) and note
     if spawn and !reminder:GetBool() then return end
-    if IsValid(notipan) then notipan:Remove() end
+    if IsValid(notipan) then
+        if (notipan.Priority == false or notipan.Priority == priority) then
+            notipan:Remove()
+        elseif notipan.Priority != priority then
+            return
+        end
+    end
     local text = "Your loadout will change next deployment."
     if spawn then text = "[ " .. string.NiceName(keybind:GetString()) .. " ] Change loadout"
-    elseif isstring(noti) then text = noti
+    elseif isstring(note) then text = note
     end
     notipan = vgui.Create("DPanel", GetHUDPanel())
     notipan.Paint = nil
+    notipan.Priority = priority
     local box = vgui.Create("DLabel", notipan)
     box:SetFont("quickloadout_font_medium")
     box:SetText(text)
@@ -309,9 +316,8 @@ local function NetworkLoadout()
 end
 
 net.Receive("quickloadout", function()
-    local spawn = net.ReadBool()
-    if IsValid(notipan) then notipan:Remove() end
-    QLNotify(spawn)
+    local spawn, prio = net.ReadBool(), net.ReadBool()
+    QLNotify(spawn, prio)
     -- if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.")
 end)
 
@@ -480,7 +486,7 @@ function QLOpenMenu()
             if !apply then
                 ptable = tmp
             end
-            QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.")
+            QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.", !apply)
         end
         if !apply then return end
         file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
@@ -1116,11 +1122,52 @@ function QLOpenMenu()
         rmbsave:SetWrap(true)
         rmbsave:SetTextColor(color_white)
 
-        local buthelp = GenerateLabel(options, "Interface")
+        local guihelp = GenerateLabel(options, "Interface")
+        guihelp:Dock(TOP)
+        guihelp:SetFont("quickloadout_font_medium")
+        guihelp:SetTextInset(0, 0)
+        guihelp:SizeToContents()
+        
+        local fontpanel = options:Add("Panel")
+        fontpanel:Dock(TOP)
+        fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
+        local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Fonts"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
+        local fonthelp = GenerateLabel(options, "To specify two separate fonts, add \",\" in between two font names.")
+        fonthelp:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
+        fonthelp:SetFont("quickloadout_font_small")
+        fonthelp:SetTextInset(0, 0)
+        fonthelp:SizeToContentsY(options:GetWide() * 0.025)
+        fonttext:SetFont("quickloadout_font_small")
+        fonttext:SizeToContentsX(options:GetWide() * 0.05)
+        fonttext:SizeToContentsY(options:GetWide() * 0.025)
+        fonttext:SetTextInset(0, 0)
+        fonttext:DockMargin(0, 0, options:GetWide() * 0.025, 0)
+        fonttext:Dock(LEFT)
+        fonttext:SetTextColor(color_white)
+        Derma_Install_Convar_Functions(fontfield)
+        fontfield:SetFont("quickloadout_font_small")
+        fontfield:SetConVar("quickloadout_ui_fonts")
+        fontfield.DoClickInternal = fontfield.DoDoubleClick
+        fontfield.OnLabelTextChanged = function(self, text)
+            fontfield:ConVarChanged(text)
+            mainmenu:InvalidateChildren(true)
+        end
+        fontfield:Dock(FILL)
+        -- fontslider.Label:SetFontInternal("quickloadout_font_small")
+        -- fontslider.Label:SetText("Font scale")
+        -- fontslider.Label:SizeToContentsX(options:GetWide() * 0.05)
+        -- fontslider.Label:SizeToContentsY(options:GetWide() * 0.025)
+        -- fontslider:SetConVar("quickloadout_ui_font_scale")
+        -- fontslider:SetMinMax(fontscale:GetMin(), fontscale:GetMax())
+        fontpanel:SetSize(fonttext:GetTextSize())
+        fonthelp:Dock(TOP)
+
+        local buthelp = GenerateLabel(options, "Buttons")
         buthelp:Dock(TOP)
-        buthelp:SetFont("quickloadout_font_medium")
+        buthelp:SetFont("quickloadout_font_small")
         buthelp:SetTextInset(0, 0)
         buthelp:SizeToContents()
+
         local enablecat = options:Add("DCheckBoxLabel")
         enablecat:Dock(TOP)
         enablecat:SetConVar("quickloadout_showcategory")
@@ -1169,6 +1216,12 @@ function QLOpenMenu()
             timer.Simple(0, function() CreateWeaponButtons() end)
         end
 
+        local bghelp = GenerateLabel(options, "Background")
+        bghelp:Dock(TOP)
+        bghelp:SetFont("quickloadout_font_small")
+        bghelp:SetTextInset(0, 0)
+        bghelp:SizeToContents()
+
         local enableblur = options:Add("DCheckBoxLabel")
         enableblur:Dock(TOP)
         enableblur:SetConVar("quickloadout_ui_blur")
@@ -1198,39 +1251,6 @@ function QLOpenMenu()
         enablegun:SetFont("quickloadout_font_small")
         enablegun:SetWrap(true)
         enablegun:SetTextColor(color_white)
-
-        local fontpanel = options:Add("Panel")
-        fontpanel:Dock(TOP)
-        fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
-        local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Fonts"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
-        local fonthelp = GenerateLabel(options, "Add \",\" for separate small font.")
-        fonthelp:SetFont("quickloadout_font_small")
-        fonthelp:SetTextInset(0, 0)
-        fonthelp:SizeToContentsY(options:GetWide() * 0.025)
-        fonttext:SetFont("quickloadout_font_small")
-        fonttext:SizeToContentsX(options:GetWide() * 0.05)
-        fonttext:SizeToContentsY(options:GetWide() * 0.025)
-        fonttext:SetTextInset(0, 0)
-        fonttext:DockMargin(0, 0, options:GetWide() * 0.025, 0)
-        fonttext:Dock(LEFT)
-        fonttext:SetTextColor(color_white)
-        Derma_Install_Convar_Functions(fontfield)
-        fontfield:SetFont("quickloadout_font_small")
-        fontfield:SetConVar("quickloadout_ui_fonts")
-        fontfield.DoClickInternal = fontfield.DoDoubleClick
-        fontfield.OnLabelTextChanged = function(self, text)
-            fontfield:ConVarChanged(text)
-            mainmenu:InvalidateChildren(true)
-        end
-        fontfield:Dock(FILL)
-        -- fontslider.Label:SetFontInternal("quickloadout_font_small")
-        -- fontslider.Label:SetText("Font scale")
-        -- fontslider.Label:SizeToContentsX(options:GetWide() * 0.05)
-        -- fontslider.Label:SizeToContentsY(options:GetWide() * 0.025)
-        -- fontslider:SetConVar("quickloadout_ui_font_scale")
-        -- fontslider:SetMinMax(fontscale:GetMin(), fontscale:GetMax())
-        fontpanel:SetSize(fonttext:GetTextSize())
-        fonthelp:Dock(TOP)
 
         local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
         colortext:Dock(TOP)
@@ -1480,12 +1500,15 @@ function QLOpenMenu()
                     surface.DrawTexturedRect(x * 0.4, y * 0.5 - offset * 3.5 / ratio, offset * 8, offset * 8 / ratio)
                 end
                 if catimage then
-                    surface.SetDrawColor(color_default)
                     surface.SetMaterial(catimage)
                     surface.DrawTexturedRect(x - offset * 0.15 - icon, y - offset * 0.15 - icon, icon, icon)
                 end
                 render.PopFilterMag()
                 render.PopFilterMin()
+            end
+            button.PaintOver = function(self, x, y)
+                local offset = math.min(x * 0.1, y * 0.5)
+                surface.SetDrawColor(color_default)
                 if cat1 and button.LoneRider then
                     draw.SimpleText(button.LoneRider[1], "quickloadout_font_small", x - offset * 0.125 - (button.LoneRider[2] and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 elseif !cat1 and category2.Category then
@@ -1496,7 +1519,7 @@ function QLOpenMenu()
                     draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
                 if eqnum then
-                    surface.SetDrawColor(color_light)
+                    surface.SetDrawColor(color_medium)
                     draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
                 end
             end
@@ -1557,7 +1580,7 @@ function QLOpenMenu()
             end
         else
             button.DoClickInternal = function(self)
-                QLNotify(loadouts[key].name .. " equipped!")
+                QLNotify(loadouts[key].name .. " equipped!", true)
                 ptable = loadouts[key].weps
                 RefreshLoadout()
                 CloseMenu(true)
@@ -1624,13 +1647,23 @@ function QLOpenMenu()
                 end
                 render.PopFilterMag()
                 render.PopFilterMin()
-                draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                if weptext then
-                    draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                end
             end
-            surface.SetDrawColor(color_light)
-            draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+            -- surface.SetDrawColor(color_light)
+            -- draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+        end
+        button.PaintOver = function(self, x, y)
+            local offset = math.min(x * 0.1, y * 0.5)
+            surface.SetDrawColor(color_default)
+            if ref then
+                draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            end
+            if weptext then
+                draw.SimpleText(weptext, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            end
+            if eqnum then
+                surface.SetDrawColor(color_medium)
+                draw.SimpleText(eqnum, "quickloadout_font_small", x - offset * 0.125, offset * 0.0675, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP, scale, bgcolor)
+            end
         end
         button.DoClickInternal = function()
             if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end

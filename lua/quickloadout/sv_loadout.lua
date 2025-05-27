@@ -35,6 +35,7 @@ net.Receive("quickloadout", function(len, ply)
     if !ply:Alive() or (time:GetFloat() > 0 and ply.qlspawntime + time:GetFloat() < CurTime()) then
         net.Start("quickloadout")
         net.WriteBool(false)
+        net.WriteBool(false)
         net.Send(ply)
         return
     end
@@ -111,6 +112,7 @@ hook.Add("PlayerSpawn", "QuickLoadoutSpawn", function(ply, trans)
     if IsValid(ply) then
         net.Start("quickloadout")
         net.WriteBool(true)
+        net.WriteBool(time:GetInt() > 0)
         net.Send(ply)
     end
 end)
@@ -120,6 +122,7 @@ hook.Add("PostPlayerDeath", "QuickLoadoutDeath", function(ply)
         if IsValid(ply) then
             net.Start("quickloadout")
             net.WriteBool(true)
+            net.WriteBool(false)
             net.Send(ply)
         end
     end)
