@@ -36,6 +36,8 @@ end
 
 local keybind = GetConVar("quickloadout_key")
 local keybindload = GetConVar("quickloadout_key_load")
+local rmbclose = GetConVar("quickloadout_menu_rightclick")
+local rmbmode = GetConVar("quickloadout_menu_rightclick_mode")
 local cancelbind = GetConVar("quickloadout_menu_cancel")
 local loadbind = GetConVar("quickloadout_menu_load")
 local savebind = GetConVar("quickloadout_menu_save")
@@ -160,17 +162,19 @@ local function GenerateLabel(frame, name, class, panel)
     local text = NameSetup() or wrong
     surface.SetFont("quickloadout_font_large")
     button.Name = class
+    local fw, fh = frame:GetSize()
     button:SetMouseInputEnabled(true)
-    button:SetMinimumSize(nil, frame:GetWide() * 0.075)
-    button:SetSize(frame:GetWide() * 0.975, frame:GetWide() * 0.125)
+    button:SetMinimumSize(nil, fw * 0.075)
+    button:SetSize(fw * 0.975, fw * 0.125)
     button:SetFontInternal("quickloadout_font_large")
-    button:SetTextInset(frame:GetWide() * 0.025, 0)
+    button:SetTextInset(fw * 0.025, 0)
     button:SetWrap(true)
     button:SetTextColor(color_white)
-    button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
+    local bw, bh = button:GetSize()
+    button:DockMargin(math.max(bw * 0.005, 1) , math.max(bw * 0.005, 1), math.max(bw * 0.005, 1), math.max(bw * 0.005, 1))
     button:SetContentAlignment(7)
     button:SetText(text)
-    button:SizeToContentsY(button:GetWide() * 0.015)
+    button:SizeToContentsY(bw * 0.015)
     if ispanel(panel) and ispanel(panel.image) then
         button:SetIsToggle(true)
         button.Paint = function(self, x, y)
@@ -215,16 +219,18 @@ local function GenerateEditableLabel(frame, name)
     local text = name or "Uh oh! Broken!"
     surface.SetFont("quickloadout_font_large")
     button:SetName(name)
+    local fw, fh = frame:GetSize()
     button:SetMouseInputEnabled(true)
     button:SetKeyboardInputEnabled(true)
-    button:SetSize(frame:GetWide() * 0.975, frame:GetWide() * 0.125)
+    button:SetSize(fw * 0.975, fw * 0.125)
     button:SetFontInternal("quickloadout_font_large")
-    button:SetTextInset(frame:GetWide() * 0.025, 0)
+    button:SetTextInset(fw * 0.025, 0)
     button:SetWrap(true)
     if name then button:SetText(text) end
-    button:SizeToContentsY(button:GetWide() * 0.015)
+    local bw, bh = button:GetSize()
+    button:SizeToContentsY(bw * 0.015)
     button:SetTextColor(color_white)
-    button:DockMargin(math.max(button:GetWide() * 0.005, 1) , math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1), math.max(button:GetWide() * 0.005, 1))
+    button:DockMargin(math.max(bw * 0.005, 1) , math.max(bw * 0.005, 1), math.max(bw * 0.005, 1), math.max(bw * 0.005, 1))
     button:SetContentAlignment(7)
     button.DoClickInternal = function(self)
         if self:GetToggle() then return end
@@ -424,11 +430,15 @@ function QLOpenMenu()
     local width, height = bg:GetSize()
     local mainmenu = vgui.Create("EditablePanel", bg)
     mainmenu.Close = function(self)
-        if refresh then QLNotify("Loadout changes discarded.") end
-        ptable = tmp
-        refresh = false
         CloseMenu()
     end
+    mainmenu.OnMousePressed = function(self, code)
+        if code != MOUSE_RIGHT then return end
+        if !rmbclose:GetBool() then return end
+        CloseMenu(refresh and rmbmode:GetBool())
+        return true
+    end
+    mainmenu:SetMouseInputEnabled(true)
     mainmenu:SetSize(width, height)
     mainmenu:SetZPos(-1)
     wepimg = nil
@@ -456,7 +466,7 @@ function QLOpenMenu()
         return (maxslots:GetBool() or slotlimit:GetBool()) and " (" .. ((maxslots:GetBool() and maxslots:GetInt() or !game.SinglePlayer() and "32") .. (slotlimit:GetBool() and " weapons, " or " weapon limit") or "") .. (slotlimit:GetBool() and slotlimit:GetInt() .. " per slot" or "") .. ")" or ""
     end
 
-    function CloseMenu()
+    function CloseMenu(apply)
         tt = SysTime() + 0.25
         mainmenu:SetKeyboardInputEnabled(false)
         mainmenu:SetMouseInputEnabled(false)
@@ -466,7 +476,13 @@ function QLOpenMenu()
             open = false
             bg:Remove()
         end)
-        if !refresh then return end
+        if refresh then
+            if !apply then
+                ptable = tmp
+            end
+            QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.")
+        end
+        if !apply then return end
         file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
         timer.Simple(0, function()
             -- mainmenu.Paint = nil
@@ -499,7 +515,9 @@ function QLOpenMenu()
     category2.Icon = nil
     category2.Category = nil
     mainmenu.image = mainmenu:Add("Panel")
+    mainmenu.image:SetMouseInputEnabled(false)
     mainmenu.theguy = vgui.Create("DModelPanel", mainmenu)
+    mainmenu.theguy:SetMouseInputEnabled(false)
     AccessorFunc(mainmenu.theguy, "Entity2", "Entity2")
     mainmenu.theguy.DoPaint = mainmenu.theguy.Paint
     mainmenu.theguy.Paint = function(self, x, y)
@@ -621,8 +639,7 @@ function QLOpenMenu()
     end
     -- image:SetKeepAspect(true)
 
-    local options, optbut = GenerateCategory(lcont), GenerateLabel(lcont, "User Options", collapse, mainmenu)
-    options:Hide()
+    local optbut = GenerateLabel(lcont, "User Options", collapse, mainmenu)
     optbut:Dock(TOP)
     optbut.Text = "[ "..string.upper(bindings.optbind or "").." ]"
     optbut.PaintOver = function(self, x, y)
@@ -638,9 +655,6 @@ function QLOpenMenu()
     ccancel:SetWide(math.ceil(closer:GetWide() * 0.485))
     ccancel:Dock(FILL)
     ccancel.DoClickInternal = function(self)
-        if refresh then QLNotify("Loadout changes discarded.") end
-        ptable = tmp
-        refresh = false
         self:SetToggle(true)
         CloseMenu()
     end
@@ -652,9 +666,8 @@ function QLOpenMenu()
     csave:Dock(RIGHT)
     csave:Hide()
     csave.DoClickInternal = function(self)
-        QLNotify("Loadout changes applied.")
         self:SetToggle(true)
-        CloseMenu()
+        CloseMenu(refresh)
     end
     csave.PaintOver = function(self, x, y)
         draw.SimpleText(closer.Text, "quickloadout_font_small", x-scale2, y-scale2, color_white, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
@@ -692,6 +705,16 @@ function QLOpenMenu()
     enable:SetFont("quickloadout_font_small")
     enable:DockMargin(lcont:GetTall() * 0.0155, lcont:GetTall() * 0.00775, lcont:GetTall() * 0.0155, lcont:GetTall() * 0.00775)
     enable:Dock(TOP)
+    local options = vgui.Create("DScrollPanel", lcont)
+    local optbar = options:GetVBar() 
+    optbar:SetHideButtons(true)
+    optbar:SetWide(lcont:GetWide() * 0.05)
+    optbar.Paint = nil
+    optbar.btnGrip.Paint = function(self, x, y)
+        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, color_medium)
+    end
+    options:Hide()
+    options:Dock(FILL)
     local trash = LocalPlayer():GetWeapons()
     local importer = GenerateLabel(lcont, "Import current weapons", nil, mainmenu)
     importer:SetFont("quickloadout_font_medium")
@@ -767,6 +790,7 @@ function QLOpenMenu()
         modelpanel.Window = window
         list.Get("DesktopWindows").PlayerEditor:init(window)
         if IsValid(window) then
+            window:SetDraggable(false)
             window:SetSize(mainmenu:GetWide() * 0.5, mainmenu:GetTall() * 0.8)
             window:SetPos(rcont:GetX(), mainmenu:GetTall() * 0.1)
         end
@@ -886,10 +910,8 @@ function QLOpenMenu()
     rbar:SetWide(lcont:GetWide() * 0.05)
     lbar.Paint = nil
     rbar.Paint = nil
-    lbar.btnGrip.Paint = function(self, x, y)
-        draw.RoundedBox(x, x * 0.25, x * 0.25, x * 0.5, y - x * 0.375, color_medium)
-    end
-    rbar.btnGrip.Paint = lbar.btnGrip.Paint
+    lbar.btnGrip.Paint = optbar.btnGrip.Paint
+    rbar.btnGrip.Paint = optbar.btnGrip.Paint
 
     closer:Dock(BOTTOM)
     -- local closer = GenerateLabel(lcont, "Close", nil, image)
@@ -906,14 +928,15 @@ function QLOpenMenu()
         if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() modelpanel:OnDepressed() return end
         if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() ccancel:Toggle() return end
         if input.GetKeyCode(optbind:GetString()) != -1 and key == input.GetKeyCode(optbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_options") then optbut:DoClickInternal() optbut:Toggle() return end
-        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then csave:SetToggle(true) csave:Toggle() CloseMenu() return end
+        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then csave:DoClickInternal() csave:Toggle() return end
     end
 
     function CreateOptionsMenu()
         options:Clear()
         options:SetSize(lcont:GetWide(), lcont:GetTall() * 0.1)
+        -- options:Dock(FILL)
         options:SetY(lcont:GetWide() * 0.2)
-        options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
+        -- options:DockPadding(lcont:GetWide() * 0.025, 0, lcont:GetWide() * 0.025, 0)
 
         local default
         if override:GetInt() == -1 then
@@ -931,9 +954,11 @@ function QLOpenMenu()
             default = GenerateLabel(options, DefaultEnabled())
             default:SetTextInset(0, 0)
         end
+        default:Dock(TOP)
         default:SetTextColor(color_white)
         default:SetFont("quickloadout_font_small")
         local remind = options:Add("DCheckBoxLabel")
+        remind:Dock(TOP)
         remind:SetConVar("quickloadout_remind_client")
         remind:SetText("Loadout reminder on spawn")
         remind:SetTall(options:GetWide() * 0.125)
@@ -941,8 +966,17 @@ function QLOpenMenu()
         remind:SetTextColor(color_white)
         remind:SetFont("quickloadout_font_small")
 
-
+        local bindhelp = GenerateLabel(options, "Bindings")
+        bindhelp:Dock(TOP)
+        bindhelp:SetFont("quickloadout_font_medium")
+        bindhelp:SetTextInset(0, 0)
+        bindhelp:SizeToContents()
         local bindpanel, canpanel, loadpanel, savepanel, optpanel = options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel"), options:Add("Panel")
+        bindpanel:Dock(TOP)
+        canpanel:Dock(TOP)
+        loadpanel:Dock(TOP)
+        savepanel:Dock(TOP)
+        optpanel:Dock(TOP)
         local binder, bindtext = vgui.Create("DBinder", bindpanel), GenerateLabel(bindpanel, "Loadout window key")
         bindtext:SetFont("quickloadout_font_small")
         bindtext:Dock(FILL)
@@ -1062,7 +1096,33 @@ function QLOpenMenu()
         savepanel:SetSize(saver:GetTextSize())
         optpanel:SetSize(opter:GetTextSize())
 
+        local enablermb = options:Add("DCheckBoxLabel")
+        enablermb:Dock(TOP)
+        enablermb:SetConVar("quickloadout_menu_rightclick")
+        enablermb:SetText("Right click to close")
+        enablermb:SetTooltip("Allows closing the menu by right clicking the background.")
+        enablermb:SetValue(rmbclose:GetBool())
+        enablermb:SetFont("quickloadout_font_small")
+        enablermb:SetWrap(true)
+        enablermb:SetTextColor(color_white)
+
+        local rmbsave = options:Add("DCheckBoxLabel")
+        rmbsave:Dock(TOP)
+        rmbsave:SetConVar("quickloadout_menu_rightclick_mode")
+        rmbsave:SetText("Autosave on right click")
+        rmbsave:SetTooltip("Saves the current loadout on right click if turned on.\nRequires above setting to function.")
+        rmbsave:SetValue(rmbmode:GetBool())
+        rmbsave:SetFont("quickloadout_font_small")
+        rmbsave:SetWrap(true)
+        rmbsave:SetTextColor(color_white)
+
+        local buthelp = GenerateLabel(options, "Interface")
+        buthelp:Dock(TOP)
+        buthelp:SetFont("quickloadout_font_medium")
+        buthelp:SetTextInset(0, 0)
+        buthelp:SizeToContents()
         local enablecat = options:Add("DCheckBoxLabel")
+        enablecat:Dock(TOP)
         enablecat:SetConVar("quickloadout_showcategory")
         enablecat:SetText("Weapon categories")
         enablecat:SetTooltip("Toggles whether weapon buttons should or should not show their spawnmenu category underneath them.")
@@ -1078,6 +1138,7 @@ function QLOpenMenu()
         end
 
         local enablesubcat = options:Add("DCheckBoxLabel")
+        enablesubcat:Dock(TOP)
         enablesubcat:SetConVar("quickloadout_showsubcategory")
         enablesubcat:SetText("Weapon subcategories")
         enablesubcat:SetTooltip("Toggles whether weapon buttons should or should not show their weapon subcategory underneath them.")
@@ -1093,6 +1154,7 @@ function QLOpenMenu()
         end
 
         local enableslot = options:Add("DCheckBoxLabel")
+        enableslot:Dock(TOP)
         enableslot:SetConVar("quickloadout_showslot")
         enableslot:SetText("Weapon slots")
         enableslot:SetTooltip("Toggles whether weapon buttons should or should not show their inventory slot underneath them.")
@@ -1108,6 +1170,7 @@ function QLOpenMenu()
         end
 
         local enableblur = options:Add("DCheckBoxLabel")
+        enableblur:Dock(TOP)
         enableblur:SetConVar("quickloadout_ui_blur")
         enableblur:SetText("Background blur")
         enableblur:SetTooltip("Enables background blurring when the menu is open.")
@@ -1117,6 +1180,7 @@ function QLOpenMenu()
         enableblur:SetTextColor(color_white)
 
         local enableguy = options:Add("DCheckBoxLabel")
+        enableguy:Dock(TOP)
         enableguy:SetConVar("quickloadout_showcharacter")
         enableguy:SetText("Background character")
         enableguy:SetTooltip("Shows your player character in the background when the menu is open.")
@@ -1126,6 +1190,7 @@ function QLOpenMenu()
         enableguy:SetTextColor(color_white)
 
         local enablegun = options:Add("DCheckBoxLabel")
+        enablegun:Dock(TOP)
         enablegun:SetConVar("quickloadout_showcharacter_weapon")
         enablegun:SetText("Background character weapons")
         enablegun:SetTooltip("Shows your player character holding the various weapons available.")
@@ -1135,12 +1200,13 @@ function QLOpenMenu()
         enablegun:SetTextColor(color_white)
 
         local fontpanel = options:Add("Panel")
+        fontpanel:Dock(TOP)
         fontpanel:SetTooltip("The font Quick Loadout's GUI should use.\nYou can use any installed font on your computer, or found in Garry's Mod's ''resource/fonts'' folder.\nLeave empty to use default fonts supplied.")
         local fonttext, fontfield, fontslider = GenerateLabel(fontpanel, "Fonts"), GenerateEditableLabel(fontpanel, fonts:GetString()) -- , options:Add("DNumSlider")
         local fonthelp = GenerateLabel(options, "Add \",\" for separate small font.")
         fonthelp:SetFont("quickloadout_font_small")
-        fonthelp:SizeToContentsY(options:GetWide() * 0.025)
         fonthelp:SetTextInset(0, 0)
+        fonthelp:SizeToContentsY(options:GetWide() * 0.025)
         fonttext:SetFont("quickloadout_font_small")
         fonttext:SizeToContentsX(options:GetWide() * 0.05)
         fonttext:SizeToContentsY(options:GetWide() * 0.025)
@@ -1154,6 +1220,7 @@ function QLOpenMenu()
         fontfield.DoClickInternal = fontfield.DoDoubleClick
         fontfield.OnLabelTextChanged = function(self, text)
             fontfield:ConVarChanged(text)
+            mainmenu:InvalidateChildren(true)
         end
         fontfield:Dock(FILL)
         -- fontslider.Label:SetFontInternal("quickloadout_font_small")
@@ -1166,18 +1233,16 @@ function QLOpenMenu()
         fonthelp:Dock(TOP)
 
         local colortext, bgsheet = GenerateLabel(options, "Colors"), options:Add("DPropertySheet")
+        colortext:Dock(TOP)
         colortext:SetFont("quickloadout_font_small")
         colortext:SetTextInset(0, 0)
-
-        for k, v in ipairs(options:GetChildren()) do
-            -- v:SizeToContents()
-            v:DockMargin(options:GetWide() * 0.025, options:GetWide() * 0.025, options:GetWide() * 0.025, 0)
-        end
+        colortext:SizeToContents()
+        bgsheet:Dock(TOP)
 
         local bgpalette, btpalette = bgsheet:Add("DColorMixer"), bgsheet:Add("DColorMixer")
         Derma_Install_Convar_Functions(bgpalette)
         bgsheet:SetTall(math.max(options:GetWide() * 0.8, 240))
-        bgsheet:DockMargin(0, options:GetWide() * 0.025, 0, 0)
+        bgsheet:DockMargin(0, 0, 0, options:GetWide() * 0.025)
         bgsheet:AddSheet("Background", bgpalette, "icon16/script_palette.png")
         bgsheet:AddSheet("Buttons", btpalette, "icon16/style_edit.png")
         bgpalette:SetAlphaBar(false)
@@ -1195,7 +1260,11 @@ function QLOpenMenu()
             col_hl = ColorAlpha(self:GetColor(), 128)
             self:ConVarChanged(self:GetColor().r .. " " .. self:GetColor().g .. " " .. self:GetColor().b)
         end
-        colortext:SizeToContents()
+        for k, v in ipairs(options:GetCanvas():GetChildren()) do
+            -- v:SizeToContents()
+            v:DockMargin(options:GetWide() * 0.05, 0, options:GetWide() * 0.05, options:GetWide() * 0.025)
+            -- v:Dock(TOP)
+        end
     end
 
     CreateOptionsMenu()
@@ -1208,7 +1277,8 @@ function QLOpenMenu()
     function ShortenCategory(wep)
         local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
         local nicecat = language.GetPhrase(ref and ref.Category or wep)
-        local bc = nicecat:match(match):Trim()
+        if !IsValid(nicecat) then return "" end
+        local bc = string.match(nicecat, match):Trim()
         local short = bc and (nicecat:len() > 7 and (ref and ref.Base and ref.Base:find(bc:lower()) != nil and nicecat:gsub(bc, "") or nicecat:match("^[%u%d%p]+%s")) or nicecat):gsub("%b()", ""):Trim()
         return (slot and ref and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
     end
@@ -1490,7 +1560,7 @@ function QLOpenMenu()
                 QLNotify(loadouts[key].name .. " equipped!")
                 ptable = loadouts[key].weps
                 RefreshLoadout()
-                CloseMenu()
+                CloseMenu(true)
             end
             button.DoRightClick = function(self)
                 QLNotify(loadouts[key].name .. " loaded!")
