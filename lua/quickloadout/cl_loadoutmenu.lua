@@ -1426,7 +1426,7 @@ function QLOpenMenu()
                     button:InvalidateLayout(true)
                     button.LoneRider = {ShortenCategory(key), list.Get("ContentCategoryIcons")[key]}
                 else
-                    numbers = (catcount > 0 and catcount .. " categor" .. (catcount > 1 and "ies" or "y") .. ", " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
+                    numbers = (catcount > 1 and catcount .. " categories, " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                     -- PrintTable(tbl)
                     button.PaintOver = function(self, x, y)
                         local offset = math.min(x * 0.1, y * 0.5)
