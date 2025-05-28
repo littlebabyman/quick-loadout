@@ -38,6 +38,7 @@ local keybind = GetConVar("quickloadout_key")
 local keybindload = GetConVar("quickloadout_key_load")
 local rmbclose = GetConVar("quickloadout_menu_rightclick")
 local rmbmode = GetConVar("quickloadout_menu_rightclick_mode")
+local escclose = GetConVar("quickloadout_menu_escapetoclose")
 local cancelbind = GetConVar("quickloadout_menu_cancel")
 local loadbind = GetConVar("quickloadout_menu_load")
 local savebind = GetConVar("quickloadout_menu_save")
@@ -442,7 +443,7 @@ function QLOpenMenu()
     mainmenu.Close = function(self)
         CloseMenu()
     end
-    mainmenu.OnMousePressed = function(self, code)
+    function mainmenu:OnMousePressed(code)
         if code != MOUSE_RIGHT then return end
         if !rmbclose:GetBool() then return end
         CloseMenu(refresh and rmbmode:GetBool())
@@ -492,6 +493,7 @@ function QLOpenMenu()
             end
             QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.", !apply)
         end
+        refresh = false
         if !apply then return end
         file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
         timer.Simple(0, function()
@@ -933,12 +935,16 @@ function QLOpenMenu()
     mainmenu.OnCursorEntered = toptext.OnCursorEntered
 
     function mainmenu:OnKeyCodePressed(key)
-        if input.GetKeyCode(savebind:GetString()) != -1 and key == input.GetKeyCode(savebind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_save") then sbut:DoClickInternal() sbut:Toggle() return end
-        if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:Toggle() return end
-        if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() modelpanel:OnDepressed() return end
-        if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() ccancel:Toggle() return end
-        if input.GetKeyCode(optbind:GetString()) != -1 and key == input.GetKeyCode(optbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_options") then optbut:DoClickInternal() optbut:Toggle() return end
-        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then csave:DoClickInternal() csave:Toggle() return end
+        if input.GetKeyCode(savebind:GetString()) != -1 and key == input.GetKeyCode(savebind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_save") then sbut:DoClickInternal() sbut:Toggle() return true end
+        if input.GetKeyCode(loadbind:GetString()) != -1 and key == input.GetKeyCode(loadbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_load") then lbut:DoClickInternal() lbut:Toggle() return true end
+        if input.GetKeyCode(modelbind:GetString()) != -1 and key == input.GetKeyCode(modelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_model") then modelpanel:DoClickInternal() modelpanel:DoClick() modelpanel:OnDepressed() return true end
+        if input.GetKeyCode(cancelbind:GetString()) != -1 and key == input.GetKeyCode(cancelbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_cancel") then ccancel:DoClickInternal() ccancel:Toggle() return true end
+        if input.GetKeyCode(optbind:GetString()) != -1 and key == input.GetKeyCode(optbind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu_options") then optbut:DoClickInternal() optbut:Toggle() return true end
+        if input.GetKeyCode(keybind:GetString()) != -1 and key == input.GetKeyCode(keybind:GetString()) or input.GetKeyName(key) == input.LookupBinding("quickloadout_menu") then csave:DoClickInternal() csave:Toggle() return true end
+    end
+
+    function mainmenu:OnKeyCodeReleased(key)
+        if escclose:GetBool() and key == KEY_ESCAPE then CloseMenu() return true end
     end
 
     function CreateOptionsMenu()
@@ -1131,6 +1137,16 @@ function QLOpenMenu()
         rmbsave:SetFont("quickloadout_font_small")
         rmbsave:SetWrap(true)
         rmbsave:SetTextColor(color_white)
+
+        local enableesc = options:Add("DCheckBoxLabel")
+        enableesc:Dock(TOP)
+        enableesc:SetConVar("quickloadout_menu_escapetoclose")
+        enableesc:SetText("Double-tap ESC to close")
+        enableesc:SetTooltip("Allows closing the menu by double-tapping escape.")
+        enableesc:SetValue(escclose:GetBool())
+        enableesc:SetFont("quickloadout_font_small")
+        enableesc:SetWrap(true)
+        enableesc:SetTextColor(color_white)
 
         local fontpanel = options:Add("Panel")
         fontpanel:Dock(TOP)
