@@ -132,12 +132,12 @@ hook.Add("KeyPress", "QuickLoadoutCancel", function(ply, key)
     if time:GetFloat() <= 0 then return end
     if !timestop:GetBool() then return end
     if ply.qlspawntime > 0 and key == IN_ATTACK and ply.qlspawntime + 0.2 < CurTime() then
-        -- if (ply.qlspawntime + time:GetFloat() > CurTime()) then
-        --     net.Start("quickloadout")
-        --     net.WriteBool(false)
-        --     net.WriteBool(true)
-        --     net.Send(ply)
-        -- end
+        if (ply.qlspawntime + time:GetFloat() > CurTime()) then
+            net.Start("quickloadout")
+            net.WriteBool(false)
+            net.WriteBool(true)
+            net.Send(ply)
+        end
         ply.qlspawntime = 0
     end
 end)

@@ -258,9 +258,16 @@ end
 local notipan = nil
 local function QLNotify(note, priority)
     local spawn = !isstring(note) and note
+    print(note, spawn, notipan, priority)
     if spawn and !reminder:GetBool() then return end
     if IsValid(notipan) then
         if (notipan.Priority and !priority) then return end
+        notipan.Spawn = spawn
+        notipan.Priority = priority
+        if (priority and notipan.Spawn and !spawn) then
+            notipan:MoveTo((ScrW() - notipan:GetWide()) * 0.5, ScrH(), .2, 0, -1, function(data, pnl) pnl:Remove() end)
+            return
+        end
         if (!notipan.Priority or notipan.Priority and priority) then
             notipan:Remove()
         end
@@ -271,6 +278,7 @@ local function QLNotify(note, priority)
     end
     notipan = vgui.Create("DPanel", GetHUDPanel())
     notipan.Paint = nil
+    notipan.Spawn = spawn
     notipan.Priority = priority
     local box = vgui.Create("DLabel", notipan)
     box:SetFont("quickloadout_font_medium")
@@ -304,11 +312,11 @@ local function QLNotify(note, priority)
     local wpos = (ScrW() - box:GetWide()) * 0.5
     if !note and priority then
         notipan:SetPos(wpos, ScrH() * 0.8)
-        notipan:MoveTo(wpos, ScrH(), 0.2, 0, -1, function() notipan:Remove() end)
+        notipan:MoveTo(wpos, ScrH(), 0.2, 0, -1, function(data, pnl) pnl:Remove() end)
         return
     end
     notipan:SetPos(wpos, ScrH())
-    notipan:MoveTo(wpos, ScrH() * 0.8, 0.2, 0, -1, function() notipan:MoveTo(wpos, ScrH(), .2, spawntime + 1.8, -1, function() notipan:Remove() end) end)
+    notipan:MoveTo(wpos, ScrH() * 0.8, 0.2, 0, -1, function(data, pnl) pnl:MoveTo(wpos, ScrH(), .2, spawntime + 1.8, -1, function(data, pnl) pnl:Remove() end) end)
 end
 
 local function NetworkLoadout()
@@ -481,12 +489,8 @@ function QLOpenMenu()
         tt = SysTime() + 0.25
         mainmenu:SetKeyboardInputEnabled(false)
         mainmenu:SetMouseInputEnabled(false)
-        mainmenu:MoveTo(-width, 0, 0.25, 0, -0.8)
+        mainmenu:MoveTo(-width, 0, 0.25, 0, 0.8, function(data, pnl) open = false bg:Remove() end)
         -- mainmenu:SizeTo(0, height, 0.25, 0, 1.5)
-        timer.Simple(0.25, function()
-            open = false
-            bg:Remove()
-        end)
         if refresh then
             if !apply then
                 ptable = tmp
