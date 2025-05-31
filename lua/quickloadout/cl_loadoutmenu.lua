@@ -403,7 +403,7 @@ local function GenerateWeaponTable(force)
             reftable = {}
         end
     end
-    PrintTable(wtable)
+    -- PrintTable(wtable)
 end
 
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
@@ -1455,12 +1455,13 @@ function QLOpenMenu()
                 if cat1 then buttonclicked = nil rcont:Hide() end
             end
         end
+        local cancel = cat:GetChild(0).DoClickInternal
         local sublist = table.Copy(tbl)
         -- table.sort(sublist, ItemComparator)
         table.SortByMember(sublist, "name", true)
         for key, v in SortedPairs(sublist) do
             local button = GenerateLabel(cat, v.name, v.class or key, mainmenu)
-            button.DoRightClick = cat:GetChild(0).DoClickInternal
+            button.DoRightClick = cancel
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
             local icon = math.max(scale * 8, 16)
@@ -1479,7 +1480,7 @@ function QLOpenMenu()
                 if catcount == 0 and wepcount == 1 then
                     button:Remove()
                     button = GenerateLabel(cat, (v[uncategorized] or v)[1].name, (v[uncategorized] or v)[1].class, mainmenu)
-                    button.DoRightClick = cat:GetChild(0).DoClickInternal
+                    button.DoRightClick = cancel
                     button:SizeToContentsY(fontsize)
                     button:InvalidateLayout(true)
                     button.LoneRider = {ShortenCategory(key), list.Get("ContentCategoryIcons")[key]}
@@ -1487,7 +1488,7 @@ function QLOpenMenu()
                     numbers = (catcount > 1 and catcount .. " categories, " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                     if key == uncategorized then
                         button:Remove()
-                        PopulateCategory(cat:GetChild(0), v, cont, cat, slot, true)
+                        PopulateCategory(parent, v, cont, cat, slot, true)
                         continue
                     end
                     -- PrintTable(tbl)
@@ -1712,8 +1713,11 @@ function QLOpenMenu()
             if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
             rcont:Show()
             category1:Hide()
+            category1:Clear()
             category2:Hide()
+            category2:Clear()
             category3:Hide()
+            category3:Clear()
             PopulateCategory(button, wtable, rscroller, category1, index)
             if button:GetToggle() then
                 rcont:Hide()
