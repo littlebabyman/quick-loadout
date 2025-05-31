@@ -335,18 +335,15 @@ net.Receive("quickloadout", function()
     -- if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.")
 end)
 
-local function ItemComparator(a, b)
-    if !istable(a) then return false end
-    if !istable(b) then return true end
-    if !a.name then return false end
-    if !b.name then return true end
-    if isstring(a.name) then
-        if isstring(b.name) then return
-            a.name:lower() < b.name:lower()
-        end
-        return false
-    end
-    return a < b
+local char = "[%c%s%p]"
+
+function ShortenCategory(wep)
+    local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
+    local nicecat = (language.GetPhrase(ref and ref.Category or wep))
+    if !IsValid(nicecat) then print("wot", wep) return "" end
+    local bc = string.gsub(string.match(nicecat, match):Trim(), char, "")
+    local short = bc and (nicecat:len() > 7 and (ref and ref.Base and ref.Base:find(bc:lower()) != nil and nicecat:gsub(bc, "") or nicecat:match("^[%u%d%p]+%s")) or nicecat):gsub("%b()", ""):Trim()
+    return (slot and ref and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
 end
 
 local function GenerateWeaponTable(force)
@@ -1334,14 +1331,7 @@ function QLOpenMenu()
         return ref and language.GetPhrase(ref.PrintName) or name
     end
 
-    function ShortenCategory(wep)
-        local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
-        local nicecat = language.GetPhrase(ref and ref.Category or wep)
-        if !IsValid(nicecat) then return "" end
-        local bc = string.match(nicecat, match):Trim()
-        local short = bc and (nicecat:len() > 7 and (ref and ref.Base and ref.Base:find(bc:lower()) != nil and nicecat:gsub(bc, "") or nicecat:match("^[%u%d%p]+%s")) or nicecat):gsub("%b()", ""):Trim()
-        return (slot and ref and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
-    end
+    local char = "[%c%s%p]"
 
     function TheCats(cat)
         if cat == category1 then return category2 else return category3 end
