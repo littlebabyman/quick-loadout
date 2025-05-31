@@ -1478,7 +1478,7 @@ function QLOpenMenu()
                 end
                 if catcount == 0 and wepcount == 1 then
                     button:Remove()
-                    button = GenerateLabel(cat, v[uncategorized][1].name, v[uncategorized][1].class, mainmenu)
+                    button = GenerateLabel(cat, (v[uncategorized] or v)[1].name, (v[uncategorized] or v)[1].class, mainmenu)
                     button.DoRightClick = cat:GetChild(0).DoClickInternal
                     button:SizeToContentsY(fontsize)
                     button:InvalidateLayout(true)
@@ -1519,7 +1519,7 @@ function QLOpenMenu()
                     continue
                 end
             end
-            local keyname = (button.LoneRider and v[uncategorized][1] or v).class
+            local keyname = (button.LoneRider and (v[uncategorized] or v)[1] or v).class
             local ref = rtable[keyname]
             local haswep = (table.HasValue(ptable, keyname) and !ptable[slot])
             local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
