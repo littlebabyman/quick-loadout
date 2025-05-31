@@ -118,6 +118,8 @@ cvars.AddChangeCallback("quickloadout_ui_fonts", function() timer.Simple(0, Crea
 -- cvars.AddChangeCallback("quickloadout_ui_font_small", function() timer.Simple(0, CreateFonts) end)
 hook.Add("OnScreenSizeChanged", "RecreateQLFonts", function() timer.Simple(0, CreateFonts) end)
 
+local uncategorized = ""
+
 local function GenerateCategory(frame, name)
     local category = frame:Add("DListLayout")
     if name then category.Name = name end
@@ -258,7 +260,6 @@ end
 local notipan = nil
 local function QLNotify(note, priority)
     local spawn = !isstring(note) and note
-    print(note, spawn, notipan, priority)
     if spawn and !reminder:GetBool() then return end
     if IsValid(notipan) then
         if (notipan.Priority and !priority) then return end
@@ -334,6 +335,20 @@ net.Receive("quickloadout", function()
     -- if spawn then if !reminder:GetBool() then return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Press " .. string.NiceName(keybind:GetString()) .. " to modify your loadout.") return end LocalPlayer():PrintMessage(HUD_PRINTCENTER, "Your loadout will change next deployment.")
 end)
 
+local function ItemComparator(a, b)
+    if !istable(a) then return false end
+    if !istable(b) then return true end
+    if !a.name then return false end
+    if !b.name then return true end
+    if isstring(a.name) then
+        if isstring(b.name) then return
+            a.name:lower() < b.name:lower()
+        end
+        return false
+    end
+    return a < b
+end
+
 local function GenerateWeaponTable(force)
     if table.IsEmpty(wtable) or force then
         print("Generating weapon table...")
@@ -352,9 +367,18 @@ local function GenerateWeaponTable(force)
                 wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
                 wep.Image = image and wep.HudImage or TestImage(class) -- or wep.SpawnIcon
                 wep.PrintName = language.GetPhrase(reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or class)
-                if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                    table.ForceInsert(wtable[nicecat], {class = class, name = wep.PrintName})
+                local cat = reftable and (reftable.SubCategory or reftable.SubCatType) or uncategorized
+                if (cat) then
+                    cat = string.gsub(string.gsub(string.gsub(cat, "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
+                    wep.SubCategory = cat
+                    if !wtable[nicecat][cat] then
+                        wtable[nicecat][cat] = {}
+                    end
+                    table.ForceInsert(wtable[nicecat][cat], {class = class, name = wep.PrintName})
                 end
+                -- if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
+                --     table.ForceInsert(wtable[nicecat][cat], {class = class, name = wep.PrintName})
+                -- end
                 if reftable then
                     wep.Base = reftable.Base
                     if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
@@ -373,21 +397,13 @@ local function GenerateWeaponTable(force)
                     -- if #reftable.WorldModel > 0 then
                     --     wep.SpawnIcon = file.Exists(mdl, "GAME") and mdl
                     -- end
-                    local cat = reftable.SubCategory or reftable.SubCatType
-                    if (cat) then
-                        cat = string.gsub(string.gsub(string.gsub(string.gsub(cat, "ies$", "y"), "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
-                        wep.SubCategory = cat
-                        if !wtable[nicecat][cat] then
-                            wtable[nicecat][cat] = {}
-                        end
-                        table.ForceInsert(wtable[nicecat][cat], {class = class, name = wep.PrintName})
-                    end
                     if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
                 end
             end
             reftable = {}
         end
     end
+    PrintTable(wtable)
 end
 
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
@@ -1410,53 +1426,51 @@ function QLOpenMenu()
         category1:Show()
     end
 
-    local function SomePairsShit(tbl, real)
-        if real then return SortedPairsByMemberValue(tbl, "name") end
-        return SortedPairs(tbl)
-    end
-
-    function PopulateCategory(parent, tbl, cont, cat, slot) -- good enough automated container refresh
-        cat:Clear()
+    function PopulateCategory(parent, tbl, cont, cat, slot, noclear) -- good enough automated container refresh
         local cat1 = cat == category1
-        local cancel = GenerateLabel(cat, cat.Name, collapse, mainmenu)
-        cancel.DoClickInternal = function(self)
-            cat:Hide()
-            self:SetToggle(true)
-            parent:SetToggle(false)
-            parent:GetParent():Show()
-            wepimg = nil
-            mainmenu.image.Text = nil
-            mainmenu.image.WepData = {}
-            mainmenu.theguy:SetWeapon("")
-            -- if ptable[slot] and rtable[ptable[slot]] then
-            --     local weapon = rtable[ptable[slot]]
-            --     local icon = weapon.HudImage or weapon.Image
-            --     if icon then
-            --         wepimg = Material(icon, "smooth")
-            --         local ratio = wepimg:Width() / wepimg:Height()
-            --         image.ImageRatio = ratio - 1
-            --     end
-            --     if weapon.Stats then
-            --         image.WepData = weapon.Stats
-            --     end
-            -- end
-            if cat1 then buttonclicked = nil rcont:Hide() end
+        if !noclear then
+            cat:Clear()
+            local cancel = GenerateLabel(cat, cat.Name, collapse, mainmenu)
+            cancel.DoClickInternal = function(self)
+                cat:Hide()
+                self:SetToggle(true)
+                parent:SetToggle(false)
+                parent:GetParent():Show()
+                wepimg = nil
+                mainmenu.image.Text = nil
+                mainmenu.image.WepData = {}
+                mainmenu.theguy:SetWeapon("")
+                -- if ptable[slot] and rtable[ptable[slot]] then
+                --     local weapon = rtable[ptable[slot]]
+                --     local icon = weapon.HudImage or weapon.Image
+                --     if icon then
+                --         wepimg = Material(icon, "smooth")
+                --         local ratio = wepimg:Width() / wepimg:Height()
+                --         image.ImageRatio = ratio - 1
+                --     end
+                --     if weapon.Stats then
+                --         image.WepData = weapon.Stats
+                --     end
+                -- end
+                if cat1 then buttonclicked = nil rcont:Hide() end
+            end
         end
-        local seq = table.IsSequential(tbl)
-        if seq then table.SortByMember(tbl, "name", true) end
-        for key, v in SortedPairs(tbl) do
-            local button = GenerateLabel(cat, v.name, seq and v.class or key, mainmenu)
-            button.DoRightClick = cancel.DoClickInternal
+        local sublist = table.Copy(tbl)
+        -- table.sort(sublist, ItemComparator)
+        table.SortByMember(sublist, "name", true)
+        for key, v in SortedPairs(sublist) do
+            local button = GenerateLabel(cat, v.name, v.class or key, mainmenu)
+            button.DoRightClick = cat:GetChild(0).DoClickInternal
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
             local icon = math.max(scale * 8, 16)
             local catimage = Material(!cat1 and category2.Icon or list.Get("ContentCategoryIcons")[key] or "vgui/null", "mips")
-            if !seq then
+            if !v.class then
                 local wepcount, catcount = 0, 0
                 local numbers, subseq = "", table.IsSequential(v)
                 for sub, tab in pairs(v) do
                     if !subseq then
-                        catcount = catcount + 1
+                        if sub != uncategorized then catcount = catcount + 1 end
                         wepcount = wepcount + table.Count(tab)
                     else
                         wepcount = wepcount + 1
@@ -1464,13 +1478,18 @@ function QLOpenMenu()
                 end
                 if catcount == 0 and wepcount == 1 then
                     button:Remove()
-                    button = GenerateLabel(cat, v[1].name, v[1].class, mainmenu)
-                    button.DoRightClick = cancel.DoClickInternal
+                    button = GenerateLabel(cat, v[uncategorized][1].name, v[uncategorized][1].class, mainmenu)
+                    button.DoRightClick = cat:GetChild(0).DoClickInternal
                     button:SizeToContentsY(fontsize)
                     button:InvalidateLayout(true)
                     button.LoneRider = {ShortenCategory(key), list.Get("ContentCategoryIcons")[key]}
                 else
                     numbers = (catcount > 1 and catcount .. " categories, " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
+                    if key == uncategorized then
+                        button:Remove()
+                        PopulateCategory(cat:GetChild(0), v, cont, cat, slot, true)
+                        continue
+                    end
                     -- PrintTable(tbl)
                     button.PaintOver = function(self, x, y)
                         local offset = math.min(x * 0.1, y * 0.5)
@@ -1500,7 +1519,7 @@ function QLOpenMenu()
                     continue
                 end
             end
-            local keyname = (button.LoneRider and v[1] or v).class
+            local keyname = (button.LoneRider and v[uncategorized][1] or v).class
             local ref = rtable[keyname]
             local haswep = (table.HasValue(ptable, keyname) and !ptable[slot])
             local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
