@@ -340,7 +340,7 @@ local char = "[%c%s%p]"
 function ShortenCategory(wep)
     local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
     local nicecat = (language.GetPhrase(ref and ref.Category or wep))
-    if !IsValid(nicecat) then print("wot", wep) return "" end
+    if !IsValid(nicecat) then return "" end
     local bc = string.gsub(string.match(nicecat, match):Trim(), char, "")
     local short = bc and (nicecat:len() > 7 and (ref and ref.Base and ref.Base:find(bc:lower()) != nil and nicecat:gsub(bc, "") or nicecat:match("^[%u%d%p]+%s")) or nicecat):gsub("%b()", ""):Trim()
     return (slot and ref and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
