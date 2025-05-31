@@ -364,7 +364,7 @@ local function GenerateWeaponTable(force)
                 wep.HudImage = image and (file.Exists("materials/" .. image, "GAME") and image) or TestImage(class, true)
                 wep.Image = image and wep.HudImage or TestImage(class) -- or wep.SpawnIcon
                 wep.PrintName = language.GetPhrase(reftable and (reftable.AbbrevName or reftable.PrintName) or wep.PrintName or class)
-                local cat = reftable and (reftable.SubCategory or reftable.SubCatType) or uncategorized
+                local cat = reftable and ((weapons.IsBasedOn(class, "weapon_swcs_base") and string.NiceName(util.KeyValuesToTable(reftable.ItemDefVisuals or "").weapon_type or uncategorized)) or reftable.SubCategory or reftable.SubCatType) or uncategorized
                 if (cat) then
                     cat = string.gsub(string.gsub(string.gsub(cat, "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
                     wep.SubCategory = cat
