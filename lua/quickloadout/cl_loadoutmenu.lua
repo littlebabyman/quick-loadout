@@ -836,7 +836,7 @@ function QLOpenMenu()
             if modelcvar:GetBool() then RefreshLoadout(closer) end
         end
     end
-    modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), mskin:GetInt(), mbg:GetString())
+    modelpanel:SetModel(player_manager.TranslatePlayerModel(mdl:GetString()), IsValid(mskin) and mskin:GetInt() or 0, IsValid(mbg) and mbg:GetString() or "000000000")
     modelpanel:SetSize(toptext:GetTall()*0.5, toptext:GetTall())
     modelpanel:SetTooltip("Current model: "..mdl:GetString())
     -- if ConVarExists("playermodel_selector") then modelpanel:SetConsoleCommand("playermodel_selector") end
@@ -893,6 +893,8 @@ function QLOpenMenu()
         self.Entity:ResetSequence("pose_standing_02")
         self.Entity:AddEffects(EF_ITEM_BLINK)
         self.Entity:SetEyeTarget(Vector(100, 0, 64))
+        self.Entity:SetSkin(IsValid(mbg) and mbg:GetString() or "000000000")
+        self.Entity:SetBodyGroups(IsValid(mbg) and mbg:GetString() or "000000000")
         function mainmenu.theguy.Entity:GetPlayerColor() return LocalPlayer():GetPlayerColor() end
         if !self:GetWeapon() then return end
         self:SetWeapon( self:GetWeapon() )
