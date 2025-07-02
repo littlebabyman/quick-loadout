@@ -64,6 +64,8 @@ function QuickLoadout(ply)
     ply:StripWeapons()
     ply:StripAmmo()
     if !table.IsEmpty(ply.quickloadout) then
+        ply:SetActiveWeapon(NULL)
+        ply.QLPreventSwitch = true
         local wtable = list.Get("Weapon")
         local ammomult1, ammomult2 = clips1:GetInt(), clips2:GetInt()
         for k, wep in ipairs(ply.quickloadout) do
@@ -88,17 +90,21 @@ function QuickLoadout(ply)
             end
         end
         timer.Simple(0, function()
+            ply.QLPreventSwitch = false
             local weps = ply:GetWeapons()
+            if !IsValid(weps[1]) then return end
             ply:SelectWeapon(weps[1])
             ply:SetSaveValue("m_hLastWeapon", weps[2] or NULL)
         end)
     end
-    ply:SetActiveWeapon(NULL)
     if !(ply:GetInfoNum("quickloadout_enable_client", 1) == 0 or default:GetInt() == 1 or (default:GetInt() == -1 and ply:GetInfoNum("quickloadout_default_client", 1) == 1)) then
         return true
     end
 end
 
+hook.Add("PlayerSwitchWeapon", "QuickLoadoutPreventSwitch", function(ply, old, new)
+    if ply.QLPreventSwitch then return true end
+end)
 -- hook.Add("PlayerInitialSpawn", "QuickLoadoutInitTable", function(ply) ply.quickloadout = {} end)
 
 hook.Add("PlayerLoadout", "QuickLoadoutLoadout", QuickLoadout)

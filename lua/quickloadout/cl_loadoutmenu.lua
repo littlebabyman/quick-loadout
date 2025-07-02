@@ -781,7 +781,7 @@ function QLOpenMenu()
         if !self:GetToggle() then CreateLoadoutButtons(true) qllist:Show() weplist:Hide() else CreateWeaponButtons() qllist:Hide() weplist:Show() end
     end
     lbut:SetWide(math.ceil(saveload:GetWide() * 0.485))
-    lbut:Dock(RIGHT)
+    lbut:Dock(FILL)
     lbut.DoClickInternal = function(self)
         if IsValid(modelpanel.Window) then modelpanel.Window:Remove() end
         -- qllist:SetVisible(!self:GetToggle())
