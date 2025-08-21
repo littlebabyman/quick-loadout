@@ -24,7 +24,7 @@ if file.Exists(dir .. gm .. "autosave.json", "DATA") then
 end
 
 if file.Exists(dir .. gm .. "client_loadouts.json", "DATA") and !istable(util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))) then
-    print("Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/" .. dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
+    print("[Quick Loadouts] Corrupted loadout table detected, creating back-up!!\ngarrysmod/data/" .. dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json")
     file.Write(os.date(dir .. gm .. "client_loadouts_%y_%m_%d-%H_%M_%S_backup.json"), file.Read(dir .. gm .. "client_loadouts.json", "DATA"))
     file.Write(dir .. gm .. "client_loadouts.json", "[]")
 end
@@ -346,11 +346,19 @@ function ShortenCategory(wep)
     return (slot and ref and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
 end
 
+local hardchecks = {["CSSWeapons"] = list.Get("CSSWeapons")}
+
 local function GenerateWeaponTable(force)
     if table.IsEmpty(wtable) or force then
-        print("Generating weapon table...")
+        print("[Quick Loadouts] Generating weapon table...")
         rtable = list.Get("Weapon")
         local reftable = {}
+        for tbl, sub in pairs(hardchecks) do
+            if !istable(sub) then continue end
+            for i = 1, #sub do
+                rtable[sub[i].ClassName].Spawnable = true
+            end
+        end
         for class, wep in SortedPairs(rtable) do
             if wep.Spawnable then
                 reftable = weapons.Get(class)
@@ -396,6 +404,8 @@ local function GenerateWeaponTable(force)
                     -- end
                     if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
                 end
+            else
+                print(class)
             end
             reftable = {}
         end
