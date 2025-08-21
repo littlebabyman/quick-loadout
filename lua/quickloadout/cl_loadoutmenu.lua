@@ -404,8 +404,6 @@ local function GenerateWeaponTable(force)
                     -- end
                     if reftable.SubCatTier and reftable.SubCatTier != "9Special" then wep.Rating = string.gsub(reftable.SubCatTier, "^%d(%a)", "%1") end
                 end
-            else
-                print(class)
             end
             reftable = {}
         end
