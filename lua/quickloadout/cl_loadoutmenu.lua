@@ -1435,7 +1435,8 @@ function QLOpenMenu()
                 cancel:SizeToContentsY(fontsize)
                 cancel.PaintOver = function(self, x, y)
                     local offset = math.min(x * 0.1, y * 0.5)
-                    draw.SimpleText(category2.Category, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                    surface.SetDrawColor(color_default)
+                    draw.SimpleText(category2.Category, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
             end 
             cancel.DoClickInternal = function(self)
@@ -1596,7 +1597,8 @@ function QLOpenMenu()
         button:SizeToContentsY(fontsize)
         button.PaintOver = function(self, x, y)
             local offset = math.min(x * 0.1, y * 0.5)
-            draw.SimpleText(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+            surface.SetDrawColor(color_default)
+            draw.SimpleText(wepcount, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
         end
         if button.ClassName == "DLabelEditable" then
             local confirm = false
