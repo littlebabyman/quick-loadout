@@ -1431,6 +1431,13 @@ function QLOpenMenu()
         if !noclear then
             cat:Clear()
             local cancel = GenerateLabel(cat, cat.Name, collapse, mainmenu)
+            if !cat1 then
+                cancel:SizeToContentsY(fontsize)
+                cancel.PaintOver = function(self, x, y)
+                    local offset = math.min(x * 0.1, y * 0.5)
+                    draw.SimpleText(category2.Category, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, colo, TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                end
+            end 
             cancel.DoClickInternal = function(self)
                 cat:Hide()
                 self:SetToggle(true)
@@ -1461,6 +1468,7 @@ function QLOpenMenu()
         table.SortByMember(sublist, "name", true)
         for key, v in SortedPairs(sublist) do
             local button = GenerateLabel(cat, v.name, v.class or key, mainmenu)
+            button.ShortCat = v.class and ShortenCategory(v.class)
             button.DoRightClick = cancel
             button:SizeToContentsY(fontsize)
             button:InvalidateLayout(true)
@@ -1483,7 +1491,7 @@ function QLOpenMenu()
                     button.DoRightClick = cancel
                     button:SizeToContentsY(fontsize)
                     button:InvalidateLayout(true)
-                    button.LoneRider = {ShortenCategory(key), list.Get("ContentCategoryIcons")[key]}
+                    button.LoneRider = list.Get("ContentCategoryIcons")[key]
                 else
                     numbers = (catcount > 1 and catcount .. " categories, " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                     if key == uncategorized then
@@ -1505,14 +1513,14 @@ function QLOpenMenu()
                             render.PopFilterMag()
                             render.PopFilterMin()
                         end
-                        if !cat1 and category2.Category then
-                            draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                        end
+                        -- if !cat1 and category2.Category then
+                            -- draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                        -- end
                     end
                     button.DoClickInternal = function()
                         if cat1 then
                             category2.Icon = list.Get("ContentCategoryIcons")[key]
-                            category2.Category = ShortenCategory(key)
+                            category2.Category = key
                         end
                         PopulateCategory(button, v, cont, TheCats(cat), slot)
                         cat:Hide()
@@ -1527,7 +1535,7 @@ function QLOpenMenu()
             -- local catimage = Material(ref and ref.Icon or "vgui/null", "mips")
             local wepimage = Material(ref and ref.Image or "vgui/null", "mips")
             local ratio = wepimage:Width() / wepimage:Height()
-            local weptext, eqnum = ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, keyname) and "#"..tostring(table.KeyFromValue(ptable, keyname))
+            local cattext, weptext, eqnum = button.ShortCat, ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, keyname) and "#"..tostring(table.KeyFromValue(ptable, keyname))
             if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, keyname)) then
                 eqnum = eqnum .. " ↔ " .. "#"..slot
             end
@@ -1553,10 +1561,11 @@ function QLOpenMenu()
             button.PaintOver = function(self, x, y)
                 local offset = math.min(x * 0.1, y * 0.5)
                 surface.SetDrawColor(color_default)
-                if cat1 and button.LoneRider then
-                    draw.SimpleText(button.LoneRider[1], "quickloadout_font_small", x - offset * 0.125 - (button.LoneRider[2] and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                elseif !cat1 and category2.Category then
-                    draw.SimpleText(category2.Category, "quickloadout_font_small", x - offset * 0.125 - (category2.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                -- if cat1 and button.LoneRider then
+                --     draw.SimpleText(button.ShortCat, "quickloadout_font_small", x - offset * 0.125 - (button.LoneRider[2] and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+                -- elseif !cat1 and category2.Category then
+                if cattext then
+                    draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - ((button.LoneRider or category2.Icon) and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 end
                 -- draw.SimpleText(cattext, "quickloadout_font_small", x - offset * 0.125 - (ref.Icon and icon + offset * 0.25 or 0), y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
                 if weptext then
