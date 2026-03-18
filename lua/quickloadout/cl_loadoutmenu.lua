@@ -529,6 +529,10 @@ function QLOpenMenu()
 
     GenerateWeaponTable()
     table.RemoveByValue(ptable, "")
+    mainmenu.image = mainmenu:Add("Panel")
+    mainmenu.image:SetMouseInputEnabled(false)
+    mainmenu.theguy = vgui.Create("DModelPanel", mainmenu)
+    mainmenu.theguy:SetMouseInputEnabled(false)
     local lcont, rcont = mainmenu:Add("Panel"), mainmenu:Add("Panel")
     lcont:SetZPos(0)
     lcont.Paint = function(self, x, y)
@@ -539,7 +543,7 @@ function QLOpenMenu()
     lcont:SetX((width - height) * 0.25)
     lcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetWide() * 0.05, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont:CopyBase(lcont)
-    rcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
+    rcont:DockPadding(math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.05, math.max(lcont:GetWide() * 0.005, 1), lcont:GetTall() * 0.1)
     rcont.Paint = lcont.Paint
     rcont:SetX(lcont:GetPos() + lcont:GetWide() * 1.1)
     rcont:Hide()
@@ -548,13 +552,19 @@ function QLOpenMenu()
     local qllist, weplist = GenerateCategory(lscroller), GenerateCategory(lscroller)
     qllist:Hide()
     -- weplist:MakeDroppable("quickloadoutarrange", false)
-    local category1, category2, category3 = GenerateCategory(rscroller, "◀ Cancel"), GenerateCategory(rscroller, "◀ Categories"), GenerateCategory(rscroller, "◀ Subcategories")
+    local catlabel, canlabel, category1, category2, category3 = GenerateLabel(rcont, nil, "Weapons"), GenerateLabel(rcont, "◀ Cancel", nil, mainmenu), GenerateCategory(rscroller, "◀ Cancel"), GenerateCategory(rscroller, "◀ Categories"), GenerateCategory(rscroller, "◀ Subcategories")
+    catlabel:SetFont("quickloadout_font_medium")
+    catlabel:SizeToContentsY(fontsize)
+    catlabel:Dock(TOP)
+    catlabel.Name = ""
+    catlabel.PaintOver = function(self, x, y)
+        local offset = math.min(x * 0.1, y * 0.5)
+        surface.SetDrawColor(color_default)
+        draw.SimpleText(self.Name, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
+    end
+    canlabel:Dock(TOP)
     category2.Icon = nil
     category2.Category = nil
-    mainmenu.image = mainmenu:Add("Panel")
-    mainmenu.image:SetMouseInputEnabled(false)
-    mainmenu.theguy = vgui.Create("DModelPanel", mainmenu)
-    mainmenu.theguy:SetMouseInputEnabled(false)
     AccessorFunc(mainmenu.theguy, "Entity2", "Entity2")
     mainmenu.theguy.DoPaint = mainmenu.theguy.Paint
     mainmenu.theguy.Paint = function(self, x, y)
@@ -1343,7 +1353,10 @@ function QLOpenMenu()
 
     local char = "[%c%s%p]"
 
-    function TheCats(cat)
+    function TheCats(cat, inv)
+        if inv then
+            if cat == category3 then return category2 else return category1 end
+        end
         if cat == category1 then return category2 else return category3 end
     end
 
@@ -1430,40 +1443,27 @@ function QLOpenMenu()
         local cat1 = cat == category1
         if !noclear then
             cat:Clear()
-            local cancel = GenerateLabel(cat, cat.Name, collapse, mainmenu)
-            if !cat1 then
-                cancel:SizeToContentsY(fontsize)
-                cancel.PaintOver = function(self, x, y)
-                    local offset = math.min(x * 0.1, y * 0.5)
-                    surface.SetDrawColor(color_default)
-                    draw.SimpleText(category2.Category, "quickloadout_font_small", offset * 0.25, y - offset * 0.125, surface.GetDrawColor(), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM, scale, bgcolor)
-                end
-            end 
-            cancel.DoClickInternal = function(self)
+            catlabel.Name = cat == category3 and parent.Name or ""
+            canlabel:SetText(cat.Name)
+            if cat == category2 then
+                catlabel:SetText(category2.Category)
+            end
+            canlabel.DoClickInternal = function(self)
                 cat:Hide()
+                if cat == category2 then
+                    catlabel:SetText("Weapons")
+                    category2.Category = nil
+                end
+                PopulateCategory(parent, wtable[category2.Category] or wtable, cont, TheCats(cat, true), slot)
                 self:SetToggle(true)
-                parent:SetToggle(false)
-                parent:GetParent():Show()
                 wepimg = nil
                 mainmenu.image.Text = nil
                 mainmenu.image.WepData = {}
                 mainmenu.theguy:SetWeapon("")
-                -- if ptable[slot] and rtable[ptable[slot]] then
-                --     local weapon = rtable[ptable[slot]]
-                --     local icon = weapon.HudImage or weapon.Image
-                --     if icon then
-                --         wepimg = Material(icon, "smooth")
-                --         local ratio = wepimg:Width() / wepimg:Height()
-                --         image.ImageRatio = ratio - 1
-                --     end
-                --     if weapon.Stats then
-                --         image.WepData = weapon.Stats
-                --     end
-                -- end
-                if cat1 then buttonclicked = nil rcont:Hide() end
+                if cat1 then buttonclicked = nil rcont:Hide() weplist:GetChild(slot-1):Toggle() end
             end
         end
-        local cancel = cat:GetChild(0).DoClickInternal
+        local cancel = canlabel.DoClickInternal
         local sublist = table.Copy(tbl)
         -- table.sort(sublist, ItemComparator)
         table.SortByMember(sublist, "name", true)
