@@ -2,6 +2,7 @@ AddCSLuaFile()
 local dir, gm = "quickloadout/", engine.ActiveGamemode() .. "/"
 local ptable = {}
 local loadouts = {}
+QuickLoadout = {WepList = {}, RefList = {}, TempList = {}}
 
 if !file.Exists("quickloadout", "DATA") then
     file.CreateDir("quickloadout")
@@ -20,7 +21,7 @@ if file.Size(dir .. gm .. "autosave.json", "DATA") <= 0 then
 end
 
 if file.Exists(dir .. gm .. "autosave.json", "DATA") then
-    ptable = util.JSONToTable(file.Read(dir .. gm .. "autosave.json", "DATA"))
+    QuickLoadout.TempList = util.JSONToTable(file.Read(dir .. gm .. "autosave.json", "DATA"))
 end
 
 if file.Exists(dir .. gm .. "client_loadouts.json", "DATA") and !istable(util.JSONToTable(file.Read(dir .. gm .. "client_loadouts.json", "DATA"))) then
@@ -196,15 +197,15 @@ local function GenerateLabel(frame, name, class, panel)
             wepimg = nil
             panel.image.WepData = {}
             panel.theguy:SetWeapon("")
-            if class and rtable[class] then
+            if class and QuickLoadout.RefList[class] then
                 panel.image.Text = class
-                local icon = rtable[class].HudImage or rtable[class].Image
+                local icon = QuickLoadout.RefList[class].HudImage or QuickLoadout.RefList[class].Image
                 if icon then
                     wepimg = Material(icon, "mips")
                     local ratio = wepimg:Width() / wepimg:Height()
                     panel.image.ImageRatio = ratio - 1
                 end
-                local stats = rtable[class].Stats
+                local stats = QuickLoadout.RefList[class].Stats
                 if stats then
                     panel.image.WepData = stats
                     if ispanel(panel.theguy) then
@@ -329,7 +330,7 @@ end
 local function NetworkLoadout()
     if CurTime() < lastgiven + 1 then QLNotify("You're sending loadouts too quick! Calm down.") return end
     lastgiven = CurTime()
-    local weps = util.Compress(util.TableToJSON(ptable))
+    local weps = util.Compress(util.TableToJSON(QuickLoadout.TempList))
     net.Start("quickloadout")
     net.WriteData(weps)
     net.SendToServer()
@@ -344,7 +345,7 @@ end)
 local char = "[%c%s%p]"
 
 function ShortenCategory(wep)
-    local ref, match, cat, slot = rtable[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
+    local ref, match, cat, slot = QuickLoadout.RefList[wep], "^[%w%d%p]+", showcat:GetBool(), showslot:GetBool()
     local nicecat = (language.GetPhrase(ref and ref.Category or wep))
     if !IsValid(nicecat) then return "" end
     local bc = string.gsub(string.match(nicecat, match):Trim(), char, "")
@@ -355,22 +356,22 @@ end
 local hardchecks = {["CSSWeapons"] = list.Get("CSSWeapons")}
 
 local function GenerateWeaponTable(force)
-    if table.IsEmpty(wtable) or force then
+    if table.IsEmpty(QuickLoadout.WepList) or force then
         print("[Quick Loadouts] Generating weapon table...")
-        rtable = list.Get("Weapon")
+        QuickLoadout.RefList = list.Get("Weapon")
         local reftable = {}
         for tbl, sub in pairs(hardchecks) do
             if !istable(sub) then continue end
             for i = 1, #sub do
-                rtable[sub[i].ClassName].Spawnable = true
+                QuickLoadout.RefList[sub[i].ClassName].Spawnable = true
             end
         end
-        for class, wep in SortedPairs(rtable) do
+        for class, wep in SortedPairs(QuickLoadout.RefList) do
             if wep.Spawnable then
                 reftable = weapons.Get(class)
                 local nicecat = language.GetPhrase(wep.Category)
-                if !wtable[nicecat] then
-                    wtable[nicecat] = {}
+                if !QuickLoadout.WepList[nicecat] then
+                    QuickLoadout.WepList[nicecat] = {}
                 end
                 local mat = (list.Get("ContentCategoryIcons")[nicecat])
                 local image = reftable and (reftable.LoadoutImage or reftable.HudImage)
@@ -382,13 +383,13 @@ local function GenerateWeaponTable(force)
                 if (cat) then
                     cat = string.gsub(string.gsub(string.gsub(cat, "s$", ""), "^%d(%a)", "%1"), "^⠀", "​")
                     wep.SubCategory = cat
-                    if !wtable[nicecat][cat] then
-                        wtable[nicecat][cat] = {}
+                    if !QuickLoadout.WepList[nicecat][cat] then
+                        QuickLoadout.WepList[nicecat][cat] = {}
                     end
-                    table.ForceInsert(wtable[nicecat][cat], {class = class, name = wep.PrintName})
+                    table.ForceInsert(QuickLoadout.WepList[nicecat][cat], {class = class, name = wep.PrintName})
                 end
                 -- if !reftable or !(reftable.SubCategory or reftable.SubCatType) then
-                --     table.ForceInsert(wtable[nicecat][cat], {class = class, name = wep.PrintName})
+                --     table.ForceInsert(QuickLoadout.WepList[nicecat][cat], {class = class, name = wep.PrintName})
                 -- end
                 if reftable then
                     wep.Base = reftable.Base
@@ -415,7 +416,7 @@ local function GenerateWeaponTable(force)
             reftable = {}
         end
     end
-    -- PrintTable(wtable)
+    -- PrintTable(QuickLoadout.WepList)
 end
 
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
@@ -442,7 +443,7 @@ local holdtypetbl = {
 local refresh = false
 function QLOpenMenu()
     local tmp = {}
-    table.CopyFromTo(ptable, tmp)
+    table.CopyFromTo(QuickLoadout.TempList, tmp)
     local buttonclicked = nil
     local dtext = {string.NiceName(language.GetPhrase("damage")), "RPM", "APM"}
     local tt = SysTime()
@@ -523,13 +524,13 @@ function QLOpenMenu()
         -- mainmenu:SizeTo(0, height, 0.25, 0, 1.5)
         if refresh then
             if !apply then
-                ptable = tmp
+                QuickLoadout.TempList = tmp
             end
             QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.", !apply)
         end
         refresh = false
         if !apply then return end
-        file.Write(dir .. gm .. "autosave.json", util.TableToJSON(ptable))
+        file.Write(dir .. gm .. "autosave.json", util.TableToJSON(QuickLoadout.TempList))
         timer.Simple(0, function()
             -- mainmenu.Paint = nil
             NetworkLoadout()
@@ -537,7 +538,7 @@ function QLOpenMenu()
     end
 
     GenerateWeaponTable()
-    table.RemoveByValue(ptable, "")
+    table.RemoveByValue(QuickLoadout.TempList, "")
     mainmenu.image = mainmenu:Add("Panel")
     mainmenu.image:SetMouseInputEnabled(false)
     mainmenu.theguy = vgui.Create("DModelPanel", mainmenu)
@@ -623,7 +624,7 @@ function QLOpenMenu()
                 self.WepData.rofrat = math.Clamp(ratmap, 0, 1)
                 self.WepData.rofrat2 = math.Clamp(ratmap - 1, 0, 1)
             end
-            self.WepData.type = self.Text and rtable[self.Text].Stats and ((!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2) or 0
+            self.WepData.type = self.Text and QuickLoadout.RefList[self.Text].Stats and ((!self.WepData.mag or !self.WepData.ammo or !self.WepData.dmgtotal) and 3 or 2) or 0
         end
     end
     mainmenu.image.PaintOver = function(self, x, y)
@@ -778,10 +779,10 @@ function QLOpenMenu()
     importer.DoClickInternal = function(self)
         local holster = GetConVar("holsterweapon_weapon") and GetConVar("holsterweapon_weapon"):GetString()
         local g = 0
-        table.Empty(ptable)
+        table.Empty(QuickLoadout.TempList)
         for k, v in ipairs(trash) do
-            if holster and v:GetClass() == (rtable[holster] and holster or "weaponholster") then g = 1 continue end
-            ptable[k-g] = v:GetClass()
+            if holster and v:GetClass() == (QuickLoadout.RefList[holster] and holster or "weaponholster") then g = 1 continue end
+            QuickLoadout.TempList[k-g] = v:GetClass()
         end
         CreateWeaponButtons()
         RefreshLoadout(closer)
@@ -1360,7 +1361,7 @@ function QLOpenMenu()
     CreateOptionsMenu()
 
     function QuickName(name)
-        local ref = rtable[name]
+        local ref = QuickLoadout.RefList[name]
         return ref and language.GetPhrase(ref.PrintName) or name
     end
 
@@ -1411,12 +1412,12 @@ function QLOpenMenu()
         count = maxslots:GetBool() and maxslots:GetInt() or game.SinglePlayer() and 0 or 32
         -- count2 = slotlimit:GetBool() and slotlimit:GetInt() or 0
 
-        for i, v in ipairs(ptable) do
+        for i, v in ipairs(QuickLoadout.TempList) do
             local button = GenerateLabel(weplist, QuickName(v), v, mainmenu)
             WepSelector(button, i, v)
         end
         local newwep = GenerateLabel(weplist, "+ Add Weapon", "vgui/null", mainmenu)
-        WepSelector(newwep, #ptable + 1, nil)
+        WepSelector(newwep, #QuickLoadout.TempList + 1, nil)
         -- if sbut:GetToggle() then sbut:Toggle()
         -- elseif lbut:GetToggle() then lbut:Toggle() end
         lscroller:InvalidateChildren(true)
@@ -1439,7 +1440,7 @@ function QLOpenMenu()
                 button.DoRightClick = button.DoClickInternal
             end
         else
-            for i, v in ipairs(ptable) do
+            for i, v in ipairs(QuickLoadout.TempList) do
                 local button = GenerateLabel(category1, QuickName(v), v, mainmenu)
                 WepSelector(button, i, v)
                 button:SetIsToggle(false)
@@ -1467,7 +1468,7 @@ function QLOpenMenu()
                     catlabel:SetText("Weapons")
                     category2.Category = nil
                 end
-                PopulateCategory(parent, wtable[category2.Category] or wtable, cont, TheCats(cat, true), slot)
+                PopulateCategory(parent, QuickLoadout.WepList[category2.Category] or QuickLoadout.WepList, cont, TheCats(cat, true), slot)
                 self:SetToggle(true)
                 wepimg = nil
                 mainmenu.image.Text = nil
@@ -1543,14 +1544,14 @@ function QLOpenMenu()
                 end
             end
             local keyname = (button.LoneRider and (v[uncategorized] or v)[1] or v).class
-            local ref = rtable[keyname]
-            local haswep = (table.HasValue(ptable, keyname) and !ptable[slot])
+            local ref = QuickLoadout.RefList[keyname]
+            local haswep = (table.HasValue(QuickLoadout.TempList, keyname) and !QuickLoadout.TempList[slot])
             local usable = !haswep and (ref.Spawnable or ref.AdminOnly and LocalPlayer():IsAdmin())
             -- local catimage = Material(ref and ref.Icon or "vgui/null", "mips")
             local wepimage = Material(ref and ref.Image or "vgui/null", "mips")
             local ratio = wepimage:Width() / wepimage:Height()
-            local cattext, weptext, eqnum = button.ShortCat, ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(ptable, keyname) and "#"..tostring(table.KeyFromValue(ptable, keyname))
-            if eqnum and ptable[slot] and slot != tonumber(table.KeyFromValue(ptable, keyname)) then
+            local cattext, weptext, eqnum = button.ShortCat, ref.SubCategory and (ref.Rating and ref.Rating .. " " or "") .. ref.SubCategory, table.HasValue(QuickLoadout.TempList, keyname) and "#"..tostring(table.KeyFromValue(QuickLoadout.TempList, keyname))
+            if eqnum and QuickLoadout.TempList[slot] and slot != tonumber(table.KeyFromValue(QuickLoadout.TempList, keyname)) then
                 eqnum = eqnum .. " ↔ " .. "#"..slot
             end
             button.Paint = function(self, x, y)
@@ -1591,11 +1592,11 @@ function QLOpenMenu()
                 end
             end
             button.DoClickInternal = function(self)
-                if table.HasValue(ptable, keyname) then
-                    if !ptable[slot] then self:SetToggle(true) return end
-                    table.Merge(ptable, {[table.KeyFromValue(ptable, keyname)] = ptable[slot]}, true)
+                if table.HasValue(QuickLoadout.TempList, keyname) then
+                    if !QuickLoadout.TempList[slot] then self:SetToggle(true) return end
+                    table.Merge(QuickLoadout.TempList, {[table.KeyFromValue(QuickLoadout.TempList, keyname)] = QuickLoadout.TempList[slot]}, true)
                 end
-                table.Merge(ptable, {[slot] = keyname}, true)
+                table.Merge(QuickLoadout.TempList, {[slot] = keyname}, true)
                 cat:Clear()
                 CreateWeaponButtons()
                 RefreshLoadout(closer)
@@ -1606,7 +1607,7 @@ function QLOpenMenu()
 
     function LoadoutSelector(button, key)
         -- print(button, key)
-        local wepcount = (loadouts[key] and #loadouts[key].weps or #ptable) .. " weapons"
+        local wepcount = (loadouts[key] and #loadouts[key].weps or #QuickLoadout.TempList) .. " weapons"
         button:SizeToContentsY(fontsize)
         button.PaintOver = function(self, x, y)
             local offset = math.min(x * 0.1, y * 0.5)
@@ -1629,7 +1630,7 @@ function QLOpenMenu()
             button.OnLabelTextChanged = function(self, text)
                 qllist:Clear()
                 if string.len(text) < 1 then text = "New Loadout " .. key end
-                table.Merge(loadouts, {[key] = {name = text, weps = ptable}}, true)
+                table.Merge(loadouts, {[key] = {name = text, weps = QuickLoadout.TempList}}, true)
                 file.Write(dir .. gm .. "client_loadouts.json", util.TableToJSON(loadouts))
                 sbut:DoClickInternal()
                 sbut:DoClick()
@@ -1649,13 +1650,13 @@ function QLOpenMenu()
         else
             button.DoClickInternal = function(self)
                 QLNotify(loadouts[key].name .. " equipped!", true)
-                ptable = loadouts[key].weps
+                QuickLoadout.TempList = loadouts[key].weps
                 RefreshLoadout()
                 CloseMenu(true)
             end
             button.DoRightClick = function(self)
                 QLNotify(loadouts[key].name .. " loaded!")
-                ptable = loadouts[key].weps
+                QuickLoadout.TempList = loadouts[key].weps
                 RefreshLoadout(closer)
                 CreateWeaponButtons()
                 lbut:DoClickInternal()
@@ -1671,7 +1672,7 @@ function QLOpenMenu()
 
     function WepSelector(button, index, class)
         -- print(button:GetTextSize())
-        local ref = rtable[class]
+        local ref = QuickLoadout.RefList[class]
         local unusable = (maxslots:GetBool() or !game.SinglePlayer()) and index > count or class and (!ref or !ref.Spawnable or (ref.AdminOnly and !LocalPlayer():IsAdmin()))
         -- button:SetWrap(false)
         -- button.Paint = function(self, x, y)
@@ -1742,7 +1743,7 @@ function QLOpenMenu()
             category2:Clear()
             category3:Hide()
             category3:Clear()
-            PopulateCategory(button, wtable, rscroller, category1, index)
+            PopulateCategory(button, QuickLoadout.WepList, rscroller, category1, index)
             if button:GetToggle() then
                 rcont:Hide()
             else
@@ -1756,8 +1757,8 @@ function QLOpenMenu()
         button.DoRightClick = function(self)
             self:SetToggle(true)
             self:Toggle()
-            if index > #ptable then return end
-            table.remove(ptable, index)
+            if index > #QuickLoadout.TempList then return end
+            table.remove(QuickLoadout.TempList, index)
             CreateWeaponButtons()
             RefreshLoadout(closer)
         end
