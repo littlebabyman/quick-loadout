@@ -2,7 +2,6 @@ AddCSLuaFile()
 local dir, gm = "quickloadout/", engine.ActiveGamemode() .. "/"
 local ptable = {}
 local loadouts = {}
-QuickLoadouts = {}
 
 if !file.Exists("quickloadout", "DATA") then
     file.CreateDir("quickloadout")
@@ -156,7 +155,7 @@ local function TestImage(item, hud)
     return
 end
 
-QuickLoadouts.shortNamesTable = {
+QuickLoadout.shortNamesTable = {
     ["Tactical RP"] = "TacRP",
     ["Tactical RP (Special)"] = "TacRP",
     ["Tactical Intervention"] = "TacInt",
@@ -349,7 +348,7 @@ function ShortenCategory(wep)
     local nicecat = (language.GetPhrase(ref and ref.Category or wep))
     if !IsValid(nicecat) then return "" end
     local bc = string.gsub(string.match(nicecat, match):Trim(), char, "")
-    local short = QuickLoadouts.shortNamesTable[nicecat] or bc and (nicecat:len() > 7 and (ref and ref.Base and ref.Base:find(bc:lower()) != nil and nicecat:gsub(bc, "") or nicecat:match("^[%u%d%p]+%s")) or nicecat):gsub("%b()", ""):Trim()
+    local short = QuickLoadout.shortNamesTable[nicecat] or bc and (nicecat:len() > 7 and (ref and ref.Base and ref.Base:find(bc:lower()) != nil and nicecat:gsub(bc, "") or nicecat:match("^[%u%d%p]+%s")) or nicecat):gsub("%b()", ""):Trim()
     return (slot and ref and ref.Slot and " Slot " .. ref.Slot or "") .. " " .. (cat and "[" .. (short:gsub("[^%w.:+]", ""):len() > 7 and short:gsub("([^%c%s%p])[%l]+", "%1") or short):gsub("[^%w.:+]", "") .. "]" or "")
 end
 
