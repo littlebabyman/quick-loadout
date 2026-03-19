@@ -565,6 +565,9 @@ function QLOpenMenu()
     local catlabel, canlabel, category1, category2, category3 = GenerateLabel(rcont, nil, "Weapons"), GenerateLabel(rcont, "◀ Cancel", nil, mainmenu), GenerateCategory(rscroller, "◀ Cancel"), GenerateCategory(rscroller, "◀ Categories"), GenerateCategory(rscroller, "◀ Subcategories")
     catlabel:SetFont("quickloadout_font_medium")
     catlabel:SizeToContentsY(fontsize)
+    catlabel:SetWrap(false)
+    catlabel:SetToolTip(catlabel:GetText())
+    catlabel:SetTooltipDelay(0)
     catlabel:Dock(TOP)
     catlabel.Name = ""
     catlabel.PaintOver = function(self, x, y)
@@ -1461,11 +1464,13 @@ function QLOpenMenu()
             canlabel:SetText(cat.Name)
             if cat == category2 then
                 catlabel:SetText(category2.Category)
+                catlabel:SetToolTip(catlabel:GetText())
             end
             canlabel.DoClickInternal = function(self)
                 cat:Hide()
                 if cat == category2 then
                     catlabel:SetText("Weapons")
+                    catlabel:SetToolTip(catlabel:GetText())
                     category2.Category = nil
                 end
                 PopulateCategory(parent, QuickLoadouts.WepList[category2.Category] or QuickLoadouts.WepList, cont, TheCats(cat, true), slot)
