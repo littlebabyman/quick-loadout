@@ -1506,7 +1506,7 @@ function QLOpenMenu()
                     button.DoRightClick = cancel
                     button:SizeToContentsY(fontsize)
                     button:InvalidateLayout(true)
-                    button.LoneRider = list.Get("ContentCategoryIcons")[key]
+                    button.LoneRider = list.Get("ContentCategoryIcons")[key] or true
                 else
                     numbers = (catcount > 1 and catcount .. " categories, " or "") .. wepcount .. " weapon" .. (wepcount != 1 and "s" or "")
                     if key == uncategorized then
