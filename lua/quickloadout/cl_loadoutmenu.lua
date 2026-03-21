@@ -360,7 +360,7 @@ local function GenerateWeaponTable(force)
         print("[Quick Loadouts] Generating weapon table...")
         QuickLoadouts.RefList = list.Get("Weapon")
         local reftable = {}
-        for tbl, sub in pairs(hardchecks) do
+        for _, sub in pairs(hardchecks) do
             if !istable(sub) then continue end
             for i = 1, #sub do
                 QuickLoadouts.RefList[sub[i].ClassName].Spawnable = true
@@ -368,7 +368,7 @@ local function GenerateWeaponTable(force)
         end
         for class, wep in SortedPairs(QuickLoadouts.RefList) do
             if wep.Spawnable then
-                reftable = weapons.Get(class)
+                reftable = weapons.Get(class) or util.KeyValuesToTable(file.Read("scripts/weapons/"..class..".txt", "GAME"))
                 local nicecat = language.GetPhrase(wep.Category)
                 if !QuickLoadouts.WepList[nicecat] then
                     QuickLoadouts.WepList[nicecat] = {}
@@ -393,18 +393,18 @@ local function GenerateWeaponTable(force)
                 -- end
                 if reftable then
                     wep.Base = reftable.Base
-                    if reftable.Slot then wep.Slot = (tonumber(reftable.Slot) or 0)+1 end
+                    if reftable.Slot or reftable.bucket then wep.Slot = (tonumber(reftable.Slot or reftable.bucket) or 0)+1 end
                     wep.Stats = {
-                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary.Damage,
-                        num = reftable.Num or reftable.Primary.NumShots or 1,
-                        rof = reftable.RPM or reftable.Primary.RPM or (reftable.FireDelay and math.Round(60 / reftable.FireDelay) or reftable.Primary.Delay and reftable.Primary.Delay > 0 and math.Round(60 / reftable.Primary.Delay)),
-                        ammo = game.GetAmmoName(game.GetAmmoID(tostring(reftable.AmmoType or reftable.Ammo or reftable.Primary.Ammo))),
-                        mag = reftable.ClipSize or reftable.Primary.ClipSize,
-                        ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary.Ammo))),
-                        mag2 = reftable.Secondary.ClipSize,
-                        mdl = reftable.WorldModel,
+                        dmg = reftable.DamageMax or reftable.Damage_Max or reftable.Damage or reftable.Bullet and istable(reftable.Bullet.Damage) and reftable.Bullet.Damage[1] or reftable.Primary and reftable.Primary.Damage or reftable.damage or cvars.Number("sk_plr_dmg_"..string.Replace(class, "weapon_", "")) or reftable.primary_ammo and game.GetAmmoPlayerDamage(game.GetAmmoID(reftable.primary_ammo)),
+                        num = reftable.Num or reftable.Primary and reftable.Primary.NumShots or 1,
+                        rof = reftable.RPM or reftable.Primary and reftable.Primary.RPM or (reftable.FireDelay and math.Round(60 / reftable.FireDelay) or reftable.Primary and reftable.Primary.Delay and reftable.Primary.Delay > 0 and math.Round(60 / reftable.Primary.Delay)),
+                        ammo = game.GetAmmoName(game.GetAmmoID(tostring(reftable.AmmoType or reftable.Ammo or reftable.Primary and reftable.Primary.Ammo or reftable.primary_ammo))),
+                        mag = reftable.ClipSize or reftable.Primary and reftable.Primary.ClipSize or reftable.clip_size,
+                        ammo2 = game.GetAmmoName(game.GetAmmoID(tostring(reftable.Secondary and reftable.Secondary.Ammo or reftable.secondary_ammo))),
+                        mag2 = reftable.Secondary and reftable.Secondary.ClipSize or reftable.clip2_size,
+                        mdl = reftable.WorldModel or reftable.playermodel,
                         welements = reftable.WElements,
-                        holdtype = reftable.HoldType,
+                        holdtype = reftable.HoldType or reftable.anim_prefix,
                     }
                     -- local mdl = "materials/spawnicons/" .. string.StripExtension() .. ".png"
                     -- if #reftable.WorldModel > 0 then
@@ -422,22 +422,35 @@ end
 local mat, bmat = Material("vgui/gradient-l"), Material("pp/blurscreen")
 local warntext = "Disclaimer: Displayed stats may be inaccurate."
 local holdtypetbl = {
-    pistol = "idle_revolver",
-    revolver = "idle_revolver",
-    duel = "idle_dual",
-    smg = "idle_rpg",
-    ar2 = "idle_rpg",
-    shotgun = "idle_passive",
-    rpg = "idle_passive",
-    physgun = "idle_passive",
-    crossbow = "idle_rpg",
-    camera = "idle_slam",
-    slam = "idle_slam",
-    grenade = "idle_slam",
-    knife = "idle_slam",
-    fist = "pose_standing_02",
-    melee = "idle_slam",
-    melee2 = "idle_melee2",
+    ["pistol"] = "idle_revolver",
+    ["glock"] = "idle_revolver",
+    ["revolver"] = "idle_revolver",
+    ["python"] = "idle_revolver",
+    ["duel"] = "idle_dual",
+    ["smg"] = "idle_rpg",
+    ["smg2"] = "idle_rpg",
+    ["mp5"] = "idle_rpg",
+    ["ar2"] = "idle_rpg",
+    ["shotgun"] = "idle_passive",
+    ["rpg"] = "idle_passive",
+    ["physgun"] = "idle_passive",
+    ["gauss"] = "idle_passive",
+    ["egon"] = "idle_passive",
+    ["missile launcher"] = "idle_rpg",
+    ["crossbow"] = "idle_rpg",
+    ["bow"] = "idle_rpg",
+    ["hive"] = "idle_slam",
+    ["camera"] = "idle_slam",
+    ["trip"] = "idle_slam",
+    ["slam"] = "idle_slam",
+    ["squeak"] = "idle_slam",
+    ["grenade"] = "idle_slam",
+    ["knife"] = "idle_slam",
+    ["fist"] = "pose_standing_02",
+    ["melee"] = "idle_slam",
+    ["crowbar"] = "idle_slam",
+    ["stunbaton"] = "idle_slam",
+    ["melee2"] = "idle_melee2",
 }
 
 local refresh = false
@@ -908,7 +921,7 @@ function QLOpenMenu()
         end
         self.Entity2:SetParent(self.Entity, self.Entity:LookupAttachment("anim_attachment_RH"))
         local holdtype = mainmenu.image.WepData.holdtype
-        self.Entity:ResetSequence(holdtype and holdtypetbl[holdtype] or "idle_suitcase" or 1)
+        self.Entity:ResetSequence(holdtype and holdtypetbl[string.lower(holdtype)] or "idle_suitcase" or 1)
     
     end
     function mainmenu.theguy:GetWeapon()
