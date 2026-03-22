@@ -355,6 +355,8 @@ end
 
 local hardchecks = {["CSSWeapons"] = list.Get("CSSWeapons")}
 
+local dev = GetConVar("developer")
+
 local function GenerateWeaponTable(force)
     if table.IsEmpty(QuickLoadouts.WepList) or force then
         print("[Quick Loadouts] Generating weapon table...")
@@ -368,7 +370,10 @@ local function GenerateWeaponTable(force)
         end
         for class, wep in SortedPairs(QuickLoadouts.RefList) do
             if wep.Spawnable then
-                reftable = weapons.Get(class) or util.KeyValuesToTable(file.Read("scripts/weapons/"..class..".txt", "GAME"))
+                reftable = weapons.Get(class) or file.Exists("scripts/weapons/"..class..".txt", "GAME") and util.KeyValuesToTable(file.Read("scripts/weapons/"..class..".txt", "GAME"))
+                if dev:GetBool() and !reftable then
+                    print([[Weapon class "]]..class..[[" is not found as SWEP or WeaponData in "scripts/weapons/]]..class..[[.txt" (how?)]])
+                end
                 local nicecat = language.GetPhrase(wep.Category)
                 if !QuickLoadouts.WepList[nicecat] then
                     QuickLoadouts.WepList[nicecat] = {}
@@ -431,6 +436,11 @@ local holdtypetbl = {
     ["smg2"] = "idle_rpg",
     ["mp5"] = "idle_rpg",
     ["ar2"] = "idle_rpg",
+    ["tinygun"] = "idle_rpg",
+    ["rifle"] = "idle_rpg",
+    ["biggun"] = "idle_rpg",
+    ["boltaction"] = "idle_rpg",
+    ["riflewithverticalgrip"] = "idle_smg1",
     ["shotgun"] = "idle_passive",
     ["rpg"] = "idle_passive",
     ["physgun"] = "idle_passive",
