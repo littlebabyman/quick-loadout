@@ -361,6 +361,7 @@ local function GenerateWeaponTable(force)
     if table.IsEmpty(QuickLoadouts.WepList) or force then
         print("[Quick Loadouts] Generating weapon table...")
         QuickLoadouts.RefList = list.Get("Weapon")
+        local measure = SysTime()
         local reftable = {}
         for _, sub in pairs(hardchecks) do
             if !istable(sub) then continue end
@@ -371,9 +372,9 @@ local function GenerateWeaponTable(force)
         for class, wep in SortedPairs(QuickLoadouts.RefList) do
             if wep.Spawnable then
                 reftable = weapons.Get(class) or file.Exists("scripts/weapons/"..class..".txt", "GAME") and util.KeyValuesToTable(file.Read("scripts/weapons/"..class..".txt", "GAME"))
-                if dev:GetBool() and !reftable then
-                    print([[Weapon class "]]..class..[[" is not found as SWEP or WeaponData in "scripts/weapons/]]..class..[[.txt" (how?)]])
-                end
+                -- if dev:GetBool() and !reftable then
+                --     print([[Weapon class "]]..class..[[" is not found as SWEP or WeaponData in "scripts/weapons/]]..class..[[.txt" (how?)]])
+                -- end
                 local nicecat = language.GetPhrase(wep.Category)
                 if !QuickLoadouts.WepList[nicecat] then
                     QuickLoadouts.WepList[nicecat] = {}
@@ -420,6 +421,7 @@ local function GenerateWeaponTable(force)
             end
             reftable = {}
         end
+        print("[Quick Loadouts] Finished generating weapon table in " .. math.Truncate(SysTime() - measure, 4) .. " seconds.")
     end
     -- PrintTable(QuickLoadouts.WepList)
 end
