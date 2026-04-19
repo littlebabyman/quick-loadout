@@ -261,7 +261,7 @@ local function GenerateEditableLabel(frame, name)
 end
 
 local function QLEditTime(t)
-    return CurTime() < t and "\n".. math.Truncate(t - CurTime(),1)
+    return CurTime() < t and "\n" .. string.format("%0.1f", t - CurTime())
 end
 
 local notipan = nil
