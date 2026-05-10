@@ -300,7 +300,8 @@ local function QLNotify(note, priority)
     box:Dock(FILL)
     notipan:SetSize(box:GetTextSize())
     notipan:SetTall(notipan:GetTall()*2)
-    if spawn and time:GetBool() then
+    local wpos = (ScrW() - box:GetWide()) * 0.5
+    if spawn and priority and time:GetBool() then
         local cutoff = vgui.Create("DLabel", notipan)
         cutoff:SetFont("quickloadout_font_medium")
         cutoff:SetText(spawntime)
@@ -310,14 +311,17 @@ local function QLNotify(note, priority)
         cutoff:SetSize(cutoff:GetTextSize())
         cutoff:Dock(FILL)
         local spawncutoff = CurTime() + spawntime
-        cutoff.Think = function()
+        function cutoff:Think()
+            if LocalPlayer():Health() <= 0 and priority then
+                notipan:SetPos(wpos, ScrH() * 0.8)
+                notipan:MoveTo(wpos, ScrH(), .2, 1.8, -1, function(data, pnl) pnl:Remove() end)
+                self:Remove() return end
             if spawncutoff > CurTime() then
-            cutoff:SetText(QLEditTime(spawncutoff) or "")
+            self:SetText(QLEditTime(spawncutoff) or "")
             end
         end
     end
     -- container:SizeToContentsY(draw.GetFontHeight("quickloadout_font_medium")*2)
-    local wpos = (ScrW() - box:GetWide()) * 0.5
     if !note and priority then
         notipan:SetPos(wpos, ScrH() * 0.8)
         notipan:MoveTo(wpos, ScrH(), 0.2, 0, -1, function(data, pnl) pnl:Remove() end)
@@ -551,7 +555,7 @@ function QLOpenMenu()
             if !apply then
                 QuickLoadouts.TempList = tmp
             end
-            QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.", !apply)
+            QLNotify(apply and "Loadout changes applied." or "Loadout changes discarded.")
         end
         refresh = false
         if !apply then return end
