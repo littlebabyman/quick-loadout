@@ -292,7 +292,8 @@ local function QLNotify(note, priority)
     box:SetFont("quickloadout_font_medium")
     box:SetText(text)
     box:SetTextColor(color_white)
-    local spawntime = spawn and (IsValid(LocalPlayer()) and LocalPlayer():Health() > 0 and (time:GetBool() and time:GetInt() or 0) or 8) or 1
+    local tb, ti = time:GetBool(), time:GetInt()
+    local spawntime = spawn and (IsValid(LocalPlayer()) and (tb and ti or 0) or 8) or 1
     notipan:SetContentAlignment(8)
     box:SetContentAlignment(8)
     -- box:SetSize(box:GetTextSize())
@@ -301,7 +302,7 @@ local function QLNotify(note, priority)
     notipan:SetSize(box:GetTextSize())
     notipan:SetTall(notipan:GetTall()*2)
     local wpos = (ScrW() - box:GetWide()) * 0.5
-    if spawn and priority and time:GetBool() then
+    if spawn and priority and tb then
         local cutoff = vgui.Create("DLabel", notipan)
         cutoff:SetFont("quickloadout_font_medium")
         cutoff:SetText(spawntime)
